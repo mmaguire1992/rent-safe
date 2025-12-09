@@ -1,0 +1,28 @@
+function GreenGrowthIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      <path
+        d="M16.2856 6H23.1428V12.8571"
+        stroke="#00893A"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M23.1426 6L13.4569 15.6857C13.2967 15.8428 13.0813 15.9307 12.8569 15.9307C12.6326 15.9307 12.4172 15.8428 12.2569 15.6857L8.31408 11.7429C8.15385 11.5858 7.93844 11.4978 7.71408 11.4978C7.48972 11.4978 7.2743 11.5858 7.11408 11.7429L0.856934 18"
+        stroke="#00893A"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export default GreenGrowthIcon;
