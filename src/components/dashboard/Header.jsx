@@ -12,6 +12,7 @@ import { FiCheckCircle } from "react-icons/fi";
 import BlueSearchIcon from "../../svg/blueSearchIcon";
 import BellIcon from "../../svg/bellIcon";
 import GreenCheckedIcon from "../../svg/greenCheckedIcon";
+import LogoutIcon from "../../svg/logoutIcon";
 
 function Header({ onMenuClick }) {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ function Header({ onMenuClick }) {
   };
 
   return (
-    <div className="bg-white border-b border-lightGray px-3 sm:px-6 py-3 md:py-4 relative">
+    <div className="bg-white  px-3 sm:px-6 py-3 md:py-4 relative">
       <div className="flex items-center justify-between gap-2 md:gap-4">
         {/* Mobile Menu Button */}
         <button
@@ -67,22 +68,23 @@ function Header({ onMenuClick }) {
         </div>
 
         {/* Center - Plan Info */}
-        <div className="hidden lg:flex items-center gap-4 mx-8 border border-lightGray rounded-xl py-1 pr-1 pl-3">
-          <div className="flex items-center gap-2">
-            <span className="text-midGray text-base font-bold text-nunito">
-              Current Plan:
-            </span>
-            <span className="text-yellow font-bold text-base text-nunito">
-              Premium
-            </span>
-          </div>
-          <button className="bg-yellowGradient text-white px-4 py-1.5  rounded-lg text-base font-bold text-nunito hover:bg-opacity-90 transition-colors whitespace-nowrap">
-            Upgrade Your Plan
-          </button>
-        </div>
 
         {/* Right - Notifications & Profile */}
         <div className="flex items-center gap-2 md:gap-4">
+          <div className="hidden lg:flex items-center gap-4  border border-lightGray rounded-xl py-1 pr-1 pl-3">
+            <div className="flex items-center gap-2">
+              <span className="text-midGray text-base font-bold font-nunito">
+                Current Plan:
+              </span>
+              <span className="text-yellow font-bold text-base font-nunito">
+                Premium
+              </span>
+            </div>
+            <button className="bg-yellowGradient text-white px-4 py-1.5  rounded-lg text-base font-bold font-nunito hover:bg-opacity-90 transition-colors whitespace-nowrap">
+              Upgrade Your Plan
+            </button>
+          </div>
+
           <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <BellIcon />
           </button>
@@ -103,7 +105,7 @@ function Header({ onMenuClick }) {
                 </span>
               </div>
               <div className="hidden md:flex items-center gap-1">
-                <span className="text-secondary font-bold text-base text-nunito">
+                <span className="text-secondary font-bold text-base font-nunito">
                   John Smith
                 </span>
                 <FiChevronDown
@@ -116,7 +118,7 @@ function Header({ onMenuClick }) {
 
             {/* Dropdown Menu */}
             {dropdownOpen && (
-              <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-lg border border-lightGray shadow-lg z-50">
+              <div className="absolute top-full right-0 mt-2 w-60 bg-white rounded-lg border border-lightGray shadow-lg z-50">
                 {/* User Info Section */}
                 <div className="p-4 border-b border-lightGray">
                   <div className="flex items-center gap-3">
@@ -124,13 +126,15 @@ function Header({ onMenuClick }) {
                       <div className="w-12 h-12 bg-[#6B4EFF] rounded-full flex items-center justify-center text-white font-bold">
                         JS
                       </div>
-                      <FiCheckCircle className="absolute -bottom-1 -right-1 text-green-600 bg-white rounded-full text-sm" />
+                      <span className="absolute -top-1 -right-1">
+                        <GreenCheckedIcon />
+                      </span>
                     </div>
                     <div>
-                      <h3 className="font-bold text-secondary text-base">
+                      <h3 className="font-semibold font-nunito text-secondary text-base">
                         John Smith
                       </h3>
-                      <p className="text-sm text-darkGray">
+                      <p className="text-xs text-[#52525B] font-normal">
                         johnsmith@gmail.com
                       </p>
                     </div>
@@ -144,34 +148,20 @@ function Header({ onMenuClick }) {
                       navigate("/dashboard/profile");
                       setDropdownOpen(false);
                     }}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                    className="w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
                   >
-                    <span className="font-semibold text-[#6B4EFF] text-base">
+                    <span className="font-normal text-[#343C6A] text-base lg:text-lg font-nunito">
                       Profile Setting
                     </span>
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                    className="w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
                   >
-                    <span className="font-semibold text-[#6B4EFF] text-base">
+                    <span className="font-normal text-[#343C6A] text-base lg:text-lg font-nunito">
                       Logout
                     </span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#9CA3AF"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                      <polyline points="16 17 21 12 16 7" />
-                      <line x1="21" y1="12" x2="9" y2="12" />
-                    </svg>
+                    <LogoutIcon />
                   </button>
                 </div>
               </div>

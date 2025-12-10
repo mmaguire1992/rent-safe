@@ -3,6 +3,12 @@ import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { FiSearch, FiMoreVertical, FiPaperclip, FiSend, FiChevronLeft, FiMail, FiPhone } from "react-icons/fi";
 import { FiCheckCircle } from "react-icons/fi";
+import {
+  allMessages,
+  messageRequests,
+  getChatMessages,
+  getTenantData as getTenantDataFromConstant,
+} from "@/constant";
 
 function Messages() {
   const navigate = useNavigate();
@@ -11,140 +17,9 @@ function Messages() {
   const [showRequestDetail, setShowRequestDetail] = useState(false);
   const [messageText, setMessageText] = useState("");
 
-  const allMessages = [
-    {
-      id: 1,
-      name: "David Wanner",
-      property: "2-Bed Apartment Manchester",
-      message: "Hello, I'm interested in viewing the property this week.",
-      time: "2h ago",
-      unread: 1,
-      hasPhoto: true,
-      photoUrl: "https://via.placeholder.com/48x48",
-      initials: "DW",
-    },
-    {
-      id: 2,
-      name: "Naomi Watts",
-      property: "2-Bed Apartment Anfield",
-      message: "Hello, I'm interested in viewing the property this week.",
-      time: "1h ago",
-      unread: 1,
-      hasPhoto: false,
-      initials: "NW",
-    },
-    {
-      id: 3,
-      name: "Ricardo Diaz",
-      property: "2-Bed Apartment Anfield",
-      message: "Hello, I'm interested in viewing the property this week.",
-      time: "1h ago",
-      unread: 1,
-      hasPhoto: false,
-      initials: "RD",
-    },
-    {
-      id: 4,
-      name: "Keisha Blue",
-      property: "3-Bed House Liverpool",
-      message: "Hello, I'm interested in viewing the property this week.",
-      time: "30m ago",
-      unread: 1,
-      hasPhoto: false,
-      initials: "KB",
-    },
-  ];
-
-  const messageRequests = [
-    {
-      id: 1,
-      name: "David Wanner",
-      property: "2-Bed Apartment Manchester",
-      message: "Hello, I'm interested in viewing the property this week.",
-      time: "2h ago",
-      unread: 1,
-      hasPhoto: true,
-      photoUrl: "https://via.placeholder.com/48x48",
-      initials: "DW",
-    },
-    {
-      id: 2,
-      name: "Naomi Watts",
-      property: "2-Bed Apartment Anfield",
-      message: "Hello, I'm interested in viewing the property this week.",
-      time: "1h ago",
-      unread: 1,
-      hasPhoto: false,
-      initials: "NW",
-    },
-    {
-      id: 3,
-      name: "Ricardo Diaz",
-      property: "2-Bed Apartment Anfield",
-      message: "Hello, I'm interested in viewing the property this week.",
-      time: "1h ago",
-      unread: 1,
-      hasPhoto: false,
-      initials: "RD",
-    },
-    {
-      id: 4,
-      name: "Keisha Blue",
-      property: "3-Bed House Liverpool",
-      message: "Hello, I'm interested in viewing the property this week.",
-      time: "30m ago",
-      unread: 1,
-      hasPhoto: false,
-      initials: "KB",
-    },
-    {
-      id: 5,
-      name: "Sarah Johnson",
-      property: "1-Bed Studio Birmingham",
-      message: "Hello, I'm interested in viewing the property this week.",
-      time: "45m ago",
-      unread: 1,
-      hasPhoto: false,
-      initials: "SJ",
-    },
-    {
-      id: 6,
-      name: "Michael Brown",
-      property: "4-Bed House Leeds",
-      message: "Hello, I'm interested in viewing the property this week.",
-      time: "1h ago",
-      unread: 1,
-      hasPhoto: false,
-      initials: "MB",
-    },
-  ];
-
   const conversations = activeTab === "all" ? allMessages : messageRequests;
 
-  const chatMessages = selectedConversation
-    ? [
-        {
-          id: 1,
-          sender: "david",
-          senderInitials: "DW",
-          message:
-            "Hi, I'm interested in your 2-bedroom apartment in Manchester. Is it still available?",
-          time: "10:30 AM",
-          type: "text",
-        },
-        {
-          id: 2,
-          sender: "you",
-          message: {
-            rent: "€800 / month",
-            property: "2-Bed Apartment Manchester",
-            requirements: "I need your ID and proof of income.",
-          },
-          time: "11:15 AM",
-          type: "offer",
-        },
-      ]
-    : [];
+  const chatMessages = getChatMessages(selectedConversation?.id);
 
   const handleSendMessage = () => {
     if (messageText.trim()) {
@@ -159,48 +34,8 @@ function Messages() {
     navigate(`/dashboard/tenant/${selectedConversation?.id}/offer`);
   };
 
-  // Tenant data for message request detail view
-  const getTenantData = (conversationId) => {
-    // In real app, this would come from API
-    return {
-      name: "David Wanner",
-      verified: true,
-      profileImage: "https://via.placeholder.com/120x120",
-      description: "Experienced marketing professional with excellent references from previous landlords. Looking for long-term rental with reliable payment history and strong community engagement.",
-      designation: "Marketing Manager",
-      location: "Manchester, UK",
-      monthlyIncome: "€4,800",
-      creditScore: 785,
-      creditMax: 850,
-      creditRating: "Excellent",
-      creditDescription: "This tenant demonstrates excellent creditworthiness and payment reliability.",
-      identity: {
-        fullName: "Michael Wei Chen",
-        dateOfBirth: "8th July 1992",
-        nationalInsurance: "CD789012E",
-        phone: "+44 7445 987654",
-        email: "michael.chen@email.com",
-      },
-      currentAddress: {
-        address: "78 Canal Street",
-        city: "Manchester",
-        country: "United Kingdom",
-        postcode: "M1 3EZ",
-        livingPeriod: "3 years",
-      },
-      employment: {
-        jobTitle: "Senior Marketing Manager",
-        company: "Digital Marketing Hub Ltd",
-        employmentType: "Full-time Permanent",
-        annualSalary: "€4,800",
-        startDate: "March 2021",
-        workLocation: "Manchester Office",
-      },
-    };
-  };
-
   const tenantData = selectedConversation && showRequestDetail && activeTab === "requests"
-    ? getTenantData(selectedConversation.id)
+    ? getTenantDataFromConstant(selectedConversation.id)
     : null;
 
   const creditPercentage = tenantData

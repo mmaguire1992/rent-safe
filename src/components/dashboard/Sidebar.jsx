@@ -1,26 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-  FiHome,
-  FiGrid,
-  FiMessageCircle,
-  FiCreditCard,
-  FiShield,
-  FiUser,
-  FiHelpCircle,
-  FiChevronLeft,
-  FiChevronRight,
-} from "react-icons/fi";
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import MainLogo from "../../assests/images/whiteLogo.png";
 import LogoIcon from "../../svg/logoIcon";
-import DashboardIcon from "../../svg/dashboardIcon";
-import PropertiesIcon from "../../svg/propertiesIcon";
-import MessagesIcon from "../../svg/messageIcon";
-import PaymentsIcon from "../../svg/planIcon";
-import VerificationIcon from "../../svg/verificationIcon";
-import SettingsIcon from "../../svg/settingsIcon";
-import SupportIcon from "../../svg/supportIcon";
+import { sidebarMenuItems } from "@/constant";
 
 function Sidebar({ onClose }) {
   const navigate = useNavigate();
@@ -28,50 +11,7 @@ function Sidebar({ onClose }) {
   const [activeItem, setActiveItem] = useState(location.pathname);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const menuItems = [
-    {
-      icon: DashboardIcon,
-      label: "Dashboard",
-      path: "/dashboard",
-      badge: null,
-    },
-    {
-      icon: PropertiesIcon,
-      label: "My Properties",
-      path: "/dashboard/properties",
-      badge: null,
-    },
-    {
-      icon: MessagesIcon,
-      label: "Messages",
-      path: "/dashboard/messages",
-      badge: 3,
-    },
-    {
-      icon: PaymentsIcon,
-      label: "Payments & Plans",
-      path: "/dashboard/payments",
-      badge: null,
-    },
-    {
-      icon: VerificationIcon,
-      label: "Verification Center",
-      path: "/dashboard/verification",
-      badge: null,
-    },
-    {
-      icon: SettingsIcon,
-      label: "Profile Settings",
-      path: "/dashboard/profile",
-      badge: null,
-    },
-    {
-      icon: SupportIcon,
-      label: "Support",
-      path: "/dashboard/support",
-      badge: null,
-    },
-  ];
+  const menuItems = sidebarMenuItems;
 
   const handleNavClick = (path) => {
     setActiveItem(path);

@@ -18,6 +18,17 @@ import {
   FiFilter,
 } from "react-icons/fi";
 import { FiCheckCircle } from "react-icons/fi";
+import {
+  getPropertyData,
+  listingStatusTabs,
+  dateOptions,
+  propertyTypeOptions,
+  bedroomOptions,
+  bathroomOptions,
+  priceRangeOptions,
+  areaOptions,
+  statusFilterOptions,
+} from "@/constant";
 
 function PropertyDetail() {
   const navigate = useNavigate();
@@ -39,122 +50,9 @@ function PropertyDetail() {
   const [rentPrice, setRentPrice] = useState("");
   const [rentDescription, setRentDescription] = useState("");
 
-  // Sample data - in real app, this would come from API based on id
-  const propertyData = {
-    id: id || "8053",
-    title: "2-Bed Apartment in City Centre",
-    address: "45 Deansgate, Manchester, M3 2AP",
-    bedrooms: 2,
-    bathrooms: 2,
-    status: "Active",
-    dateAdded: "25th Nov 2023",
-    approvedOn: "25th Nov 2023",
-    validUntil: "25th Feb 2024",
-    views: 343,
-    leads: 12,
-    monthlyRent: "€800",
-    propertyType: "Flat/Apartment",
-    furnishedStatus: "Furnished",
-    availableFrom: "15th Nov 2023",
-    description:
-      "Beautiful modern apartment in the heart of Manchester city centre. This stunning 2-bedroom property features contemporary design, floor-to-ceiling windows with city views, and high-quality finishes throughout. Perfect for professionals or couples looking for city living at its finest.",
-    renterProfileDescription:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
-    additionalRequirements:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-    mainImage: "https://via.placeholder.com/800x500",
-    thumbnails: [
-      "https://via.placeholder.com/200x200",
-      "https://via.placeholder.com/200x200",
-      "https://via.placeholder.com/200x200",
-      "https://via.placeholder.com/200x200",
-    ],
-    amenities: [
-      { name: "Parking", icon: FiHome },
-      { name: "WiFi Included", icon: FiWifi },
-      { name: "Garden", icon: FiHome },
-      { name: "Control Heating", icon: FiThermometer },
-    ],
-    utilities: [
-      { name: "Parking", icon: FiHome },
-      { name: "WiFi Included", icon: FiWifi },
-      { name: "Garden", icon: FiHome },
-      { name: "Control Heating", icon: FiThermometer },
-    ],
-    preferredRenterTypes: [
-      { label: "Single Male", checked: true },
-      { label: "Single Female", checked: true },
-      { label: "Couple", checked: true },
-      { label: "Family", checked: true },
-      { label: "Students", checked: true },
-      { label: "Professionals", checked: true },
-      { label: "Self-Employed", checked: true },
-      { label: "Sharers", checked: false },
-      { label: "Corporate Tenant", checked: false },
-    ],
-  };
+  const propertyData = getPropertyData(id);
 
   const [selectedImage, setSelectedImage] = useState(propertyData.mainImage);
-
-  const listingStatusTabs = [
-    { value: "all", label: "All" },
-    { value: "active", label: "Active" },
-    { value: "pending", label: "Pending" },
-    { value: "draft", label: "Draft" },
-    { value: "archived", label: "Archived" },
-  ];
-
-  const dateOptions = [
-    { value: "", label: "Select Date" },
-    { value: "today", label: "Today" },
-    { value: "week", label: "This Week" },
-    { value: "month", label: "This Month" },
-  ];
-
-  const propertyTypeOptions = [
-    { value: "", label: "All Types" },
-    { value: "apartment", label: "Apartment" },
-    { value: "house", label: "House" },
-    { value: "studio", label: "Studio" },
-  ];
-
-  const bedroomOptions = [
-    { value: "", label: "All" },
-    { value: "1", label: "1" },
-    { value: "2", label: "2" },
-    { value: "3", label: "3" },
-    { value: "4+", label: "4+" },
-  ];
-
-  const bathroomOptions = [
-    { value: "", label: "All" },
-    { value: "1", label: "1" },
-    { value: "2", label: "2" },
-    { value: "3", label: "3" },
-    { value: "4+", label: "4+" },
-  ];
-
-  const priceRangeOptions = [
-    { value: "", label: "All" },
-    { value: "0-500", label: "€0 - €500" },
-    { value: "500-1000", label: "€500 - €1000" },
-    { value: "1000-1500", label: "€1000 - €1500" },
-    { value: "1500+", label: "€1500+" },
-  ];
-
-  const areaOptions = [
-    { value: "", label: "All" },
-    { value: "manchester", label: "Manchester" },
-    { value: "london", label: "London" },
-    { value: "birmingham", label: "Birmingham" },
-  ];
-
-  const statusOptions = [
-    { value: "", label: "All" },
-    { value: "active", label: "Active" },
-    { value: "pending", label: "Pending" },
-    { value: "draft", label: "Draft" },
-  ];
 
   return (
     <DashboardLayout>
@@ -277,7 +175,7 @@ function PropertyDetail() {
             <div>
               <label className="block text-xs text-darkGray mb-1">Status</label>
               <CustomDropdown
-                options={statusOptions}
+                options={statusFilterOptions}
                 value={statusFilter}
                 onChange={setStatusFilter}
                 placeholder="Status"

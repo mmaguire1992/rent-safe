@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import CustomDropdown from "@/components/common/CustomDropdown";
 import FileUpload from "@/components/FileUpload";
+import ProgressIndicator from "@/components/AddProperty/ProgressIndicator";
+import AIModal from "@/components/AddProperty/AIModal";
+import SuccessModal from "@/components/AddProperty/SuccessModal";
 import {
   FiHome,
   FiMapPin,
@@ -14,10 +17,17 @@ import {
   FiX,
   FiCalendar,
   FiPlus,
-  FiCopy,
-  FiEdit,
 } from "react-icons/fi";
-import { FiCheckCircle } from "react-icons/fi";
+import {
+  addPropertySteps,
+  addPropertyTypeOptions,
+  addPropertyCityOptions,
+  countyOptions,
+  chargeTypeOptions,
+  preferredRenterTypeOptions,
+  amenitiesList,
+  utilitiesList,
+} from "@/constant";
 
 function AddProperty() {
   const navigate = useNavigate();
@@ -54,91 +64,9 @@ function AddProperty() {
     additionalRequirements: "",
   });
 
-  const steps = [
-    { number: 1, label: "Basic Info", icon: FiHome },
-    { number: 2, label: "Location", icon: FiMapPin },
-    { number: 3, label: "Rent Details", icon: FiDollarSign },
-    { number: 4, label: "Amenities & Utilities", icon: FiWifi },
-    { number: 5, label: "Upload Images", icon: FiUpload },
-    { number: 6, label: "Renter Description", icon: FiUser },
-    { number: 7, label: "Review", icon: FiCheck },
-  ];
-
-  const propertyTypeOptions = [
-    { value: "apartment", label: "Apartment" },
-    { value: "house", label: "House" },
-    { value: "studio", label: "Studio" },
-    { value: "condo", label: "Condo" },
-  ];
-
-  const cityOptions = [
-    { value: "manchester", label: "Manchester" },
-    { value: "london", label: "London" },
-    { value: "birmingham", label: "Birmingham" },
-    { value: "liverpool", label: "Liverpool" },
-  ];
-
-  const countyOptions = [
-    { value: "greater-manchester", label: "Greater Manchester" },
-    { value: "london", label: "London" },
-    { value: "west-midlands", label: "West Midlands" },
-    { value: "merseyside", label: "Merseyside" },
-  ];
-
-  const chargeTypeOptions = [
-    { value: "deposit", label: "Deposit" },
-    { value: "service-charge", label: "Service Charge" },
-    { value: "council-tax", label: "Council Tax" },
-    { value: "utilities", label: "Utilities" },
-  ];
-
-  const preferredRenterTypeOptions = [
-    { value: "single-male", label: "Single Male" },
-    { value: "single-female", label: "Single Female" },
-    { value: "couple", label: "Couple" },
-    { value: "family", label: "Family" },
-    { value: "students", label: "Students" },
-    { value: "professionals", label: "Professionals" },
-    { value: "self-employed", label: "Self-Employed" },
-    { value: "sharers", label: "Sharers" },
-    { value: "corporate", label: "Corporate Tenant" },
-  ];
-
-  const amenitiesList = [
-    "Wardrobes",
-    "Bed(s)",
-    "Wooden flooring",
-    "Carpet flooring",
-    "Fireplace",
-    "Underfloor heating",
-    "Heating controls",
-    "Dishwasher",
-    "Washing machine",
-    "Dryer / Washer-dryer",
-    "Microwave",
-    "Hob & oven",
-    "Fridge-freezer",
-    "Pantry / separate storage",
-    "Residents' parking",
-    "Sprinkler system",
-    "Bicycle storage",
-    "Smoke alarms",
-    "CCTV in communal areas",
-    "Recycling bins area",
-    "Lift",
-    "Gas Safety Certificate",
-    "Electrical Safety Certificate",
-    "EV charging point",
-    "TV point",
-    "Garage",
-  ];
-
-  const utilitiesList = [
-    { value: "electricity", label: "Electricity" },
-    { value: "gas", label: "Gas" },
-    { value: "water", label: "Water" },
-    { value: "internet", label: "Internet" },
-  ];
+  const steps = addPropertySteps;
+  const propertyTypeOptions = addPropertyTypeOptions;
+  const cityOptions = addPropertyCityOptions;
 
   const handleNext = () => {
     if (currentStep < steps.length) {
@@ -244,49 +172,7 @@ function AddProperty() {
         </div>
 
         {/* Progress Indicator */}
-        <div className="bg-white rounded-lg border border-lightGray p-6">
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => {
-              const Icon = step.icon;
-              const isCompleted = currentStep > step.number;
-              const isCurrent = currentStep === step.number;
-
-              return (
-                <div key={step.number} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-                        isCompleted || isCurrent
-                          ? "bg-[#6B4EFF] text-white"
-                          : "bg-gray-200 text-gray-500"
-                      }`}
-                    >
-                      {isCompleted ? (
-                        <FiCheckCircle className="text-xl" />
-                      ) : (
-                        <Icon className="text-xl" />
-                      )}
-                    </div>
-                    <span
-                      className={`text-xs mt-2 font-semibold ${
-                        isCurrent ? "text-[#6B4EFF]" : "text-darkGray"
-                      }`}
-                    >
-                      {step.label}
-                    </span>
-                  </div>
-                  {index < steps.length - 1 && (
-                    <div
-                      className={`flex-1 h-0.5 mx-2 ${
-                        isCompleted ? "bg-[#6B4EFF]" : "bg-gray-200 border-dashed"
-                      }`}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <ProgressIndicator steps={steps} currentStep={currentStep} />
 
         {/* Step Content */}
         <div className="bg-white rounded-lg border border-lightGray p-6">
@@ -1065,146 +951,23 @@ function AddProperty() {
       </div>
 
       {/* AI Content Generator Modal */}
-      {showAIModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg w-full max-w-3xl relative max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-lightGray flex items-center justify-between sticky top-0 bg-white">
-              <div>
-                <h2 className="text-2xl font-bold text-secondary">
-                  AI Content Generator
-                </h2>
-                <p className="text-sm text-darkGray mt-1">
-                  Generate your property description with AI
-                </p>
-              </div>
-              <button
-                onClick={() => setShowAIModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <FiX className="text-secondary text-xl" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-base font-semibold text-secondary">
-                    Property Description
-                  </label>
-                  <div className="flex gap-2">
-                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                      <FiCopy className="text-[#6B4EFF]" />
-                    </button>
-                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                      <FiEdit className="text-[#6B4EFF]" />
-                    </button>
-                  </div>
-                </div>
-                <textarea
-                  value={formData.propertyDescription}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      propertyDescription: e.target.value,
-                    })
-                  }
-                  placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua..."
-                  rows="6"
-                  className="w-full px-4 py-3 border border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] focus:border-transparent resize-none"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-base font-semibold text-[#6B4EFF]">
-                    AI Generated Description
-                  </label>
-                  <span className="text-xs text-darkGray">
-                    Save to edit the AI generated content
-                  </span>
-                </div>
-                <textarea
-                  value={aiDescription}
-                  onChange={(e) => setAiDescription(e.target.value)}
-                  placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua..."
-                  rows="6"
-                  className="w-full px-4 py-3 border border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] focus:border-transparent resize-none"
-                />
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-lightGray flex justify-end">
-              <button
-                onClick={handleGenerateAI}
-                className="bg-[#6B4EFF] text-white px-6 py-3 rounded-lg font-bold hover:bg-opacity-90 transition-opacity mr-3"
-              >
-                Generate
-              </button>
-              <button
-                onClick={handleSaveAIContent}
-                className="bg-[#6B4EFF] text-white px-6 py-3 rounded-lg font-bold hover:bg-opacity-90 transition-opacity"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AIModal
+        showAIModal={showAIModal}
+        setShowAIModal={setShowAIModal}
+        formData={formData}
+        setFormData={setFormData}
+        aiDescription={aiDescription}
+        setAiDescription={setAiDescription}
+        handleGenerateAI={handleGenerateAI}
+        handleSaveAIContent={handleSaveAIContent}
+      />
 
       {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg w-full max-w-md relative">
-            <button
-              onClick={() => {
-                setShowSuccessModal(false);
-                navigate("/dashboard/properties");
-              }}
-              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <FiX className="text-secondary text-xl" />
-            </button>
-
-            <div className="p-8 text-center">
-              <div className="w-16 h-16 bg-[#6B4EFF] rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiCheckCircle className="text-white text-3xl" />
-              </div>
-              <h2 className="text-2xl font-bold text-secondary mb-2">
-                Your Property Is Now Live!
-              </h2>
-              <p className="text-darkGray mb-6">
-                Your listing is successfully published and renters can now view
-                and contact you. You can manage this property anytime from your
-                dashboard.
-              </p>
-              <div className="flex gap-3 justify-center">
-                <button
-                  onClick={() => {
-                    setShowSuccessModal(false);
-                    navigate(
-                      `/dashboard/properties/${formData.propertyTitle
-                        .toLowerCase()
-                        .replace(/\s+/g, "-")}`
-                    );
-                  }}
-                  className="px-6 py-3 border-2 border-[#6B4EFF] text-[#6B4EFF] rounded-lg font-semibold hover:bg-purple-50 transition-colors"
-                >
-                  View Property
-                </button>
-                <button
-                  onClick={() => {
-                    setShowSuccessModal(false);
-                    navigate("/dashboard/properties");
-                  }}
-                  className="px-6 py-3 bg-[#6B4EFF] text-white rounded-lg font-semibold hover:bg-opacity-90 transition-colors"
-                >
-                  Go To My Property
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <SuccessModal
+        showSuccessModal={showSuccessModal}
+        setShowSuccessModal={setShowSuccessModal}
+        formData={formData}
+      />
     </DashboardLayout>
   );
 }

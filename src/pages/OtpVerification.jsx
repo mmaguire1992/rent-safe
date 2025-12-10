@@ -92,7 +92,7 @@ function OtpVerification() {
   };
 
   return (
-    <AuthLayout headerText="Forget Password/OTP">
+    <AuthLayout>
       <div className="block max-w-[420px] mx-auto">
         {/* Logo */}
         <div className="mb-6">

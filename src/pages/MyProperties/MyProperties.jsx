@@ -2,15 +2,20 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import CustomDropdown from "@/components/common/CustomDropdown";
+import Pagination from "@/components/common/Pagination";
 import {
   FiSearch,
   FiFilter,
   FiPlus,
   FiDownload,
   FiMoreVertical,
-  FiChevronLeft,
-  FiChevronRight,
 } from "react-icons/fi";
+import {
+  properties,
+  statusOptions,
+  typeOptions,
+  sortOptions,
+} from "@/constant";
 
 function MyProperties() {
   const navigate = useNavigate();
@@ -19,164 +24,6 @@ function MyProperties() {
   const [sortBy, setSortBy] = useState("recent");
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-
-  const properties = [
-    {
-      id: "0033",
-      image: "https://via.placeholder.com/60x60",
-      description: "2-Bed Apartment in Cit...",
-      location: "4517 Washington Ave...",
-      type: "Apartment",
-      rent: "€800",
-      leads: 22,
-      status: "Pending",
-      views: 67,
-    },
-    {
-      id: "0034",
-      image: "https://via.placeholder.com/60x60",
-      description: "3-Bed House in Liverp...",
-      location: "123 Main Street, Man...",
-      type: "House",
-      rent: "€1,200",
-      leads: 15,
-      status: "Active",
-      views: 55,
-    },
-    {
-      id: "0035",
-      image: "https://via.placeholder.com/60x60",
-      description: "1-Bed Studio in Birm...",
-      location: "789 Park Lane, Birm...",
-      type: "Studio",
-      rent: "€600",
-      leads: 8,
-      status: "Active",
-      views: 53,
-    },
-    {
-      id: "0036",
-      image: "https://via.placeholder.com/60x60",
-      description: "4-Bed House in Leed...",
-      location: "456 Oak Avenue, Lee...",
-      type: "House",
-      rent: "€1,500",
-      leads: 30,
-      status: "Pending",
-      views: 89,
-    },
-    {
-      id: "0037",
-      image: "https://via.placeholder.com/60x60",
-      description: "2-Bed Apartment in Man...",
-      location: "321 Elm Street, Man...",
-      type: "Apartment",
-      rent: "€950",
-      leads: 18,
-      status: "Active",
-      views: 72,
-    },
-    {
-      id: "0038",
-      image: "https://via.placeholder.com/60x60",
-      description: "3-Bed House in Anfield...",
-      location: "654 King Street, An...",
-      type: "House",
-      rent: "€1,100",
-      leads: 12,
-      status: "Active",
-      views: 48,
-    },
-    {
-      id: "0039",
-      image: "https://via.placeholder.com/60x60",
-      description: "2-Bed Apartment in Man...",
-      location: "987 Canal Street, M...",
-      type: "Apartment",
-      rent: "€850",
-      leads: 25,
-      status: "Pending",
-      views: 91,
-    },
-    {
-      id: "0040",
-      image: "https://via.placeholder.com/60x60",
-      description: "1-Bed Studio in Birm...",
-      location: "147 New Street, Bir...",
-      type: "Studio",
-      rent: "€550",
-      leads: 5,
-      status: "Active",
-      views: 35,
-    },
-    {
-      id: "0041",
-      image: "https://via.placeholder.com/60x60",
-      description: "4-Bed House in Leed...",
-      location: "258 Victoria Road...",
-      type: "House",
-      rent: "€1,600",
-      leads: 35,
-      status: "Active",
-      views: 105,
-    },
-    {
-      id: "0042",
-      image: "https://via.placeholder.com/60x60",
-      description: "3-Bed House in Man...",
-      location: "369 Deansgate, Man...",
-      type: "House",
-      rent: "€1,300",
-      leads: 20,
-      status: "Pending",
-      views: 78,
-    },
-    {
-      id: "0043",
-      image: "https://via.placeholder.com/60x60",
-      description: "2-Bed Apartment in Liv...",
-      location: "741 Bold Street, Li...",
-      type: "Apartment",
-      rent: "€900",
-      leads: 14,
-      status: "Active",
-      views: 62,
-    },
-    {
-      id: "0044",
-      image: "https://via.placeholder.com/60x60",
-      description: "1-Bed Studio in Man...",
-      location: "852 Piccadilly, Man...",
-      type: "Studio",
-      rent: "€650",
-      leads: 9,
-      status: "Active",
-      views: 41,
-    },
-  ];
-
-  const statusOptions = [
-    { value: "all", label: "All" },
-    { value: "active", label: "Active" },
-    { value: "pending", label: "Pending" },
-    { value: "inactive", label: "Inactive" },
-  ];
-
-  const typeOptions = [
-    { value: "all", label: "All" },
-    { value: "apartment", label: "Apartment" },
-    { value: "house", label: "House" },
-    { value: "studio", label: "Studio" },
-  ];
-
-  const sortOptions = [
-    { value: "recent", label: "Recent" },
-    { value: "oldest", label: "Oldest" },
-    { value: "rent-high", label: "Rent: High to Low" },
-    { value: "rent-low", label: "Rent: Low to High" },
-    { value: "leads-high", label: "Leads: High to Low" },
-    { value: "views-high", label: "Views: High to Low" },
-  ];
 
   const getStatusDisplayText = (value) => {
     if (value === "all") return "Status: All";
@@ -457,40 +304,15 @@ function MyProperties() {
           </div>
 
           {/* Pagination */}
-          <div className="px-4 md:px-6 py-4 border-t border-lightGray flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-darkGray">
-              Showing {startIndex + 1}-{Math.min(endIndex, properties.length)} of{" "}
-              {properties.length} properties
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="p-2 border border-lightGray rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FiChevronLeft className="text-secondary" />
-              </button>
-              {[...Array(totalPages)].map((_, index) => (
-                <button
-                  key={index + 1}
-                  onClick={() => setCurrentPage(index + 1)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                    currentPage === index + 1
-                      ? "bg-[#6B4EFF] text-white"
-                      : "bg-white border border-lightGray text-secondary hover:bg-gray-50"
-                  }`}
-                >
-                  {index + 1}
-                </button>
-              ))}
-              <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="p-2 border border-lightGray rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FiChevronRight className="text-secondary" />
-              </button>
-            </div>
+          <div className="px-4 md:px-6 py-4 border-t border-lightGray">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={properties.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              itemName="properties"
+            />
           </div>
         </div>
       </div>

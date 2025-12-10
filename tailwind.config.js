@@ -10,6 +10,11 @@ export default {
           " linear-gradient(289.51deg, #4A2FCC 23.42%, #6B4EFF 76.58%);",
         yellowGradient:
           "linear-gradient(290.38deg, #D56400 25.66%, #F4BA5F 86.6%);",
+        BoxGrayBg: "url('/boxgraybg.png')",
+        lightGrayGradient:
+          "linear-gradient(93.66deg, rgba(232, 226, 255, 0) 2.66%, rgba(232, 226, 255, 0.3) 97.34%);",
+        lightGreenGradient:
+          "linear-gradient(110.09deg, rgba(223, 255, 230, 0) 18.77%, rgba(223, 255, 230, 0.3) 81.23%);",
       },
       colors: {
         primary: "#2177CE",
