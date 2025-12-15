@@ -7,12 +7,14 @@ function SendOfferModal({ isOpen, onClose, formData, setFormData, onSend }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg w-full max-w-md relative">
-        <div className="p-6 border-b border-lightGray">
-          <div className="flex items-center justify-between mb-2">
+      <div className="bg-white rounded-[20px] w-full max-w-2xl relative p-5">
+        <div className="p-0 ">
+          <div className="flex items-start justify-between mb-2">
             <div>
-              <h2 className="text-2xl font-bold text-secondary">Send Offer</h2>
-              <p className="text-sm text-darkGray mt-1">
+              <h2 className="text-xl font-bold font-nunito text-secondary">
+                Send Offer
+              </h2>
+              <p className="text-base font-normal font-nunito text-darkGray mt-0">
                 2-Bed Apartment Manchester
               </p>
             </div>
@@ -25,7 +27,7 @@ function SendOfferModal({ isOpen, onClose, formData, setFormData, onSend }) {
           </div>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="p-0 mt-5 space-y-4">
           <div>
             <label className="block text-base font-semibold text-secondary mb-1">
               Property
@@ -51,7 +53,7 @@ function SendOfferModal({ isOpen, onClose, formData, setFormData, onSend }) {
                 setFormData({ ...formData, monthlyRent: e.target.value })
               }
               placeholder="Enter your monthly rent"
-              className="w-full px-4 py-3 border border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] focus:border-transparent h-[52px]"
+              className="w-full px-4 py-3 border border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0  h-[52px]  [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
           </div>
 
@@ -66,12 +68,12 @@ function SendOfferModal({ isOpen, onClose, formData, setFormData, onSend }) {
               }
               placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip."
               rows="6"
-              className="w-full px-4 py-3 border border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] focus:border-transparent resize-none"
+              className="w-full px-4 py-3 border border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 resize-none"
             />
           </div>
         </div>
 
-        <div className="p-6 border-t border-lightGray flex justify-end">
+        <div className="p-1 flex justify-end">
           <button
             onClick={onSend}
             className="bg-blueGradient text-white px-6 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity"
@@ -85,4 +87,3 @@ function SendOfferModal({ isOpen, onClose, formData, setFormData, onSend }) {
 }
 
 export default SendOfferModal;
-

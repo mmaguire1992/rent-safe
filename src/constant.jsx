@@ -10,6 +10,11 @@ import RemainingListingCountIcon from "./svg/listingCounterIcon";
 import Userimg from "./assests/images/userImg.png";
 import HotelIcon from "./assests/images/hotelIcon.png";
 import UserImg from "./assests/images/userImg.png";
+import MainHotelImg from "./assests/images/mainHotelImg.png";
+import HotelThumbnail1 from "./assests/images/mainHotelImg.png";
+import HotelThumbnail2 from "./assests/images/mainHotelImg.png";
+import HotelThumbnail3 from "./assests/images/mainHotelImg.png";
+import HotelThumbnail4 from "./assests/images/mainHotelImg.png";
 import {
   FiHome,
   FiWifi,
@@ -27,6 +32,23 @@ import PaymentsIcon from "./svg/planIcon";
 import VerificationIcon from "./svg/verificationIcon";
 import SettingsIcon from "./svg/settingsIcon";
 import SupportIcon from "./svg/supportIcon";
+// Property Detail Icons
+import BlueCarIcon from "./svg/blueCarIcon";
+import BlueWIFIIcon from "./svg/blueWIFIIcon";
+import BlueGardenIcon from "./svg/blueGardenIcon";
+import BlueHeatingIcon from "./svg/blueHeatingIcon";
+import OrangeElectrityIcon from "./svg/orangeElectrityIcon";
+import OrangeGasIcon from "./svg/orangeGasIcon";
+import RedMaleIcon from "./svg/redMaleIcon";
+import SingleFemaleIcon from "./svg/singleFemaleIcon";
+import CoupleIcon from "./svg/coupleIcon";
+import FamilyIcon from "./svg/familyIcon";
+import StudentIcon from "./svg/studentIcon";
+import ProfessionalIcon from "./svg/professionalIcon";
+import SelfEmployedIcon from "./svg/selfEmployedIcon";
+import RetiredIcon from "./svg/retiredIcon";
+import SharersIcon from "./svg/sharersIcon";
+import CarporateTenantIcon from "./svg/carporateTenantIcon";
 
 // ============================================
 // DASHBOARD DATA
@@ -433,7 +455,7 @@ export const allMessages = [
     time: "2h ago",
     unread: 1,
     hasPhoto: true,
-    photoUrl: "https://via.placeholder.com/48x48",
+    photoUrl: Userimg,
     initials: "DW",
   },
   {
@@ -477,7 +499,7 @@ export const messageRequests = [
     time: "2h ago",
     unread: 1,
     hasPhoto: true,
-    photoUrl: "https://via.placeholder.com/48x48",
+    photoUrl: Userimg,
     initials: "DW",
   },
   {
@@ -562,59 +584,127 @@ export const getChatMessages = (conversationId) => {
 // PROPERTY DATA
 // ============================================
 
-export const getPropertyData = (id) => ({
-  id: id || "8053",
-  title: "2-Bed Apartment in City Centre",
-  address: "45 Deansgate, Manchester, M3 2AP",
-  bedrooms: 2,
-  bathrooms: 2,
-  status: "Active",
-  dateAdded: "25th Nov 2023",
-  approvedOn: "25th Nov 2023",
-  validUntil: "25th Feb 2024",
-  views: 343,
-  leads: 12,
-  monthlyRent: "€800",
-  propertyType: "Flat/Apartment",
-  furnishedStatus: "Furnished",
-  availableFrom: "15th Nov 2023",
-  description:
-    "Beautiful modern apartment in the heart of Manchester city centre. This stunning 2-bedroom property features contemporary design, floor-to-ceiling windows with city views, and high-quality finishes throughout. Perfect for professionals or couples looking for city living at its finest.",
-  renterProfileDescription:
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
-  additionalRequirements:
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-  mainImage: "https://via.placeholder.com/800x500",
-  thumbnails: [
-    "https://via.placeholder.com/200x200",
-    "https://via.placeholder.com/200x200",
-    "https://via.placeholder.com/200x200",
-    "https://via.placeholder.com/200x200",
-  ],
-  amenities: [
-    { name: "Parking", icon: FiHome },
-    { name: "WiFi Included", icon: FiWifi },
-    { name: "Garden", icon: FiHome },
-    { name: "Control Heating", icon: FiThermometer },
-  ],
-  utilities: [
-    { name: "Parking", icon: FiHome },
-    { name: "WiFi Included", icon: FiWifi },
-    { name: "Garden", icon: FiHome },
-    { name: "Control Heating", icon: FiThermometer },
-  ],
-  preferredRenterTypes: [
-    { label: "Single Male", checked: true },
-    { label: "Single Female", checked: true },
-    { label: "Couple", checked: true },
-    { label: "Family", checked: true },
-    { label: "Students", checked: true },
-    { label: "Professionals", checked: true },
-    { label: "Self-Employed", checked: true },
-    { label: "Sharers", checked: false },
-    { label: "Corporate Tenant", checked: false },
-  ],
-});
+export const propertyDetailsArray = [
+  {
+    id: "0033",
+    title: "2-Bed Apartment in City Centre",
+    address: "45 Deansgate, Manchester, M3 2AY",
+    bedrooms: 2,
+    bathrooms: 2,
+    status: "Active",
+    dateAdded: "15th Nov 2025",
+    approvedOn: "15th Feb 2026",
+    validUntil: "15th Feb 2027",
+    views: 342,
+    leads: 12,
+    monthlyRent: "€800",
+    propertyType: "Flat/Apartment",
+    furnishedStatus: "Furnished",
+    availableFrom: "15th Nov 2025",
+    description:
+      "Beautiful modern apartment in the heart of Manchester city centre. This stunning 2-bedroom property features contemporary design, floor-to-ceiling windows with city views, and high-quality finishes throughout. Perfect for professionals or couples looking for city living at its finest.",
+    renterProfileDescription:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+    additionalRequirements:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+    mainImage: MainHotelImg,
+    thumbnails: [
+      HotelThumbnail1,
+      HotelThumbnail2,
+      HotelThumbnail3,
+      HotelThumbnail4,
+    ],
+    amenities: [
+      "Parking",
+      "WiFi Included",
+      "Garden",
+      "Central Heating",
+      "Gas Safety Certificate",
+      "Lift",
+      "TV point",
+      "Bicycle storage",
+      "Fridge-freezer",
+      "Washing machine",
+      "Fireplace",
+      "Wardrobes",
+      "Bed(s)",
+      "Underfloor heating",
+      "Dryer / Washer-dryer",
+      "Pantry / separate storage",
+      "Smoke alarms",
+      "Garage",
+      "Electrical Safety Certificate",
+      "CCTV in communal areas",
+      "Residents' parking",
+      "Microwave",
+      "Heating controls",
+      "Wooden flooring",
+      "Carpet flooring",
+      "Dishwasher",
+      "Hob & oven",
+      "Sprinkler system",
+      "Recycling bins area",
+      "EV charging point",
+    ],
+    utilities: ["Gas", "Electricity", "Water", "Internet"],
+    preferredRenterTypes: [
+      { label: "Single Male", checked: true },
+      { label: "Single Female", checked: true },
+      { label: "Couple", checked: true },
+      { label: "Family", checked: true },
+      { label: "Students", checked: true },
+      { label: "Professionals", checked: true },
+      { label: "Self-Employed", checked: true },
+      { label: "Retired", checked: false },
+      { label: "Sharers", checked: false },
+      { label: "Corporate Tenant", checked: false },
+    ],
+  },
+  // Add more properties as needed
+];
+
+// Helper function to get property by ID
+export const getPropertyData = (id) => {
+  return (
+    propertyDetailsArray.find((property) => property.id === id) ||
+    propertyDetailsArray[0]
+  );
+};
+
+// Helper function to get amenity icon (same as ReviewStep)
+export const getAmenityIcon = (amenity) => {
+  const amenityLower = amenity.toLowerCase();
+  if (amenityLower.includes("parking")) return BlueCarIcon;
+  if (amenityLower.includes("wifi") || amenityLower.includes("wi-fi"))
+    return BlueWIFIIcon;
+  if (amenityLower.includes("garden")) return BlueGardenIcon;
+  if (amenityLower.includes("heating")) return BlueHeatingIcon;
+  return null; // Will use dummy icon in component
+};
+
+// Helper function to get utility icon (same as ReviewStep)
+export const getUtilityIcon = (utility) => {
+  const utilityLower = utility.toLowerCase();
+  if (utilityLower === "electricity") return OrangeElectrityIcon;
+  if (utilityLower === "gas") return OrangeGasIcon;
+  return null; // Will use dummy icon in component
+};
+
+// Helper function to get preferred renter type icon
+export const getPreferredRenterIcon = (label) => {
+  const labelLower = label.toLowerCase();
+  if (labelLower.includes("single male")) return RedMaleIcon;
+  if (labelLower.includes("single female")) return SingleFemaleIcon;
+  if (labelLower.includes("couple")) return CoupleIcon;
+  if (labelLower.includes("family")) return FamilyIcon;
+  if (labelLower.includes("student")) return StudentIcon;
+  if (labelLower.includes("professional")) return ProfessionalIcon;
+  if (labelLower.includes("self-employed")) return SelfEmployedIcon;
+  if (labelLower.includes("retired")) return RetiredIcon;
+  if (labelLower.includes("sharer")) return SharersIcon;
+  if (labelLower.includes("corporate")) return CarporateTenantIcon;
+  return null;
+};
 
 export const listingStatusTabs = [
   { value: "all", label: "All" },
@@ -625,7 +715,7 @@ export const listingStatusTabs = [
 ];
 
 export const dateOptions = [
-  { value: "", label: "Select Date" },
+  { value: "Date", label: "Date" },
   { value: "today", label: "Today" },
   { value: "week", label: "This Week" },
   { value: "month", label: "This Month" },
@@ -760,7 +850,7 @@ export const reviewsData = [
 export const properties = [
   {
     id: "0033",
-    image: "https://via.placeholder.com/60x60",
+    image: HotelIcon,
     description: "2-Bed Apartment in Cit...",
     location: "4517 Washington Ave...",
     type: "Apartment",
@@ -771,7 +861,7 @@ export const properties = [
   },
   {
     id: "0034",
-    image: "https://via.placeholder.com/60x60",
+    image: HotelIcon,
     description: "3-Bed House in Liverp...",
     location: "123 Main Street, Man...",
     type: "House",
@@ -782,7 +872,7 @@ export const properties = [
   },
   {
     id: "0035",
-    image: "https://via.placeholder.com/60x60",
+    image: HotelIcon,
     description: "1-Bed Studio in Birm...",
     location: "789 Park Lane, Birm...",
     type: "Studio",
@@ -793,7 +883,7 @@ export const properties = [
   },
   {
     id: "0036",
-    image: "https://via.placeholder.com/60x60",
+    image: HotelIcon,
     description: "4-Bed House in Leed...",
     location: "456 Oak Avenue, Lee...",
     type: "House",
@@ -804,7 +894,7 @@ export const properties = [
   },
   {
     id: "0037",
-    image: "https://via.placeholder.com/60x60",
+    image: HotelIcon,
     description: "2-Bed Apartment in Man...",
     location: "321 Elm Street, Man...",
     type: "Apartment",
@@ -815,7 +905,7 @@ export const properties = [
   },
   {
     id: "0038",
-    image: "https://via.placeholder.com/60x60",
+    image: HotelIcon,
     description: "3-Bed House in Anfield...",
     location: "654 King Street, An...",
     type: "House",
@@ -826,7 +916,7 @@ export const properties = [
   },
   {
     id: "0039",
-    image: "https://via.placeholder.com/60x60",
+    image: HotelIcon,
     description: "2-Bed Apartment in Man...",
     location: "987 Canal Street, M...",
     type: "Apartment",
@@ -837,7 +927,7 @@ export const properties = [
   },
   {
     id: "0040",
-    image: "https://via.placeholder.com/60x60",
+    image: HotelIcon,
     description: "1-Bed Studio in Birm...",
     location: "147 New Street, Bir...",
     type: "Studio",
@@ -848,7 +938,7 @@ export const properties = [
   },
   {
     id: "0041",
-    image: "https://via.placeholder.com/60x60",
+    image: HotelIcon,
     description: "4-Bed House in Leed...",
     location: "258 Victoria Road...",
     type: "House",
@@ -859,7 +949,7 @@ export const properties = [
   },
   {
     id: "0042",
-    image: "https://via.placeholder.com/60x60",
+    image: HotelIcon,
     description: "3-Bed House in Man...",
     location: "369 Deansgate, Man...",
     type: "House",
@@ -870,7 +960,7 @@ export const properties = [
   },
   {
     id: "0043",
-    image: "https://via.placeholder.com/60x60",
+    image: HotelIcon,
     description: "2-Bed Apartment in Liv...",
     location: "741 Bold Street, Li...",
     type: "Apartment",
@@ -881,7 +971,7 @@ export const properties = [
   },
   {
     id: "0044",
-    image: "https://via.placeholder.com/60x60",
+    image: HotelIcon,
     description: "1-Bed Studio in Man...",
     location: "852 Piccadilly, Man...",
     type: "Studio",
@@ -1063,3 +1153,212 @@ export const sidebarMenuItems = [
     badge: null,
   },
 ];
+
+// ============================================
+// PLANS & BILLING DATA
+// ============================================
+
+export const plansData = [
+  {
+    id: "basic",
+    name: "Basic Plan",
+    badge: "NEW",
+    description: "Perfect for occasional listings.",
+    price: "€15",
+    period: "/ per month",
+    features: [
+      "1 active listing",
+      "30-day visibility",
+      "Verified renter messages",
+      "Basic analytics",
+      "Email support",
+    ],
+  },
+  {
+    id: "standard",
+    name: "Standard Plan",
+    description: "Great for individual landlords.",
+    price: "€49",
+    period: "/ per month",
+    features: [
+      "10 active listings",
+      "Featured listing (1)",
+      "Verified renter messages",
+      "Advanced analytics",
+      "Priority email support",
+      "No per-listing fees",
+    ],
+  },
+  {
+    id: "premium",
+    name: "Premium Plan",
+    badge: "POPULAR",
+    description: "Best for active landlords.",
+    price: "€99",
+    period: "/ per month",
+    features: [
+      "25 active listings",
+      "Featured listings (5)",
+      "Verified renter messages",
+      "Advanced analytics",
+      "Priority phone support",
+      "Promoted in search",
+      "No per-listing fees",
+    ],
+  },
+  {
+    id: "agency",
+    name: "Agency Plan",
+    description: "Great for individual landlords.",
+    price: "€249",
+    period: "/ per month",
+    features: [
+      "Unlimited active listings",
+      "Unlimited featured listings",
+      "Verified renter messages",
+      "White-label analytics",
+      "Dedicated account manager",
+      "API access",
+      "Custom branding",
+      "No per-listing fees",
+    ],
+  },
+];
+
+export const currentPlanData = {
+  id: "premium",
+  name: "Premium Plan",
+  description: "25 active listings with advanced features.",
+  renewalDate: "15th December 2025",
+  propertiesRemaining: 18,
+  totalProperties: 25,
+};
+
+export const billingHistoryData = [
+  {
+    date: "15 Dec 2025",
+    description: "Premium Plan - Monthly",
+    amount: "€99",
+    status: "Success",
+  },
+  {
+    date: "15 Jan 2026",
+    description: "Premium Plan - Monthly",
+    amount: "€99",
+    status: "Failed",
+  },
+  {
+    date: "15 Feb 2026",
+    description: "Premium Plan - Monthly",
+    amount: "€99",
+    status: "Success",
+  },
+  {
+    date: "15 Mar 2026",
+    description: "Premium Plan - Monthly",
+    amount: "€99",
+    status: "Failed",
+  },
+  {
+    date: "15 Apr 2026",
+    description: "Premium Plan - Monthly",
+    amount: "€99",
+    status: "Success",
+  },
+  {
+    date: "15 May 2026",
+    description: "Premium Plan - Monthly",
+    amount: "€99",
+    status: "Success",
+  },
+  {
+    date: "15 Jun 2026",
+    description: "Premium Plan - Monthly",
+    amount: "€99",
+    status: "Success",
+  },
+];
+
+export const paymentMethodData = {
+  cardNumber: "**** **** **** 4242",
+  expiryDate: "12/2026",
+};
+
+// ============================================
+// VERIFICATION CENTER DATA
+// ============================================
+
+export const verificationProgressStep = 2; // 1: Documents Uploaded, 2: Under Review, 3: Verified
+
+export const rejectedDocumentData = {
+  id: 1,
+  name: "Bank Account Verification - bank-statement.pdf",
+  reason:
+    "Your bank statement was not clear enough. Please upload a recent bank statement (within the last 3 months) showing your full name and account details clearly visible. Ensure the document is not blurred or cropped.",
+};
+
+export const verifiedDocumentsData = [
+  {
+    id: 1,
+    name: "passport-scan.pdf",
+    size: "2.4 MB",
+    uploadedDate: "15 Nov 2025",
+  },
+  {
+    id: 2,
+    name: "proof-of-address.pdf",
+    size: "1.8 MB",
+    uploadedDate: "15 Nov 2025",
+  },
+];
+
+export const underReviewDocumentsData = [
+  {
+    id: 1,
+    name: "passport-scan.pdf",
+    size: "2.4 MB",
+    uploadedDate: "15 Nov 2025",
+  },
+  {
+    id: 2,
+    name: "proof-of-address.pdf",
+    size: "1.8 MB",
+    uploadedDate: "15 Nov 2025",
+  },
+];
+
+export const documentTypeOptions = [
+  { value: "passport", label: "Passport" },
+  { value: "driving-license", label: "Driving License" },
+  { value: "national-id", label: "National ID" },
+  { value: "bank-statement", label: "Bank Statement" },
+  { value: "proof-of-address", label: "Proof of Address" },
+  { value: "utility-bill", label: "Utility Bill" },
+  { value: "tax-document", label: "Tax Document" },
+  { value: "other", label: "Other" },
+];
+
+export const pendingDocumentRequirements = [
+  "Bank statement issued within last 3 months",
+  "Full name clearly visible",
+  "Account number and sort code visible",
+  "Clear, unblurred image or PDF",
+];
+
+// ============================================
+// PROFILE SETTINGS DATA
+// ============================================
+
+export const profileSettingsData = {
+  fullName: "John Smith",
+  email: "john.smith@example.com",
+  isEmailVerified: true,
+  phoneNumber: "+44 7700 900000",
+  isPhoneVerified: false,
+  businessName: "Smith Property Management",
+  address: "",
+  city: "",
+  country: "",
+  postcode: "",
+  profileImage: null,
+};

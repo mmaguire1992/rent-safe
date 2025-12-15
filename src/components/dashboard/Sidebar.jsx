@@ -8,13 +8,30 @@ import { sidebarMenuItems } from "@/constant";
 function Sidebar({ onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeItem, setActiveItem] = useState(location.pathname);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = sidebarMenuItems;
 
+  // Function to check if a menu item should be active based on current pathname
+  const isMenuActive = (menuPath, currentPathname) => {
+    // Dashboard menu: exact match or tenant routes
+    if (menuPath === "/dashboard") {
+      return (
+        currentPathname === "/dashboard" ||
+        currentPathname.startsWith("/dashboard/tenant")
+      );
+    }
+    // My Properties menu: properties routes (including add and detail)
+    if (menuPath === "/dashboard/properties") {
+      return currentPathname.startsWith("/dashboard/properties");
+    }
+    // Other menus: exact match or starts with menu path
+    return (
+      currentPathname === menuPath || currentPathname.startsWith(`${menuPath}/`)
+    );
+  };
+
   const handleNavClick = (path) => {
-    setActiveItem(path);
     navigate(path);
     if (onClose) {
       onClose();
@@ -88,7 +105,7 @@ function Sidebar({ onClose }) {
       >
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeItem === item.path;
+          const isActive = isMenuActive(item.path, location.pathname);
 
           return (
             <button

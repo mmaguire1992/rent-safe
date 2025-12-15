@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import Breadcrumb from "@/components/common/Breadcrumb";
 import ProfileHeader from "@/components/TenantProfile/ProfileHeader";
 import CreditCheck from "@/components/TenantProfile/CreditCheck";
 import IdentityInfo from "@/components/TenantProfile/IdentityInfo";
@@ -11,7 +12,6 @@ import RentalHistory from "@/components/TenantProfile/RentalHistory";
 import References from "@/components/TenantProfile/References";
 import GuarantorInfo from "@/components/TenantProfile/GuarantorInfo";
 import SendOfferModal from "@/components/TenantProfile/SendOfferModal";
-import { MdKeyboardArrowRight } from "react-icons/md";
 import { getTenantData } from "@/constant";
 
 function TenantProfile() {
@@ -39,20 +39,9 @@ function TenantProfile() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="hover:text-secondary text-base font-normal text-midGray"
-          >
-            Dashboard
-          </button>
-          <span>
-            <MdKeyboardArrowRight className="text-xl text-midGray" />
-          </span>
-          <span className="text-[#6B4EFF] text-base font-normal">
-            {tenantData.name}'s Profile
-          </span>
-        </div>
+        <Breadcrumb
+          customLabels={{ tenantName: `${tenantData.name}'s Profile` }}
+        />
 
         <ProfileHeader
           tenantData={tenantData}

@@ -79,8 +79,9 @@ function ActiveProperties({ activeProperties }) {
       </div>
 
       {/* Desktop Table */}
-      <div className="border border-lightGray block rounded-[20px] overflow-x-auto">
-        <table className="w-full">
+      <div className="border border-lightGray block rounded-[20px] overflow-x-auto overflow-y-visible">
+        <div className="min-w-[800px]">
+          <table className="w-full">
           <thead>
             <tr className="border-b border-lightGray">
               <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
@@ -216,6 +217,7 @@ function ActiveProperties({ activeProperties }) {
             ))}
           </tbody>
         </table>
+        </div>
         <div className="px-4 pb-4">
           {/* Pagination */}
           <Pagination

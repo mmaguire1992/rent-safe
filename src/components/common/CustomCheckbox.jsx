@@ -22,7 +22,7 @@ function CustomCheckbox({
         />
         <div
           className={`w-5 h-5 border rounded flex items-center justify-center transition-colors ${
-            checked ? "bg-primary border-primary" : "bg-white border-lightGray"
+            checked ? "bg-[#6B4EFF] border-[#6B4EFF]" : "bg-white border-lightGray"
           }`}
         >
           {checked && (

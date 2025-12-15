@@ -5,7 +5,7 @@ import DesignationIcon from "../../svg/designationIcon";
 import BlueLocationIcon from "../../svg/blueLocationIcon";
 import BlueIncomeIcon from "../../svg/blueIncomeIcon";
 
-function ProfileHeader({ tenantData, onSendOffer }) {
+function ProfileHeader({ tenantData, onSendOffer, onChat }) {
   const navigate = useNavigate();
 
   return (
@@ -81,7 +81,13 @@ function ProfileHeader({ tenantData, onSendOffer }) {
         </div>
         <div className="flex flex-col gap-4">
           <button
-            onClick={() => navigate("/dashboard/messages")}
+            onClick={() => {
+              if (onChat) {
+                onChat();
+              } else {
+                navigate("/dashboard/messages");
+              }
+            }}
             className="bg-blueGradient text-white px-6 py-2 rounded-[10px] text-base font-nunito font-bold hover:bg-opacity-90 transition-colors shadow-[0px_2px_4px_0px_#FFFFFF33_inset]"
           >
             Chat

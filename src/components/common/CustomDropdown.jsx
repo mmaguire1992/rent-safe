@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { FiFilter } from "react-icons/fi";
 import DownArrowIcon from "@/svg/downArrowIcon";
+import SortingIcon from "../../svg/sortingIcon";
 
 function CustomDropdown({
   options = [],
@@ -40,14 +41,15 @@ function CustomDropdown({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-4 py-3 border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 flex items-center justify-between bg-white ${
+        className={`w-full px-4 py-1.5 h-[52px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 flex gap-1 items-center justify-between bg-white ${
           value ? "border-lightGray" : "border-lightGray"
-        } ${showFilterIcon ? "pl-10" : ""}`}
+        } `}
       >
-        {showFilterIcon && (
+        {/* {showFilterIcon && (
           <FiFilter className="absolute left-3 text-darkGray" />
-        )}
-        <span className={value ? "text-secondary" : "text-darkGray"}>
+        )} */}
+
+        <span className="text-darkGray text-sm md:text-base font-nunito font-medium">
           {displayText}
         </span>
         <div
@@ -67,7 +69,7 @@ function CustomDropdown({
               key={option.value}
               type="button"
               onClick={() => handleSelect(option.value)}
-              className={`w-full px-4 py-3 text-left text-base font-normal hover:bg-gray-50 transition-colors ${
+              className={`w-full px-4 py-1.5 text-left text-sm md:text-base font-nunito font-normal hover:bg-gray-50 transition-colors ${
                 value === option.value
                   ? "bg-primary bg-opacity-10 text-primary"
                   : "text-secondary"
@@ -83,5 +85,3 @@ function CustomDropdown({
 }
 
 export default CustomDropdown;
-
-

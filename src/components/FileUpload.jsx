@@ -119,88 +119,90 @@ function FileUpload({
           {label}
         </label>
       )}
-
-      {/* File Upload Area */}
-      <div
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-lg p-3 sm:p-4 text-center transition-colors ${
-          dragActive ? "border-[#6B4EFF]" : "border-gray-300"
-        } bg-purple-50`}
-      >
-        <input
-          type="file"
-          id={`file-input-${label}`}
-          className="hidden"
-          multiple
-          accept={acceptedTypes}
-          onChange={handleFileInput}
-          disabled={uploadedFiles.length >= maxFiles}
-        />
-        <label
-          htmlFor={`file-input-${label}`}
-          className="cursor-pointer flex flex-col items-center"
+      <div className="border-2 border-dashed rounded-lg p-2 border-lightGray">
+        {/* File Upload Area */}
+        <div
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          className={` p-3 sm:p-4 text-center transition-colors ${
+            dragActive ? "border-[#6B4EFF]" : "border-gray-300"
+          } bg-[#F9F9FC]`}
         >
-          <div className="mb-3 flex items-center justify-center">
-            <UploadIcon />
-          </div>
-          <p className="text-sm sm:text-base text-secondary mb-1">Drop your files here or browse</p>
-          <p className="text-xs sm:text-sm text-darkGray">
-            pdf, docs, and png. Max {maxFiles} docs.
-          </p>
-        </label>
-        {uploadedFiles.length > 0 && (
-          <div className="mt-3 sm:mt-4 space-y-2">
-            {uploadedFiles.map((file, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-2 bg-white border border-lightGray rounded-lg gap-2"
-              >
-                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                  <div className="flex-shrink-0">
-                    <PdfIcon />
-                  </div>
-                  <div className="flex-1 min-w-0 text-left">
-                    <p className="text-xs sm:text-sm font-medium text-darkGray truncate">
-                      {file.name}
-                    </p>
-                    {file.uploading ? (
-                      <>
+          <input
+            type="file"
+            id={`file-input-${label}`}
+            className="hidden"
+            multiple
+            accept={acceptedTypes}
+            onChange={handleFileInput}
+            disabled={uploadedFiles.length >= maxFiles}
+          />
+          <label
+            htmlFor={`file-input-${label}`}
+            className="cursor-pointer flex flex-col items-center"
+          >
+            <div className="mb-3 flex items-center bg-white rounded-lg p-2 w-[36px] h-[36px] justify-center">
+              <UploadIcon />
+            </div>
+            <p className="text-sm sm:text-base text-darkGray font-medium mb-1">
+              Drop your files here or browse
+            </p>
+            <p className="text-sm text-midGray font-medium">
+              pdf, docs, and png. Max {maxFiles} docs.
+            </p>
+          </label>
+          {uploadedFiles.length > 0 && (
+            <div className="mt-3 sm:mt-4 space-y-2">
+              {uploadedFiles.map((file, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-2 bg-white border border-lightGray rounded-lg gap-2"
+                >
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <div className="flex-shrink-0">
+                      <PdfIcon />
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-xs sm:text-sm font-medium text-darkGray truncate">
+                        {file.name}
+                      </p>
+                      {file.uploading ? (
+                        <>
+                          <p className="text-xs text-[#9FA3AA] font-medium">
+                            {formatFileSize((file.progress / 100) * file.size)}{" "}
+                            of {formatFileSize(file.size)}
+                          </p>
+                          <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
+                            <div
+                              className="bg-[#6B4EFF] h-1.5 rounded-full transition-all"
+                              style={{ width: `${file.progress || 0}%` }}
+                            />
+                          </div>
+                        </>
+                      ) : (
                         <p className="text-xs text-[#9FA3AA] font-medium">
-                          {formatFileSize((file.progress / 100) * file.size)} of{" "}
                           {formatFileSize(file.size)}
                         </p>
-                        <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
-                          <div
-                            className="bg-[#6B4EFF] h-1.5 rounded-full transition-all"
-                            style={{ width: `${file.progress || 0}%` }}
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <p className="text-xs text-[#9FA3AA] font-medium">
-                        {formatFileSize(file.size)}
-                      </p>
-                    )}
+                      )}
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      file.uploading ? handleCancel(index) : handleRemove(index)
+                    }
+                    className="p-1 flex-shrink-0"
+                  >
+                    {file.uploading ? <CloseIcon /> : <DeleteIcon />}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    file.uploading ? handleCancel(index) : handleRemove(index)
-                  }
-                  className="p-1 flex-shrink-0"
-                >
-                  {file.uploading ? <CloseIcon /> : <DeleteIcon />}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-
       {/* Uploaded Files List */}
     </div>
   );

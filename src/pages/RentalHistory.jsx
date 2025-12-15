@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import Breadcrumb from "@/components/common/Breadcrumb";
 import { FiCheckCircle, FiPhone, FiMapPin, FiUser } from "react-icons/fi";
-import { MdKeyboardArrowRight } from "react-icons/md";
 import SmallCheckIcon from "../svg/smallCheckIcon";
 import GrayBuildingIcon from "../svg/grayBuildingIcon";
 import WhiteLocationIcon from "../svg/whiteLocationIcon";
@@ -13,37 +13,17 @@ function RentalHistory() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Breadcrumb */}
         <div>
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-secondary">
-              Reviews
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="hover:text-secondary text-base font-normal text-midGray"
-            >
-              Dashboard
-            </button>
-            <span>
-              <MdKeyboardArrowRight className="text-xl text-midGray" />
-            </span>
-            <button
-              onClick={() => navigate(`/dashboard/tenant/${id}`)}
-              className="hover:text-secondary text-base font-normal text-midGray"
-            >
-              {getTenantData(id).name}'s Profile
-            </button>
-            <span>
-              <MdKeyboardArrowRight className="text-xl text-midGray" />
-            </span>
-            <span className="text-[#6B4EFF] text-base font-normal">
-              12 Reviews
-            </span>
-          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-secondary mb-4">
+            Reviews
+          </h1>
         </div>
+        <Breadcrumb
+          customLabels={{
+            tenantName: `${getTenantData(id).name}'s Profile`,
+            rentalHistory: "12 Reviews",
+          }}
+        />
         {/* Title */}
 
         {/* Reviews Grid - 3 columns */}
