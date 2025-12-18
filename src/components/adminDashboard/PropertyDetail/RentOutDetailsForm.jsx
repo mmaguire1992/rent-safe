@@ -10,9 +10,9 @@ function RentOutDetailsForm({
   onSave,
 }) {
   return (
-    <div className="bg-white rounded-[20px] border border-lightGray p-6">
+    <div className="bg-white rounded-[20px] border border-lightGray md:p-6 p-4">
       <div className="mb-6">
-        <h2 className="text-xl font-bold font-nunito text-secondary mb-1">
+        <h2 className="md:text-xl text-base font-bold font-nunito text-secondary mb-1">
           Rent Out Details
         </h2>
         <p className="text-base font-normal font-nunito text-darkGray">

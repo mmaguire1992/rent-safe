@@ -42,11 +42,11 @@ function PropertyStatusCard({ propertyData, onStatusChange }) {
   const displayLabel = selectedOption?.label || "Active";
 
   return (
-    <div className="bg-white rounded-[20px] border border-lightGray p-6">
-      <h2 className="text-xl font-bold font-nunito text-secondary mb-4">
+    <div className="bg-white rounded-[20px] border border-lightGray md:p-6 p-4">
+      <h2 className="md:text-xl text-base font-bold font-nunito text-secondary mb-4">
         Listing Status
       </h2>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
         <div className="flex items-center gap-4 justify-between relative">
           <p className="text-base font-normal font-nunito text-darkGray mb-1">
             Status

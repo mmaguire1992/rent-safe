@@ -9,8 +9,8 @@ function RenterProfileDescription({
   const maxLength = 150;
 
   return (
-    <div className="bg-white rounded-[20px] border border-lightGray p-6">
-      <h2 className="text-xl font-bold font-nunito text-secondary mb-2">
+    <div className="bg-white rounded-[20px] border border-lightGray md:p-6 p-4">
+      <h2 className="md:text-xl text-base font-bold font-nunito text-secondary mb-2">
         Renter Profile Description
       </h2>
 
@@ -27,10 +27,10 @@ function RenterProfileDescription({
       </p>
 
       <div className="block mt-4">
-        <h2 className="text-xl font-bold font-nunito text-secondary mb-2">
+        <h2 className="md:text-xl text-base font-bold font-nunito text-secondary mb-2">
           Preferred Renter Type
         </h2>
-        <div className="flex items-center gap-0 space-x-4 flex-wrap">
+        <div className="flex items-start md:items-center flex-col md:flex-row gap-0 md:space-x-4 flex-wrap">
           {preferredRenterTypes?.map((type, index) => {
             const Icon = getPreferredRenterIcon(type.label);
             return (

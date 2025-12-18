@@ -15,20 +15,20 @@ function PropertyHeader({
   showRenterDetails = false,
 }) {
   return (
-    <div className="bg-white rounded-[20px] border border-lightGray p-6">
+    <div className="bg-white rounded-[20px] border border-lightGray md:p-6 p-4">
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-secondary mb-2">
+          <h1 className="md:text-2xl text-base font-bold text-secondary mb-2">
             {propertyData.title}
           </h1>
-          <div className="flex flex-wrap items-center gap-8 mb-4">
-            <div className="flex items-center gap-2 text-darkGray relative after:content-[''] after:absolute after:bottom-[3px] after:right-[-17px] after:w-[2px] after:h-[18px] after:bg-midGray">
+          <div className="flex flex-col md:flex-row flex-wrap items-start md:items-center gap-4 md:gap-8 mb-4">
+            <div className="flex items-center gap-2 text-darkGray relative md:after:content-[''] after:absolute after:bottom-[3px] md:after:right-[-17px] md:after:w-[2px] md:after:h-[18px] md:after:bg-midGray">
               <BlueLocationIcon />
               <span className="text-base font-normal font-nunito text-secondary">
                 {propertyData.address}
               </span>
             </div>
-            <span className="text-base font-normal font-nunito text-darkGray relative after:content-[''] after:absolute after:bottom-[3px] after:right-[-17px] after:w-[2px] after:h-[18px] after:bg-midGray">
+            <span className="text-base font-normal font-nunito text-darkGray relative md:after:content-[''] md:after:absolute md:after:bottom-[3px] md:after:right-[-17px] md:after:w-[2px] md:after:h-[18px] md:after:bg-midGray">
               ID: {propertyData.id}
             </span>
             <div className="flex items-center gap-4">
@@ -51,10 +51,10 @@ function PropertyHeader({
             </div>
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3 mb-4 md:mb-0">
           <button
             onClick={onShare}
-            className="flex items-center gap-2 px-6 py-1.5 border border-lightGray rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-4 md:px-6 py-1.5 border border-lightGray rounded-lg hover:bg-gray-50 transition-colors"
           >
             <FiShare2 className="text-secondary" />
             <span className="text-sm font-semibold text-secondary">Share</span>
@@ -63,7 +63,7 @@ function PropertyHeader({
             <>
               <button
                 onClick={onEdit}
-                className="flex items-center gap-2 px-6 py-1.5 border border-[#4A2FCC] text-white rounded-[10px]   transition-colors"
+                className="flex items-center gap-2 md:px-6 px-4 py-1.5 border border-[#4A2FCC] text-white rounded-[10px]   transition-colors"
               >
                 <span className="text-base font-bold font-nunito text-[#4A2FCC]">
                   Edit
@@ -72,7 +72,7 @@ function PropertyHeader({
               </button>
               <button
                 onClick={onDelete}
-                className="flex items-center gap-2 px-6 py-1.5 border border-[#D24343] text-white rounded-[10px]  transition-colors"
+                className="flex items-center gap-2 md:px-6 px-4 py-1.5 border border-[#D24343] text-white rounded-[10px]  transition-colors"
               >
                 <span className="text-base font-bold font-nunito text-[#D24343]">
                   Delete
@@ -88,7 +88,7 @@ function PropertyHeader({
           <img
             src={selectedImage}
             alt={propertyData.title}
-            className="w-full h-[400px] md:h-[500px] object-cover rounded-lg"
+            className="w-full h-[250px] md:h-[500px] object-cover rounded-lg"
           />
         </div>
         <div className="flex items-center flex-wrap gap-2">
@@ -99,7 +99,7 @@ function PropertyHeader({
                 <button
                   key={index}
                   onClick={() => setSelectedImage(img)}
-                  className={`overflow-hidden w-[100px] h-[100px] rounded-[20px]  transition-all `}
+                  className={`overflow-hidden w-[70px] h-[70px] md:w-[100px] md:h-[100px] rounded-[20px]  transition-all `}
                 >
                   <img
                     src={img}

@@ -22,11 +22,11 @@ function PropertyDetailsGrid({ propertyData }) {
   return (
     <div className="block">
       {/* Property Details */}
-      <div className="mb-4 border border-lightGray rounded-xl p-6 ">
-        <h4 className="text-xl font-bold font-nunito text-secondary mb-1">
+      <div className="mb-4 border border-lightGray rounded-xl md:p-6 p-4 ">
+        <h4 className="md:text-xl text-base font-bold font-nunito text-secondary mb-1">
           Property Details
         </h4>
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4 mt-5">
           <div className="flex items-center gap-2">
             <p className="text-base font-normal font-nunito text-darkGray mb-1">
               Monthly Rent:
@@ -66,8 +66,8 @@ function PropertyDetailsGrid({ propertyData }) {
       </div>
 
       {/* Amenities */}
-      <div className="bg-white rounded-[20px] border border-lightGray p-6">
-        <h2 className="text-xl font-bold font-nunito text-secondary mb-4">
+      <div className="bg-white rounded-[20px] border border-lightGray md:p-6 p-4">
+        <h2 className="md:text-xl text-base font-bold font-nunito text-secondary mb-4">
           Amenities
         </h2>
         <div className="flex items-center gap-4 flex-wrap">
@@ -90,11 +90,11 @@ function PropertyDetailsGrid({ propertyData }) {
           <h2 className="text-xl font-bold font-nunito text-secondary mb-4">
             Utilities
           </h2>
-          <div className="flex items-center gap-4">
+          <div className="flex items-start md:items-center flex-col md:flex-row flex-wrap gap-4">
             {propertyData.utilities?.map((utility, index) => {
               const Icon = getUtilityIconComponent(utility);
               return (
-                <div key={index} className="flex items-center gap-2">
+                <div key={index} className="flex  items-center gap-2">
                   <span className="bg-[#FFF5CC] w-[36px] h-[36px] rounded-[10px] flex items-center justify-center">
                     <Icon />
                   </span>
