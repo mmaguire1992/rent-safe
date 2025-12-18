@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import UploadIcon from "@/svg/uploadIcon";
-import DeleteIcon from "../svg/deleteIcon";
-import PdfIcon from "../svg/pdfIcon";
-import CloseIcon from "../svg/closeIcon";
+import DeleteIcon from "@/svg/deleteIcon";
+import PdfIcon from "@/svg/pdfIcon";
+import CloseIcon from "@/svg/closeIcon";
 
 function FileUpload({
   label,

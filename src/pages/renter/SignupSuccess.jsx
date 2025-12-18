@@ -15,13 +15,13 @@ function RenterSignupSuccess() {
       }, 1000);
       return () => clearInterval(timer);
     } else {
-      // Redirect to website after countdown
-      navigate("/");
+      // Redirect to landing page after countdown
+      navigate("/landing");
     }
   }, [countdown, navigate]);
 
-  const handleGoToWebsite = () => {
-    navigate("/");
+  const handleGoToLanding = () => {
+    navigate("/landing");
   };
 
   return (
@@ -45,17 +45,17 @@ function RenterSignupSuccess() {
           features.
         </p>
 
-        {/* Go To Website Button */}
+        {/* Go To Landing Page Button */}
         <button
-          onClick={handleGoToWebsite}
+          onClick={handleGoToLanding}
           className="mt-4 w-full bg-blueGradient text-white font-bold py-3 rounded-xl transition-all shadow-[0px_2px_10px_0px_#00000033]"
         >
-          Go To Website
+          Explore Properties
         </button>
 
         {/* Countdown */}
         <p className="text-base text-darkGray mt-4 text-center">
-          Redirect to Website in{" "}
+          Redirecting in{" "}
           <span className="font-bold text-yellow">{countdown}s</span>
         </p>
       </div>

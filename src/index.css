@@ -89,6 +89,143 @@ body {
   }
 }
 
+/* City Slider Custom Styles - Container aligned left, full width right */
+.city-slider-container-full {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  padding-right: 0;
+}
+
+.city-slider-container-full .slick-slide {
+  outline: none;
+}
+
+.city-slider-container-full .slick-slide > div {
+  outline: none;
+}
+
+.city-slider-container-full .slick-list {
+  overflow: visible;
+  padding-right: 0;
+}
+
+.city-slider-container-full .slick-track {
+  display: flex;
+  align-items: stretch;
+}
+
+.city-slider-container-full .slick-slide {
+  height: auto;
+}
+/* Rental History Slider Custom Styles */
+.rental-history-slider {
+  position: relative;
+}
+
+.rental-history-slider .slick-slide {
+  outline: none;
+  padding: 0 8px;
+}
+
+.rental-history-slider .slick-slide > div {
+  outline: none;
+}
+
+.rental-history-slider .slick-list {
+  margin: 0 -8px;
+  overflow: visible;
+}
+
+.rental-history-slider .slick-track {
+  display: flex;
+  align-items: stretch;
+}
+
+.rental-history-slider .slick-slide {
+  height: auto;
+}
+
+@media (max-width: 1500px) {
+  .recent-requests-slider .slick-slide {
+    min-width: 280px !important;
+    margin-left: 10px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* .rental-history-slider .slick-slide {
+    min-width: auto !important;
+    padding: 0 4px;
+  } */
+
+  .rental-history-slider .slick-list {
+    margin: 0 -4px;
+  }
+}
+
+@media (max-width: 640px) {
+  /* .rental-history-slider .slick-slide {
+    min-width: auto !important;
+    padding: 0;
+  } */
+
+  .rental-history-slider .slick-list {
+    margin: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:text-left {
+    text-align: left !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .md\:text-left {
+    text-align: left;
+  }
+}
+.city-slider-container-full .slick-prev,
+.city-slider-container-full .slick-next {
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  background: #6b4eff;
+  border-radius: 50%;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.city-slider-container-full .slick-prev {
+  left: -10px;
+}
+
+.city-slider-container-full .slick-next {
+  right: -10px;
+}
+
+.city-slider-container-full .slick-prev:before,
+.city-slider-container-full .slick-next:before {
+  font-size: 20px;
+  color: white;
+  opacity: 1;
+  line-height: 1;
+}
+
+.city-slider-container-full .slick-prev:hover,
+.city-slider-container-full .slick-next:hover {
+  background: #5a3fd9;
+}
+
+.city-slider-container-full .slick-prev:hover:before,
+.city-slider-container-full .slick-next:hover:before {
+  opacity: 1;
+}
+
 /* Custom Scrollbar Styles */
 /* Webkit browsers (Chrome, Safari, Edge) */
 ::-webkit-scrollbar {
@@ -97,22 +234,59 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #F9F9FC;
+  background: #f9f9fc;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #6B4EFF;
+  background: #6b4eff;
   border-radius: 10px;
-  border: 2px solid #F9F9FC;
+  border: 2px solid #f9f9fc;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #4A2FCC;
+  background: #4a2fcc;
 }
 
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #6B4EFF #F9F9FC;
+  scrollbar-color: #6b4eff #f9f9fc;
+}
+@media (max-width: 1060px) {
+  .container {
+    max-width: 100% !important;
+  }
+}
+@media (max-width: 767px) {
+  .card_summary_box {
+    min-height: 120px !important;
+    padding: 20px !important;
+    background-size: 100% 120px !important;
+  }
+}
+@media (min-width: 1070px) and (max-width: 1280px) {
+  .browserSlider {
+    margin-left: 15% !important;
+  }
+}
+@media (min-width: 1300px) and (max-width: 1380px) {
+  .browserSlider {
+    margin-left: 12% !important;
+  }
+}
+@media (min-width: 1385px) and (max-width: 1580px) {
+  .browserSlider {
+    margin-left: 12% !important;
+  }
+}
+@media (min-width: 1580px) and (max-width: 1880px) {
+  .browserSlider {
+    margin-left: 24% !important;
+  }
+}
+@media (min-width: 768px) {
+  .md\:text-left {
+    text-align: left !important;
+  }
 }

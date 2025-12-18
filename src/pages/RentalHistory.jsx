@@ -1,10 +1,10 @@
 import { useNavigate, useParams } from "react-router-dom";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import Breadcrumb from "@/components/common/Breadcrumb";
+import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
+import Breadcrumb from "@/components/adminDashboard/common/Breadcrumb";
 import { FiCheckCircle, FiPhone, FiMapPin, FiUser } from "react-icons/fi";
-import SmallCheckIcon from "../svg/smallCheckIcon";
-import GrayBuildingIcon from "../svg/grayBuildingIcon";
-import WhiteLocationIcon from "../svg/whiteLocationIcon";
+import SmallCheckIcon from "@/svg/smallCheckIcon";
+import GrayBuildingIcon from "@/svg/grayBuildingIcon";
+import WhiteLocationIcon from "@/svg/whiteLocationIcon";
 import { reviewsData, getTenantData } from "@/constant";
 
 function RentalHistory() {
@@ -31,9 +31,9 @@ function RentalHistory() {
           {reviewsData.map((history, index) => (
             <div className="bg-white">
               <div className="border border-lightGray rounded-[20px] p-4 bg-white ">
-                <div className="flex flex-row items-start gap-4">
+                <div className="flex md:flex-row flex-col items-start gap-4">
                   {/* Rental History Details - 60% (Left Side) */}
-                  <div className="flex-[0_0_50%] min-w-0 border-r border-lightGray space-y-3">
+                  <div className="flex-[0_0_50%] min-w-0 md:border-r border-lightGray space-y-3">
                     {/* Address */}
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 bg-[#6B4EFF] rounded-[10px] w-9 h-9 flex items-center justify-center mt-1">

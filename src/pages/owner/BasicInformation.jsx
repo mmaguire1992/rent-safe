@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import mainLogo from "@/assests/images/mainLogo.png";
 import AuthLayout from "@/components/AuthLayout";
-import ProgressIndicator from "@/components/common/ProgressIndicator";
+import ProgressIndicator from "@/components/adminDashboard/common/ProgressIndicator";
 import { BsEyeSlash } from "react-icons/bs";
 
 function BasicInformation() {

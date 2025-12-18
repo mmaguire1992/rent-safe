@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import Breadcrumb from "@/components/common/Breadcrumb";
-import ProfileHeader from "@/components/TenantProfile/ProfileHeader";
-import CreditCheck from "@/components/TenantProfile/CreditCheck";
-import IdentityInfo from "@/components/TenantProfile/IdentityInfo";
-import CurrentAddress from "@/components/TenantProfile/CurrentAddress";
-import EmploymentDetails from "@/components/TenantProfile/EmploymentDetails";
-import Documents from "@/components/TenantProfile/Documents";
-import RentalHistory from "@/components/TenantProfile/RentalHistory";
-import References from "@/components/TenantProfile/References";
-import GuarantorInfo from "@/components/TenantProfile/GuarantorInfo";
-import SendOfferModal from "@/components/TenantProfile/SendOfferModal";
+import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
+import Breadcrumb from "@/components/adminDashboard/common/Breadcrumb";
+import ProfileHeader from "@/components/adminDashboard/TenantProfile/ProfileHeader";
+import CreditCheck from "@/components/adminDashboard/TenantProfile/CreditCheck";
+import IdentityInfo from "@/components/adminDashboard/TenantProfile/IdentityInfo";
+import CurrentAddress from "@/components/adminDashboard/TenantProfile/CurrentAddress";
+import EmploymentDetails from "@/components/adminDashboard/TenantProfile/EmploymentDetails";
+import Documents from "@/components/adminDashboard/TenantProfile/Documents";
+import RentalHistory from "@/components/adminDashboard/TenantProfile/RentalHistory";
+import References from "@/components/adminDashboard/TenantProfile/References";
+import GuarantorInfo from "@/components/adminDashboard/TenantProfile/GuarantorInfo";
+import SendOfferModal from "@/components/adminDashboard/TenantProfile/SendOfferModal";
 import { getTenantData } from "@/constant";
 
 function TenantProfile() {

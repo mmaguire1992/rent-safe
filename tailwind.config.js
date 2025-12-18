@@ -15,6 +15,17 @@ export default {
           "linear-gradient(93.66deg, rgba(232, 226, 255, 0) 2.66%, rgba(232, 226, 255, 0.3) 97.34%);",
         lightGreenGradient:
           "linear-gradient(110.09deg, rgba(223, 255, 230, 0) 18.77%, rgba(223, 255, 230, 0.3) 81.23%);",
+        blueWhiteGradient:
+          "linear-gradient(135deg, rgba(249, 249, 252, 0.99) 0%, rgba(255, 255, 255, 0.9) 57.87%, rgba(232, 226, 255, 0.3) 100%)",
+        lightBlueGradient:
+          "linear-gradient(135deg, rgba(232, 226, 255, 0.3) 0%, rgba(255, 255, 255, 0.9) 57.87%, rgba(249, 249, 252, 0.99) 100%)",
+        badgeGradient:
+          "linear-gradient(90deg, rgba(232, 226, 255, 0.6) 0%, rgba(107, 78, 255, 0.1) 100%)",
+        blueGradient1: "linear-gradient(180deg, #6B4EFF 0%, #9B7EFF 100%)",
+        blueGradient2:
+          "linear-gradient(280.87deg, #6B4EFF 0.28%, #4A2FCC 99.72%);",
+        orangeGradient:
+          " linear-gradient(290.38deg, #D56400 25.66%, #F4BA5F 86.6%);",
       },
       colors: {
         primary: "#2177CE",

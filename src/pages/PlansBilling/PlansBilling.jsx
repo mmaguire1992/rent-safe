@@ -1,10 +1,10 @@
 import { useState } from "react";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import Breadcrumb from "@/components/common/Breadcrumb";
-import PlansSection from "@/components/PlansBilling/PlansSection";
-import CurrentPlanDetails from "@/components/PlansBilling/CurrentPlanDetails";
-import BillingHistory from "@/components/PlansBilling/BillingHistory";
-import PaymentMethod from "@/components/PlansBilling/PaymentMethod";
+import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
+import Breadcrumb from "@/components/adminDashboard/common/Breadcrumb";
+import PlansSection from "@/components/adminDashboard/PlansBilling/PlansSection";
+import CurrentPlanDetails from "@/components/adminDashboard/PlansBilling/CurrentPlanDetails";
+import BillingHistory from "@/components/adminDashboard/PlansBilling/BillingHistory";
+import PaymentMethod from "@/components/adminDashboard/PlansBilling/PaymentMethod";
 import {
   plansData,
   currentPlanData,

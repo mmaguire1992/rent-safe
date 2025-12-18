@@ -11,10 +11,10 @@ import Userimg from "./assests/images/userImg.png";
 import HotelIcon from "./assests/images/hotelIcon.png";
 import UserImg from "./assests/images/userImg.png";
 import MainHotelImg from "./assests/images/mainHotelImg.png";
-import HotelThumbnail1 from "./assests/images/mainHotelImg.png";
-import HotelThumbnail2 from "./assests/images/mainHotelImg.png";
-import HotelThumbnail3 from "./assests/images/mainHotelImg.png";
-import HotelThumbnail4 from "./assests/images/mainHotelImg.png";
+import HotelThumbnail1 from "./assests/websiteImg/galleryImg1.png";
+import HotelThumbnail2 from "./assests/websiteImg/galleryImg2.png";
+import HotelThumbnail3 from "./assests/websiteImg/galleryImg3.png";
+import HotelThumbnail4 from "./assests/websiteImg/galleryImg4.png";
 import {
   FiHome,
   FiWifi,
@@ -216,17 +216,17 @@ export const activeProperties = [
 export const recentRequestsSliderSettings = {
   dots: false,
   infinite: true,
-  speed: 7000,
+  speed: 500,
   slidesToShow: 3,
   slidesToScroll: 1,
-  autoplay: true,
-  pauseOnHover: false,
+  autoplay: false,
+  pauseOnHover: true,
   arrows: false,
-  cssEase: "linear",
+  cssEase: "ease",
   adaptiveHeight: false,
-  swipe: false,
-  touchMove: false,
-  draggable: false,
+  swipe: true,
+  touchMove: true,
+  draggable: true,
   fade: false,
   responsive: [
     {
@@ -235,9 +235,9 @@ export const recentRequestsSliderSettings = {
         slidesToShow: 2,
         slidesToScroll: 1,
         infinite: true,
-        speed: 7000,
-        cssEase: "linear",
-        pauseOnHover: false,
+        swipe: true,
+        touchMove: true,
+        draggable: true,
       },
     },
     {
@@ -247,9 +247,10 @@ export const recentRequestsSliderSettings = {
         slidesToScroll: 1,
         arrows: false,
         infinite: true,
-        speed: 7000,
-        cssEase: "linear",
-        pauseOnHover: false,
+        swipe: true,
+        touchMove: true,
+        draggable: true,
+        autoplay: false,
       },
     },
   ],

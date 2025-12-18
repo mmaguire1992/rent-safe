@@ -1,8 +1,8 @@
 import { useState } from "react";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import Breadcrumb from "@/components/common/Breadcrumb";
+import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
+import Breadcrumb from "@/components/adminDashboard/common/Breadcrumb";
 import FileUpload from "@/components/FileUpload";
-import SupportSuccessModal from "@/components/Support/SupportSuccessModal";
+import SupportSuccessModal from "@/components/adminDashboard/Support/SupportSuccessModal";
 
 function Support() {
   const [formData, setFormData] = useState({
@@ -19,15 +19,18 @@ function Support() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Submitting support request:", { ...formData, files: uploadedFiles });
-    
+    console.log("Submitting support request:", {
+      ...formData,
+      files: uploadedFiles,
+    });
+
     // Reset form
     setFormData({
       email: "",
       notes: "",
     });
     setUploadedFiles([]);
-    
+
     // Show success modal
     setIsSuccessModalOpen(true);
   };
@@ -37,73 +40,74 @@ function Support() {
       <div className="space-y-6">
         <Breadcrumb />
 
-        <div className="bg-white rounded-lg border border-lightGray p-6">
+        <div className="block">
           <h1 className="text-2xl font-bold font-nunito text-secondary mb-6">
             Support
           </h1>
-
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Add Details Section */}
-            <div>
-              <h2 className="text-xl font-semibold font-nunito text-secondary mb-4">
-                Add Details
-              </h2>
+          <div className="bg-white rounded-[14px] border border-lightGray p-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Add Details Section */}
               <div>
-                <label className="block text-base font-medium text-secondary mb-2">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
+                <h2 className="text-xl font-semibold font-nunito text-secondary mb-4">
+                  Add Details
+                </h2>
+                <div>
+                  <label className="block text-base font-semibold text-secondary mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 font-nunito"
+                    placeholder="Enter your email address"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Add Notes Section */}
+              <div>
+                <h2 className="text-base font-semibold font-nunito text-secondary mb-1">
+                  Add Notes
+                </h2>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-lightGray rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] font-nunito"
-                  placeholder="Enter your email address"
+                  rows="6"
+                  className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 font-nunito resize-none"
+                  placeholder="Enter your notes"
                   required
                 />
               </div>
-            </div>
 
-            {/* Add Notes Section */}
-            <div>
-              <h2 className="text-xl font-semibold font-nunito text-secondary mb-4">
-                Add Notes
-              </h2>
-              <textarea
-                name="notes"
-                value={formData.notes}
-                onChange={handleInputChange}
-                rows="6"
-                className="w-full px-4 py-3 border border-lightGray rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] font-nunito resize-none"
-                placeholder="Enter your notes"
-                required
-              />
-            </div>
+              {/* Upload Documents Section */}
+              <div>
+                <h2 className="text-base font-semibold font-nunito text-secondary mb-1">
+                  Upload Documents
+                </h2>
+                <FileUpload
+                  label=""
+                  acceptedTypes=".pdf,.docx,.png"
+                  maxFiles={3}
+                  onFilesChange={setUploadedFiles}
+                  uploadedFiles={uploadedFiles}
+                />
+              </div>
 
-            {/* Upload Documents Section */}
-            <div>
-              <h2 className="text-xl font-semibold font-nunito text-secondary mb-4">
-                Upload Documents
-              </h2>
-              <FileUpload
-                label=""
-                acceptedTypes=".pdf,.docx,.png"
-                maxFiles={3}
-                onFilesChange={setUploadedFiles}
-                uploadedFiles={uploadedFiles}
-              />
-            </div>
-
-            {/* Submit Button */}
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                className="px-8 py-3 bg-blueGradient text-white rounded-lg hover:opacity-90 transition-opacity font-semibold font-nunito"
-              >
-                Submit
-              </button>
-            </div>
-          </form>
+              {/* Submit Button */}
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="px-8 py-3 bg-blueGradient text-white rounded-[10px] text-base hover:opacity-90 transition-opacity font-bold font-nunito"
+                >
+                  Submit
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
 
@@ -117,8 +121,3 @@ function Support() {
 }
 
 export default Support;
-
-
-
-
-

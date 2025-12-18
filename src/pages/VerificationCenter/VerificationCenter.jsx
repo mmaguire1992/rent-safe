@@ -1,12 +1,12 @@
 import { useState } from "react";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import Breadcrumb from "@/components/common/Breadcrumb";
-import VerificationProgressTracker from "@/components/VerificationCenter/VerificationProgressTracker";
-import DocumentRejectedSection from "@/components/VerificationCenter/DocumentRejectedSection";
-import VerifiedDocumentsSection from "@/components/VerificationCenter/VerifiedDocumentsSection";
-import UnderReviewDocumentsSection from "@/components/VerificationCenter/UnderReviewDocumentsSection";
-import UploadVerificationDocuments from "@/components/VerificationCenter/UploadVerificationDocuments";
-import PendingDocumentsSection from "@/components/VerificationCenter/PendingDocumentsSection";
+import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
+import Breadcrumb from "@/components/adminDashboard/common/Breadcrumb";
+import VerificationProgressTracker from "@/components/adminDashboard/VerificationCenter/VerificationProgressTracker";
+import DocumentRejectedSection from "@/components/adminDashboard/VerificationCenter/DocumentRejectedSection";
+import VerifiedDocumentsSection from "@/components/adminDashboard/VerificationCenter/VerifiedDocumentsSection";
+import UnderReviewDocumentsSection from "@/components/adminDashboard/VerificationCenter/UnderReviewDocumentsSection";
+import UploadVerificationDocuments from "@/components/adminDashboard/VerificationCenter/UploadVerificationDocuments";
+import PendingDocumentsSection from "@/components/adminDashboard/VerificationCenter/PendingDocumentsSection";
 import {
   verificationProgressStep,
   rejectedDocumentData,

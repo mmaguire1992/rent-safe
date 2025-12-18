@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import Breadcrumb from "@/components/common/Breadcrumb";
-import ProgressIndicator from "@/components/AddProperty/ProgressIndicator";
-import AIModal from "@/components/AddProperty/AIModal";
-import SuccessModal from "@/components/AddProperty/SuccessModal";
-import BasicInfoStep from "@/components/AddProperty/BasicInfoStep";
-import LocationStep from "@/components/AddProperty/LocationStep";
-import RentDetailsStep from "@/components/AddProperty/RentDetailsStep";
-import AmenitiesUtilitiesStep from "@/components/AddProperty/AmenitiesUtilitiesStep";
-import UploadImagesStep from "@/components/AddProperty/UploadImagesStep";
-import RenterDescriptionStep from "@/components/AddProperty/RenterDescriptionStep";
-import ReviewStep from "@/components/AddProperty/ReviewStep";
+import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
+import Breadcrumb from "@/components/adminDashboard/common/Breadcrumb";
+import ProgressIndicator from "@/components/adminDashboard/AddProperty/ProgressIndicator";
+import AIModal from "@/components/adminDashboard/AddProperty/AIModal";
+import SuccessModal from "@/components/adminDashboard/AddProperty/SuccessModal";
+import BasicInfoStep from "@/components/adminDashboard/AddProperty/BasicInfoStep";
+import LocationStep from "@/components/adminDashboard/AddProperty/LocationStep";
+import RentDetailsStep from "@/components/adminDashboard/AddProperty/RentDetailsStep";
+import AmenitiesUtilitiesStep from "@/components/adminDashboard/AddProperty/AmenitiesUtilitiesStep";
+import UploadImagesStep from "@/components/adminDashboard/AddProperty/UploadImagesStep";
+import RenterDescriptionStep from "@/components/adminDashboard/AddProperty/RenterDescriptionStep";
+import ReviewStep from "@/components/adminDashboard/AddProperty/ReviewStep";
 import { addPropertySteps } from "@/constant";
 
 function AddProperty() {
@@ -185,7 +185,7 @@ function AddProperty() {
           <div className="flex items-center justify-between mt-6   ">
             <button
               onClick={() => navigate("/dashboard/properties")}
-              className="px-6 py-3 border border-[#F1F1F1] rounded-[10px] text-base text-secondary font-bold bg-[#F1F1F1] transition-colors"
+              className="px-4 md:px-6 md:py-3 py-2 border border-[#F1F1F1] rounded-[10px] text-base text-secondary font-bold bg-[#F1F1F1] transition-colors"
             >
               Cancel
             </button>
@@ -193,7 +193,7 @@ function AddProperty() {
               {currentStep > 1 && (
                 <button
                   onClick={handleBack}
-                  className="px-6 py-3 border-2 border-[#6B4EFF] text-[#6B4EFF] rounded-[10px] font-semibold  transition-colors"
+                  className="px-4 md:px-6 md:py-3 py-2 border-2 border-[#6B4EFF] text-[#6B4EFF] rounded-[10px] font-semibold  transition-colors"
                 >
                   Back
                 </button>
@@ -201,14 +201,14 @@ function AddProperty() {
               {currentStep < steps.length ? (
                 <button
                   onClick={handleNext}
-                  className="px-6 py-3 bg-blueGradient text-base font-bold text-white rounded-[10px] hover:bg-opacity-90 transition-colors"
+                  className="px-4 md:px-6 md:py-3 py-2 bg-blueGradient text-base font-bold text-white rounded-[10px] hover:bg-opacity-90 transition-colors"
                 >
                   Next
                 </button>
               ) : (
                 <button
                   onClick={handleSubmit}
-                  className="px-6 py-3 bg-[#6B4EFF] text-white rounded-lg font-semibold hover:bg-opacity-90 transition-colors"
+                  className="px-4 md:px-6 md:py-3 py-2 bg-[#6B4EFF] text-white rounded-lg font-semibold hover:bg-opacity-90 transition-colors"
                 >
                   Submit
                 </button>

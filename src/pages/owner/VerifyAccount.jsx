@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AuthLayout from "@/components/AuthLayout";
-import ProgressIndicator from "@/components/common/ProgressIndicator";
+import ProgressIndicator from "@/components/adminDashboard/common/ProgressIndicator";
 import FileUpload from "@/components/FileUpload";
-import CustomDropdown from "@/components/common/CustomDropdown";
+import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";
 import mainLogo from "@/assests/images/mainLogo.png";
 
 function VerifyAccount() {
@@ -21,13 +21,13 @@ function VerifyAccount() {
     // Simulate account creation
     // In real app, this would upload files and create account via API
     setTimeout(() => {
-      navigate("/signup/owner/success");
+      navigate("/dashboard");
     }, 1000);
   };
 
   const handleSkip = () => {
-    // Navigate to success page even if documents are skipped
-    navigate("/signup/owner/success");
+    // Navigate to dashboard even if documents are skipped
+    navigate("/dashboard");
   };
 
   return (

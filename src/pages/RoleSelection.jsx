@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import mainLogo from "@/assests/images/mainLogo.png";
 import AuthLayout from "@/components/AuthLayout";
-import ProgressIndicator from "@/components/common/ProgressIndicator";
+import ProgressIndicator from "@/components/adminDashboard/common/ProgressIndicator";
 
 function RoleSelection() {
   const [selectedRole, setSelectedRole] = useState("renter");
@@ -26,10 +26,10 @@ function RoleSelection() {
 
         {/* Title */}
         <div className="text-left mb-4">
-          <h1 className="text-2xl sm:text-3xl lg:text-[36px] lg:leading-[45px] font-bold text-secondary mb-2">
+          <h1 className="text-3xl lg:text-[36px] lg:leading-[45px] font-bold text-secondary mb-2">
             Create Your Account
           </h1>
-          <p className="text-darkGray text-base md:text-lg font-normal">
+          <p className="text-darkGray text-lg font-normal">
             Choose how you want to use Rent Safe. Your experience will be
             tailored to help you rent or list properties securely.
           </p>
@@ -40,14 +40,14 @@ function RoleSelection() {
 
         {/* Role Selection */}
         <div className="mb-4">
-          <h2 className="text-base font-semibold text-secondary mb-2 md:mb-1">
+          <h2 className="text-base font-semibold text-secondary mb-1">
             Select Your Role
           </h2>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+          <div className=" flex items-center sm:flex-row flex-col sm:justify-between justify-center gap-4">
             {/* Renter Option */}
             <button
               onClick={() => setSelectedRole("renter")}
-              className={`w-full px-4 py-2 border-2 h-[52px] rounded-xl text-left transition-all flex items-center justify-between ${
+              className={`w-full px-4 py-2 border-2 h-[52px] rounded-xl text-left transition-all flex items-center sm:justify-between justify-center ${
                 selectedRole === "renter"
                   ? "border-primary bg-white"
                   : "border-lightGray bg-white"
@@ -55,7 +55,7 @@ function RoleSelection() {
             >
               <div className="flex items-center justify-between">
                 <span
-                  className={`text-base font-medium ${
+                  className={`text-sm sm:text-base font-medium ${
                     selectedRole === "renter"
                       ? "text-primary"
                       : "text-secondary"
@@ -74,15 +74,15 @@ function RoleSelection() {
             {/* Owner/Agent Option */}
             <button
               onClick={() => setSelectedRole("owner")}
-              className={`w-full px-4 py-2 border-2 h-[52px] rounded-xl text-left transition-all flex items-center justify-between ${
+              className={`w-full px-2 sm:px-4 py-2 border-2 h-[52px] rounded-xl text-left transition-all flex items-center sm:justify-between justify-center ${
                 selectedRole === "owner"
                   ? "border-primary bg-white"
                   : "border-lightGray bg-white"
               }`}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center sm:justify-between justify-center">
                 <span
-                  className={`text-base font-medium ${
+                  className={`text-sm sm:text-base font-medium ${
                     selectedRole === "owner" ? "text-primary" : "text-secondary"
                   }`}
                 >

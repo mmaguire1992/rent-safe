@@ -1,5 +1,5 @@
 import { useState } from "react";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
 import { FiSearch } from "react-icons/fi";
 import {
   allMessages,
@@ -7,12 +7,12 @@ import {
   getChatMessages,
   getTenantData,
 } from "@/constant";
-import TenantProfileDetail from "@/components/Messages/TenantProfileDetail";
-import ChatView from "@/components/Messages/ChatView";
-import SendOfferModal from "@/components/TenantProfile/SendOfferModal";
-import BlueSearchIcon from "../../svg/blueSearchIcon";
-import MediumCheckedIcon from "../../svg/mediumCheckedIcon";
-import ChatBlueStartIcon from "../../svg/chatBlueStartIcon";
+import TenantProfileDetail from "@/components/adminDashboard/Messages/TenantProfileDetail";
+import ChatView from "@/components/adminDashboard/Messages/ChatView";
+import SendOfferModal from "@/components/adminDashboard/TenantProfile/SendOfferModal";
+import BlueSearchIcon from "@/svg/blueSearchIcon";
+import MediumCheckedIcon from "@/svg/mediumCheckedIcon";
+import ChatBlueStartIcon from "@/svg/chatBlueStartIcon";
 
 function Messages() {
   const [activeTab, setActiveTab] = useState("requests"); // "all" or "requests"
@@ -67,9 +67,39 @@ function Messages() {
     setShowProfileDetail(false);
   };
 
+  const handleBackToMessageList = () => {
+    setSelectedConversation(null);
+    setShowProfileDetail(false);
+  };
+
   return (
     <DashboardLayout>
       <div className="block">
+        {/* Mobile: Show back button when conversation is selected */}
+        {selectedConversation && (
+          <button
+            onClick={handleBackToMessageList}
+            className="md:hidden flex items-center gap-2 mb-4 text-secondary hover:text-primary transition-colors"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12.5 15L7.5 10L12.5 5"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className="text-base font-semibold font-nunito">Back</span>
+          </button>
+        )}
+
         <h1 className="text-xl xl:text-2xl font-bold text-secondary mb-4">
           Messages{" "}
         </h1>
@@ -127,7 +157,11 @@ function Messages() {
         >
           {/* Left Panel - Message List */}
           {!showProfileDetail && (
-            <div className="w-full md:w-96 lg:w-[400px] rounded-tl-[20px] rounded-bl-[20px] bg-white border-r border-lightGray flex flex-col">
+            <div
+              className={`${
+                selectedConversation ? "hidden md:flex" : "flex"
+              } w-full md:w-96 lg:w-[400px] rounded-tl-[20px] rounded-bl-[20px] md:rounded-tr-none md:rounded-br-none rounded-[20px] md:rounded-[0] bg-white border-r border-lightGray md:border-r flex flex-col`}
+            >
               {/* Header */}
               <div className="p-4 6 border-b border-lightGray">
                 {/* Tabs */}
@@ -210,7 +244,11 @@ function Messages() {
 
           {/* Right Panel - Chat View or Profile Detail */}
           <div
-            className={`flex flex-col bg-white rounded-tr-[20px] rounded-br-[20px] overflow-y-auto ${
+            className={`${
+              selectedConversation || showProfileDetail
+                ? "flex"
+                : "hidden md:flex"
+            } flex-col bg-white rounded-tr-[20px] rounded-br-[20px] md:rounded-tl-none md:rounded-bl-none rounded-[20px] md:rounded-[0] overflow-y-auto ${
               showProfileDetail ? "w-full" : "flex-1"
             }`}
           >
@@ -235,13 +273,13 @@ function Messages() {
                 onProfileClick={handleProfileClick}
               />
             ) : (
-              /* Empty State */
-              <div className="flex-1 flex items-center  bg-[#F9F9FC] justify-center">
+              /* Empty State - Hidden on mobile when no conversation selected */
+              <div className="hidden md:flex flex-1 items-center bg-[#F9F9FC] justify-center">
                 <div className="text-center">
                   <div className="flex items-center justify-center mx-auto mb-4">
                     <ChatBlueStartIcon />
                   </div>
-                  <h3 className=" text-lg lg:text-2xl font-bold text-[#4A2FCC] mb-2">
+                  <h3 className="text-lg lg:text-2xl font-bold text-[#4A2FCC] mb-2">
                     No conversation selected
                   </h3>
                   <p className="text-darkGray text-base font-normal font-nunito">

@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import Pagination from "@/components/common/Pagination";
-import PropertiesActionBar from "@/components/MyProperties/PropertiesActionBar";
-import PropertiesTable from "@/components/MyProperties/PropertiesTable";
-import PropertiesMobileCards from "@/components/MyProperties/PropertiesMobileCards";
+import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
+import Pagination from "@/components/adminDashboard/common/Pagination";
+import PropertiesActionBar from "@/components/adminDashboard/MyProperties/PropertiesActionBar";
+import PropertiesTable from "@/components/adminDashboard/MyProperties/PropertiesTable";
+import PropertiesMobileCards from "@/components/adminDashboard/MyProperties/PropertiesMobileCards";
 import { properties } from "@/constant";
 
 function MyProperties() {
@@ -73,7 +73,7 @@ function MyProperties() {
         />
 
         {/* Properties Mobile Cards */}
-        <div className="md:hidden bg-white rounded-lg border border-lightGray overflow-hidden">
+        <div className="md:hidden bg-white overflow-hidden">
           <PropertiesMobileCards
             properties={currentProperties}
             startIndex={startIndex}

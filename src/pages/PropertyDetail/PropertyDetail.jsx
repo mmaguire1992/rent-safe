@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import Breadcrumb from "@/components/common/Breadcrumb";
-import RentOutDetailsForm from "@/components/PropertyDetail/RentOutDetailsForm";
-import RenterDetailsSection from "@/components/PropertyDetail/RenterDetailsSection";
-import PropertyStatusCard from "@/components/PropertyDetail/PropertyStatusCard";
-import PropertyGallery from "@/components/PropertyDetail/PropertyGallery";
-import PropertyDescription from "@/components/PropertyDetail/PropertyDescription";
-import PropertyDetailsGrid from "@/components/PropertyDetail/PropertyDetailsGrid";
-import LocationSection from "@/components/PropertyDetail/LocationSection";
-import RenterProfileDescription from "@/components/PropertyDetail/RenterProfileDescription";
+import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
+import Breadcrumb from "@/components/adminDashboard/common/Breadcrumb";
+import RentOutDetailsForm from "@/components/adminDashboard/PropertyDetail/RentOutDetailsForm";
+import RenterDetailsSection from "@/components/adminDashboard/PropertyDetail/RenterDetailsSection";
+import PropertyStatusCard from "@/components/adminDashboard/PropertyDetail/PropertyStatusCard";
+import PropertyGallery from "@/components/adminDashboard/PropertyDetail/PropertyGallery";
+import PropertyDescription from "@/components/adminDashboard/PropertyDetail/PropertyDescription";
+import PropertyDetailsGrid from "@/components/adminDashboard/PropertyDetail/PropertyDetailsGrid";
+import LocationSection from "@/components/adminDashboard/PropertyDetail/LocationSection";
+import RenterProfileDescription from "@/components/adminDashboard/PropertyDetail/RenterProfileDescription";
 import { getPropertyData } from "@/constant";
 
 function PropertyDetail() {

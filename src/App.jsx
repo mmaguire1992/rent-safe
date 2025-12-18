@@ -22,17 +22,28 @@ import PlansBilling from "@/pages/PlansBilling/PlansBilling";
 import VerificationCenter from "@/pages/VerificationCenter/VerificationCenter";
 import ProfileSettings from "@/pages/ProfileSettings/ProfileSettings";
 import Support from "@/pages/Support/Support";
+import LandingPage from "@/pages/LandingPage";
+import PropertiesList from "@/pages/propertiesList";
+import PropertyDetailPage from "@/pages/PropertyDetailPage";
+import ProfileManagementPage from "@/pages/profileMangement";
+import RentSupportPage from "@/pages/RentSupport";
+import ChatMessage from "./pages/chat";
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/landing" element={<LandingPage />} />
+      <Route path="/properties" element={<PropertiesList />} />
+      <Route path="/rent-support" element={<RentSupportPage />} />
+      <Route path="/property/:id" element={<PropertyDetailPage />} />
+      <Route path="/profileManagement" element={<ProfileManagementPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/otp-verification" element={<OtpVerification />} />
       <Route path="/create-password" element={<CreatePassword />} />
       <Route path="/password-success" element={<PasswordSuccess />} />
-
+      <Route path="/chat" element={<ChatMessage />} />
       {/* Signup Flow */}
       <Route path="/signup" element={<RoleSelection />} />
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import mainLogo from "@/assests/images/mainLogo.png";
 import AuthLayout from "@/components/AuthLayout";
-import CustomCheckbox from "@/components/common/CustomCheckbox";
+import CustomCheckbox from "@/components/adminDashboard/common/CustomCheckbox";
 import { BsEye, BsEyeSlash } from "react-icons/bs";
 
 function Login() {

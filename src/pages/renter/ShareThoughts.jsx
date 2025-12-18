@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AuthLayout from "@/components/AuthLayout";
-import ProgressIndicator from "@/components/common/ProgressIndicator";
+import ProgressIndicator from "@/components/adminDashboard/common/ProgressIndicator";
 import FileUpload from "@/components/FileUpload";
 import mainLogo from "@/assests/images/mainLogo.png";
 

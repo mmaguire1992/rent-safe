@@ -15,13 +15,13 @@ function OwnerSignupSuccess() {
       }, 1000);
       return () => clearInterval(timer);
     } else {
-      // Redirect to website after countdown
-      navigate("/");
+      // Redirect to dashboard after countdown
+      navigate("/dashboard");
     }
   }, [countdown, navigate]);
 
-  const handleGoToWebsite = () => {
-    navigate("/");
+  const handleGoToDashboard = () => {
+    navigate("/dashboard");
   };
 
   return (
@@ -45,17 +45,17 @@ function OwnerSignupSuccess() {
           features.
         </p>
 
-        {/* Go To Website Button */}
+        {/* Go To Dashboard Button */}
         <button
-          onClick={handleGoToWebsite}
+          onClick={handleGoToDashboard}
           className="mt-4 w-full bg-blueGradient text-white font-bold py-3 rounded-xl transition-all shadow-[0px_2px_10px_0px_#00000033]"
         >
-          Go To Website
+          Go To Dashboard
         </button>
 
         {/* Countdown */}
         <p className="text-sm text-darkGray mt-4 text-center">
-          Redirect to Website in{" "}
+          Redirect to Dashboard in{" "}
           <span className="font-semibold">{countdown}s</span>
         </p>
       </div>
