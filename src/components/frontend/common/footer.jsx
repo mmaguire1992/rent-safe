@@ -1,5 +1,5 @@
 import React from "react";
-import Logofooter from "@/assests/websiteImg/logofooter.svg";
+import Logofooter from "@/assests/websiteImg/footerLogo.png";
 import { FiPhone, FiMapPin } from "react-icons/fi";
 import {
   FaFacebookF,
@@ -23,7 +23,7 @@ const Footer = () => {
             <img
               src={Logofooter}
               alt="Rent Safe"
-              className="h-8 w-auto object-contain"
+              className="h-auto w-[200px] object-contain"
             />
             <p className="text-base font-nunito font-normal text-[#E6E8EC] leading-5 w-full lg:max-w-[320px]">
               Lorem Ipsum is simply dummy text of the printing and typesetting

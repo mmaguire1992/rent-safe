@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { HiBars3 } from "react-icons/hi2";
 import { IoClose } from "react-icons/io5";
-import logo from "@/assests/websiteImg/logo.svg";
+import logo from "@/assests/websiteImg/mainLogo.png";
 import HouseIcon from "@/svg/websiteSvg/houseIcon";
 import HeartIcon from "@/svg/websiteSvg/heartIcon";
 import ProfileMenu from "./ProfileMenu";
@@ -138,7 +138,7 @@ const Navbar = () => {
               <img
                 src={logo}
                 alt="Rent Safe logo"
-                className="h-8 w-auto object-contain cursor-pointer"
+                className="h-auto w-[180px] object-contain cursor-pointer"
               />
             </Link>
           </div>

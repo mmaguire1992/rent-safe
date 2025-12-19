@@ -90,7 +90,7 @@ function Sidebar({ onClose }) {
           }`}
         >
           {!isCollapsed ? (
-            <img src={MainLogo} alt="Logo" className="w-[190px] h-auto" />
+            <img src={MainLogo} alt="Logo" className="w-[150px] h-auto" />
           ) : (
             <LogoIcon />
           )}

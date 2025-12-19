@@ -90,9 +90,9 @@ function References({ references }) {
             {references.map((ref, index) => (
               <div
                 key={index}
-                className="outline-none focus:outline-none px-1 sm:px-2"
+                className="outline-none focus:outline-none px-1 sm:px-2 rfntBox"
               >
-                <div className="border min-w-[300px] border-lightGray rounded-[20px] p-3 sm:p-4 bg-white h-full">
+                <div className="border border-lightGray rounded-[20px] p-3 sm:p-4 bg-white h-full w-full">
                   <div className="flex items-start gap-3 mb-4">
                     <div className="flex-shrink-0 bg-[#6B4EFF] rounded-[10px] w-9 h-9 flex items-center justify-center text-white text-sm font-bold mt-1">
                       SW

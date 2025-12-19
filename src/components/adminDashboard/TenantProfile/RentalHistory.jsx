@@ -26,7 +26,7 @@ function RentalHistory({ rentalHistory }) {
     dots: false,
     infinite: true,
     speed: 7000,
-    slidesToShow: 2,
+    slidesToShow: 1.5,
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 10,
@@ -42,63 +42,10 @@ function RentalHistory({ rentalHistory }) {
     rtl: false,
     responsive: [
       {
-        breakpoint: 1400,
-        settings: {
-          slidesToShow: 2,
-          slidesToScroll: 1,
-          infinite: true,
-          speed: 7000,
-          autoplaySpeed: 100,
-          cssEase: "linear",
-          pauseOnHover: false,
-          initialSlide: 0,
-          rtl: false,
-          swipe: false,
-          touchMove: false,
-          draggable: false,
-        },
-      },
-      {
         breakpoint: 1024,
         settings: {
           slidesToShow: 1,
           slidesToScroll: 1,
-          infinite: true,
-          speed: 7000,
-          autoplaySpeed: 100,
-          cssEase: "linear",
-          pauseOnHover: false,
-          initialSlide: 0,
-          rtl: false,
-          swipe: false,
-          touchMove: false,
-          draggable: false,
-        },
-      },
-      {
-        breakpoint: 768,
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-          arrows: false,
-          infinite: false,
-          speed: 500,
-          autoplay: false,
-          cssEase: "ease",
-          pauseOnHover: false,
-          initialSlide: 0,
-          rtl: false,
-          swipe: true,
-          touchMove: true,
-          draggable: true,
-        },
-      },
-      {
-        breakpoint: 640,
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-          arrows: false,
           infinite: false,
           speed: 500,
           autoplay: false,
@@ -140,9 +87,9 @@ function RentalHistory({ rentalHistory }) {
             {rentalHistory.map((history, index) => (
               <div
                 key={history.id || index}
-                className="outline-none focus:outline-none px-2"
+                className="outline-none focus:outline-none px-1 sm:px-2 rntBox"
               >
-                <div className="border min-w-[300px] border-lightGray rounded-[20px] p-4 bg-white ">
+                <div className="border border-lightGray rounded-[20px] p-4 bg-white w-full">
                   <div className="flex md:flex-row flex-col items-start gap-4">
                     {/* Rental History Details - 60% (Left Side) */}
                     <div className="flex-[0_0_50%] min-w-0 md:border-r border-lightGray space-y-3">
@@ -239,11 +186,11 @@ function RentalHistory({ rentalHistory }) {
 
                     {/* Landlord Recommendation - 50% (Right Side) */}
                     {history.landlordRecommendation ? (
-                      <div className="flex-[0_0_50%] min-w-0 md:pl-4">
+                      <div className="flex-[0_0_50%] min-w-0 md:pl-0 pr-3 pt-4 md:pt-0 border-t md:border-t-0 border-lightGray md:border-0">
                         <p className="font-normal text-darkGray text-base font-nunito mb-4 leading-relaxed">
                           {history.landlordRecommendation.text}
                         </p>
-                        <div className="flex items-center justify-between gap-2 mt-4">
+                        <div className="flex items-center justify-between gap-2 mt-4 pr-3">
                           <div className="block min-w-0">
                             <span className="block font-bold text-secondary text-base font-nunito">
                               {history.landlordRecommendation.name}

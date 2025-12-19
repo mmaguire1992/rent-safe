@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -11,12 +11,29 @@ import BlueTrustedIcon from "../../../svg/websiteSvg/blueTrustedIcon";
 
 function BrowsePropertyUK() {
   const [showAll, setShowAll] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const displayedCities = showAll ? ukCities : ukCities.slice(0, 6);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+
+    // Check on mount
+    checkScreenSize();
+
+    // Add event listener for window resize
+    window.addEventListener("resize", checkScreenSize);
+
+    // Cleanup
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
 
   const handleViewMore = () => {
     setShowAll(!showAll);
   };
 
+  // Slider settings - only used on desktop (lg and above)
   const browserSliderSettings = {
     dots: false,
     infinite: true,
@@ -27,6 +44,9 @@ function BrowsePropertyUK() {
     autoplaySpeed: 3000,
     pauseOnHover: true,
     arrows: false,
+    swipe: false,
+    touchMove: false,
+    draggable: false,
     responsive: [
       {
         breakpoint: 1280,
@@ -35,6 +55,9 @@ function BrowsePropertyUK() {
           slidesToScroll: 1,
           autoplay: true,
           autoplaySpeed: 3000,
+          swipe: false,
+          touchMove: false,
+          draggable: false,
         },
       },
       {
@@ -44,26 +67,9 @@ function BrowsePropertyUK() {
           slidesToScroll: 1,
           autoplay: true,
           autoplaySpeed: 3000,
-        },
-      },
-      {
-        breakpoint: 768,
-        settings: {
-          slidesToShow: 2,
-          slidesToScroll: 1,
-          arrows: false,
-          autoplay: true,
-          autoplaySpeed: 3000,
-        },
-      },
-      {
-        breakpoint: 640,
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-          arrows: false,
-          autoplay: true,
-          autoplaySpeed: 3000,
+          swipe: false,
+          touchMove: false,
+          draggable: false,
         },
       },
     ],
@@ -104,17 +110,19 @@ function BrowsePropertyUK() {
           </div>
 
           {/* Desktop View - Slick Slider (Container aligned left, full width right) */}
-          <div className="hidden lg:block  relative -mx-4 sm:-mx-6 lg:-mx-8 browserSlider ">
-            <div className="city-slider-container-full pl-4 sm:pl-6 lg:pl-8 overflow-hidden  ">
-              <Slider {...browserSliderSettings}>
-                {ukCities.map((city) => (
-                  <div key={city.id} className="px-3">
-                    <CityCard city={city} />
-                  </div>
-                ))}
-              </Slider>
+          {isDesktop && (
+            <div className="hidden lg:block relative -mx-4 sm:-mx-6 lg:-mx-8 browserSlider">
+              <div className="city-slider-container-full pl-4 sm:pl-6 lg:pl-8 overflow-hidden">
+                <Slider {...browserSliderSettings}>
+                  {ukCities.map((city) => (
+                    <div key={city.id} className="px-3">
+                      <CityCard city={city} />
+                    </div>
+                  ))}
+                </Slider>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* View More Button - Only show on mobile */}
