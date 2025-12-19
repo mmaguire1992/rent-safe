@@ -10,7 +10,7 @@ function Hero() {
   return (
     <section
       id="properties"
-      className=" py-8 md:py-12 lg:py-16 gap-8 lg:gap-12 bg-lightBlueGradient"
+      className=" py-8 md:py-12 lg:py-16 gap-8 lg:gap-12 bg-lightBlueGradient overflow-hidden"
     >
       {/* Left Content */}
       <div className="container mx-auto">
