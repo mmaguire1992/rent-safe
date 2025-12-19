@@ -22,16 +22,18 @@ function CustomCheckbox({
         />
         <div
           className={`w-5 h-5 border rounded flex items-center justify-center transition-colors ${
-            checked ? "bg-[#6B4EFF] border-[#6B4EFF]" : "bg-white border-lightGray"
+            checked
+              ? "bg-[#6B4EFF] border-[#6B4EFF]"
+              : "bg-white border-lightGray"
           }`}
         >
           {checked && (
             <svg
-              className="w-3 h-3 text-white"
+              className="w-4 h-4 text-white"
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth="2"
+              strokeWidth="3"
               viewBox="0 0 24 24"
               stroke="currentColor"
             >

@@ -185,7 +185,7 @@ function AddProperty() {
           <div className="flex items-center justify-between mt-6   ">
             <button
               onClick={() => navigate("/dashboard/properties")}
-              className="px-4 md:px-6 md:py-3 py-2 border border-[#F1F1F1] rounded-[10px] text-base text-secondary font-bold bg-[#F1F1F1] transition-colors"
+              className="px-4 md:px-6 py-1.5 font-nunito border border-[#F1F1F1] rounded-[10px] text-base text-secondary font-bold bg-[#F1F1F1] transition-colors"
             >
               Cancel
             </button>
@@ -193,7 +193,7 @@ function AddProperty() {
               {currentStep > 1 && (
                 <button
                   onClick={handleBack}
-                  className="px-4 md:px-6 md:py-3 py-2 border-2 border-[#6B4EFF] text-[#6B4EFF] rounded-[10px] font-semibold  transition-colors"
+                  className="px-4 md:px-6  py-1.5 font-nunito border-2 border-[#6B4EFF] text-[#6B4EFF] rounded-[10px] font-semibold  transition-colors"
                 >
                   Back
                 </button>
@@ -201,7 +201,7 @@ function AddProperty() {
               {currentStep < steps.length ? (
                 <button
                   onClick={handleNext}
-                  className="px-4 md:px-6 md:py-3 py-2 bg-blueGradient text-base font-bold text-white rounded-[10px] hover:bg-opacity-90 transition-colors"
+                  className="px-4 md:px-6  py-1.5 font-nunito bg-blueGradient text-base font-bold text-white rounded-[10px] hover:bg-opacity-90 transition-colors"
                 >
                   Next
                 </button>

@@ -72,7 +72,7 @@ function ProfileHeader({ tenantData, onSendOffer, onChat }) {
                 <p className="text-midGray text-sm font-nunito font-normal mb-0">
                   Monthly Income
                 </p>
-                <p className="text-secondary text-base font-nunito font-normal">
+                <p className="text-[#4A2FCC] text-base font-nunito font-normal">
                   {tenantData.monthlyIncome}
                 </p>
               </div>
@@ -92,12 +92,12 @@ function ProfileHeader({ tenantData, onSendOffer, onChat }) {
           >
             Chat
           </button>
-          <button
+          {/* <button
             onClick={onSendOffer}
             className="bg-transparent border border-[#4A2FCC] text-[#4A2FCC] px-6 py-2 rounded-[10px] text-base font-nunito font-bold hover:bg-opacity-90 transition-colors"
           >
             Send Offer
-          </button>
+          </button> */}
         </div>
       </div>
     </div>

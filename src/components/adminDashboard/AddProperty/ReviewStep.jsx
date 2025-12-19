@@ -271,7 +271,7 @@ function ReviewStep({ formData }) {
               <h4 className="text-base md:text-xl font-bold font-nunito text-secondary mb-3">
                 Amenities
               </h4>
-              <div className="flex items-start md:items-center gap-4 md:flex-wrap flex-col">
+              <div className="flex items-start md:items-center gap-4 md:flex-wrap flex-col md:flex-row">
                 {formData.amenities.map((amenity, index) => {
                   const Icon = getAmenityIcon(amenity);
                   return (
@@ -295,7 +295,7 @@ function ReviewStep({ formData }) {
               <h4 className="text-base md:text-xl font-bold font-nunito text-secondary mb-3">
                 Utilities
               </h4>
-              <div className="flex items-start md:items-center gap-4 md:flex-wrap flex-col">
+              <div className="flex items-start md:items-center gap-4 md:flex-wrap flex-col md:flex-row">
                 {formData.utilities
                   .filter((u) => u)
                   .map((utility, index) => {
@@ -380,7 +380,7 @@ function ReviewStep({ formData }) {
           <h4 className="text-base md:text-xl font-bold font-nunito text-secondary mb-1">
             Preferred Renter Type
           </h4>
-          <div className="flex items-start md:items-center md:gap-6 gap-2 md:flex-wrap flex-col">
+          <div className="flex items-start md:items-center gap-2 md:gap-6  md:flex-wrap flex-col md:flex-row">
             {preferredRenterTypeOptions.map((option) => {
               const Icon = getPreferredRenterIcon(option.value);
               const isSelected =

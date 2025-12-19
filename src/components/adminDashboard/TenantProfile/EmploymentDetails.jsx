@@ -83,7 +83,7 @@ function EmploymentDetails({ employment, proofOfIncome }) {
                 <p className="text-xs text-midGray font-nunito font-normal mb-0.5">
                   Annual Salary
                 </p>
-                <p className="font-normal text-secondary text-base font-nunito">
+                <p className="font-normal text-[#4A2FCC] text-base font-nunito">
                   {employment.annualSalary}
                 </p>
               </div>

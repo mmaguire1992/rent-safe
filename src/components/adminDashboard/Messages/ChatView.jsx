@@ -80,13 +80,16 @@ function ChatView({
             </p>
           </div>
         </div>
-        <div ref={menuRef} className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <button
+        <div
+          ref={menuRef}
+          className="flex items-center gap-2 sm:gap-3 flex-shrink-0"
+        >
+          {/* <button
             onClick={onSendOffer}
             className="bg-blueGradient text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-[10px] hover:bg-opacity-90 transition-colors text-xs sm:text-sm md:text-base font-nunito font-bold whitespace-nowrap"
           >
             Send Offer
-          </button>
+          </button> */}
           <button
             onClick={handleToggleMenu}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"

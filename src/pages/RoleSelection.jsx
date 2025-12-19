@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import mainLogo from "@/assests/images/mainLogo.png";
 import AuthLayout from "@/components/AuthLayout";
 import ProgressIndicator from "@/components/adminDashboard/common/ProgressIndicator";
@@ -105,6 +105,11 @@ function RoleSelection() {
         >
           Next
         </button>
+        <div className="mt-6 text-center">
+          <Link to="/login" className="text-primary text-base font-bold">
+            Back to Login
+          </Link>
+        </div>
       </div>
     </AuthLayout>
   );

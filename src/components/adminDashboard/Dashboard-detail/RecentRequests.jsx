@@ -13,13 +13,14 @@ function RecentRequests({ recentRequests }) {
   const recentSliderSettings = {
     dots: false,
     infinite: true,
-    speed: 500,
+    speed: 5000,
     slidesToShow: 3,
     slidesToScroll: 1,
-    autoplay: false,
+    autoplay: true,
+    autoplaySpeed: 3000,
     pauseOnHover: true,
     arrows: false,
-    cssEase: "ease",
+    cssEase: "linear",
     adaptiveHeight: false,
     swipe: true,
     touchMove: true,
@@ -36,7 +37,10 @@ function RecentRequests({ recentRequests }) {
           touchMove: true,
           draggable: true,
           arrows: false,
-          autoplay: false,
+          autoplay: true,
+          autoplaySpeed: 3000,
+          speed: 5000,
+          cssEase: "linear",
         },
       },
       {
@@ -49,22 +53,10 @@ function RecentRequests({ recentRequests }) {
           swipe: true,
           touchMove: true,
           draggable: true,
-          autoplay: false,
-          speed: 500,
-        },
-      },
-      {
-        breakpoint: 768,
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-          arrows: false,
-          infinite: true,
-          swipe: true,
-          touchMove: true,
-          draggable: true,
-          autoplay: false,
-          speed: 500,
+          autoplay: true,
+          autoplaySpeed: 3000,
+          speed: 5000,
+          cssEase: "linear",
         },
       },
       {
@@ -77,8 +69,10 @@ function RecentRequests({ recentRequests }) {
           swipe: true,
           touchMove: true,
           draggable: true,
-          autoplay: false,
-          speed: 500,
+          autoplay: true,
+          autoplaySpeed: 3000,
+          speed: 5000,
+          cssEase: "linear",
         },
       },
     ],
@@ -94,7 +88,10 @@ function RecentRequests({ recentRequests }) {
             4
           </span>
         </div>
-        <button className="text-[#2177CE] font-bold font-nunito text-xs sm:text-sm whitespace-nowrap">
+        <button
+          onClick={() => navigate("/dashboard/messages")}
+          className="text-[#2177CE] font-bold font-nunito text-xs sm:text-sm whitespace-nowrap"
+        >
           View All
         </button>
       </div>

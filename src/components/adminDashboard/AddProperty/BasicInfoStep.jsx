@@ -66,25 +66,27 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal }) {
               Property Description
             </label>
           </div>
-          <textarea
-            value={formData.propertyDescription}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                propertyDescription: e.target.value,
-              })
-            }
-            placeholder="Enter your property description"
-            rows="6"
-            className="w-full px-4 py-3 border border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 resize-none"
-          />
-          <button
-            onClick={() => setShowAIModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#E8E2FF] text-[#6B4EFF] rounded-[10px] font-bold hover:bg-opacity-90 transition-colors text-base"
-          >
-            <BlueAIIcon />
-            AI Content Generator
-          </button>
+          <div className="relative">
+            <textarea
+              value={formData.propertyDescription}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  propertyDescription: e.target.value,
+                })
+              }
+              placeholder="Enter your property description"
+              rows="6"
+              className="w-full px-4 py-3 border border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 resize-none"
+            />
+            <button
+              onClick={() => setShowAIModal(true)}
+              className="lg:absolute bottom-3 right-2 flex items-center gap-2 px-4 py-2 bg-[#E8E2FF] text-[#6B4EFF] rounded-[10px] font-bold hover:bg-opacity-90 transition-colors text-base"
+            >
+              <BlueAIIcon />
+              AI Content Generator
+            </button>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-2 grid-cols-1 gap-4">

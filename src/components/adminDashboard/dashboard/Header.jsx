@@ -80,7 +80,10 @@ function Header({ onMenuClick }) {
                 Premium
               </span>
             </div>
-            <button className="bg-yellowGradient text-white px-4 py-1.5  rounded-lg text-base font-bold font-nunito hover:bg-opacity-90 transition-colors whitespace-nowrap">
+            <button
+              onClick={() => navigate("/dashboard/payments")}
+              className="bg-yellowGradient text-white px-4 py-1.5  rounded-lg text-base font-bold font-nunito hover:bg-opacity-90 transition-colors whitespace-nowrap"
+            >
               Upgrade Your Plan
             </button>
           </div>

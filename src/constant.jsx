@@ -24,6 +24,7 @@ import {
   FiUpload,
   FiUser,
   FiCheck,
+  FiUserCheck,
 } from "react-icons/fi";
 import DashboardIcon from "./svg/dashboardIcon";
 import PropertiesIcon from "./svg/propertiesIcon";
@@ -49,6 +50,7 @@ import SelfEmployedIcon from "./svg/selfEmployedIcon";
 import RetiredIcon from "./svg/retiredIcon";
 import SharersIcon from "./svg/sharersIcon";
 import CarporateTenantIcon from "./svg/carporateTenantIcon";
+import { MdOutlineEuro } from "react-icons/md";
 
 // ============================================
 // DASHBOARD DATA
@@ -1023,10 +1025,10 @@ export const propertyDropdownOptions = [
 export const addPropertySteps = [
   { number: 1, label: "Basic Details", icon: FiHome },
   { number: 2, label: "Location", icon: FiMapPin },
-  { number: 3, label: "Rent Details", icon: FiDollarSign },
+  { number: 3, label: "Rent Details", icon: MdOutlineEuro },
   { number: 4, label: "Amenities & Utilities", icon: FiWifi },
   { number: 5, label: "Upload Images", icon: FiUpload },
-  { number: 6, label: "Renter Description", icon: FiUser },
+  { number: 6, label: "Renter Description", icon: FiUserCheck },
   { number: 7, label: "Review", icon: FiCheck },
 ];
 

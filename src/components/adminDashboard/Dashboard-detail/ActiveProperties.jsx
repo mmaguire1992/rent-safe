@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FiFilter,
   FiDownload,
@@ -14,6 +15,7 @@ import { GoPlus } from "react-icons/go";
 import ThreeDotsIcon from "@/svg/threeDotsIcon";
 
 function ActiveProperties({ activeProperties }) {
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const dropdownRefs = useRef({});
@@ -64,7 +66,10 @@ function ActiveProperties({ activeProperties }) {
             </span>
             <SortingIcon />
           </button>
-          <button className="bg-blueGradient text-white px-3 sm:px-3.5 md:px-4 h-[36px] sm:h-[38px] py-1.5 md:py-2 rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors flex items-center gap-1 sm:gap-1.5 md:gap-2 text-xs sm:text-sm md:text-base">
+          <button
+            onClick={() => navigate("/dashboard/properties/add")}
+            className="bg-blueGradient text-white px-3 sm:px-3.5 md:px-4 h-[36px] sm:h-[38px] py-1.5 md:py-2 rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors flex items-center gap-1 sm:gap-1.5 md:gap-2 text-xs sm:text-sm md:text-base"
+          >
             <span className="whitespace-nowrap">Add Property</span>
             <span>
               <GoPlus className="text-lg sm:text-xl md:text-2xl" />

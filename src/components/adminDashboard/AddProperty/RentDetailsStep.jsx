@@ -113,29 +113,50 @@ function RentDetailsStep({
             Furnished Status
           </label>
           <div className="grid lg:grid-cols-3 grid-cols-1 gap-4">
-            {["Furnished", "Unfurnished", "Semi-furnished"].map((status) => (
-              <label
-                key={status}
-                className="flex items-center gap-3 cursor-pointer border border-lightGray rounded-xl p-3 bg-white"
-              >
-                <input
-                  type="radio"
-                  name="furnishedStatus"
-                  value={status.toLowerCase()}
-                  checked={formData.furnishedStatus === status.toLowerCase()}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      furnishedStatus: e.target.value,
-                    })
-                  }
-                  className="w-4 h-4 text-[#6B4EFF] focus:ring-[#6B4EFF]"
-                />
-                <span className="text-secondary text-sm md:text-base font-medium font-nunito">
-                  {status}
-                </span>
-              </label>
-            ))}
+            {["Furnished", "Unfurnished", "Semi-furnished"].map((status) => {
+              const isSelected =
+                formData.furnishedStatus === status.toLowerCase();
+              return (
+                <label
+                  key={status}
+                  className={`flex items-center gap-3 cursor-pointer border rounded-xl p-3 bg-white transition-all ${
+                    isSelected ? "" : "border-lightGray "
+                  }`}
+                >
+                  <div className="relative flex items-center justify-center">
+                    <input
+                      type="radio"
+                      name="furnishedStatus"
+                      value={status.toLowerCase()}
+                      checked={isSelected}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          furnishedStatus: e.target.value,
+                        })
+                      }
+                      className="sr-only"
+                    />
+                    <div
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                        isSelected
+                          ? "border-[#4A2FCC] "
+                          : "border-lightGray bg-white"
+                      }`}
+                    >
+                      {isSelected && (
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#4A2FCC]"></div>
+                      )}
+                    </div>
+                  </div>
+                  <span
+                    className={`text-sm md:text-base font-medium text-secondary font-nunito transition-colors `}
+                  >
+                    {status}
+                  </span>
+                </label>
+              );
+            })}
           </div>
         </div>
       </div>

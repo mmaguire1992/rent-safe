@@ -91,7 +91,7 @@ function AmenitiesUtilitiesStep({
                     fill="none"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth="2"
+                    strokeWidth="3"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                   >

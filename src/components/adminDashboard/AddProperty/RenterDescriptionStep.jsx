@@ -21,27 +21,28 @@ function RenterDescriptionStep({ formData, setFormData, setShowAIModal }) {
               Renter Profile Description
             </label>
           </div>
-          <textarea
-            value={formData.renterProfileDescription}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                renterProfileDescription: e.target.value,
-              })
-            }
-            placeholder="Enter your property description"
-            rows="6"
-            className="w-full px-4 py-3 border  border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 resize-none"
-          />
-          <button
-            onClick={() => setShowAIModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#E8E2FF] text-[#6B4EFF] rounded-[10px] font-bold hover:bg-opacity-90 transition-colors text-sm md:text-base"
-          >
-            <BlueAIIcon />
-            AI Content Generator
-          </button>
+          <div className="relative">
+            <textarea
+              value={formData.renterProfileDescription}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  renterProfileDescription: e.target.value,
+                })
+              }
+              placeholder="Enter your property description"
+              rows="6"
+              className="w-full px-4 py-3 border  border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 resize-none"
+            />
+            <button
+              onClick={() => setShowAIModal(true)}
+              className="lg:absolute bottom-3 right-2 flex items-center gap-2 px-4 py-2 bg-[#E8E2FF] text-[#6B4EFF] rounded-[10px] font-bold hover:bg-opacity-90 transition-colors text-sm md:text-base"
+            >
+              <BlueAIIcon />
+              AI Content Generator
+            </button>
+          </div>
         </div>
-
         <div>
           <label className="block text-sm md:text-base font-nunito font-semibold text-secondary mb-1">
             Preferred Renter Type
