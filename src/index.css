@@ -400,3 +400,8 @@ body {
     text-align: left !important;
   }
 }
+@media (min-width: 1530px) and (max-width: 1800px) {
+  .container {
+    max-width: 1400px !important;
+  }
+}

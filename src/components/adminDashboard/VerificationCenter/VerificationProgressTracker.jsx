@@ -57,7 +57,7 @@ function VerificationProgressTracker({ currentStep }) {
                         }`}
                       >
                         {isActive && step.id === 2 ? (
-                          <FiLoader className="animate-spin text-white text-lg" />
+                          <FiLoader className=" text-white text-lg" />
                         ) : (
                           <Icon
                             className={`text-lg ${

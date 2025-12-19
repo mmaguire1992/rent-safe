@@ -145,7 +145,7 @@ const Navbar = () => {
 
           {/* Desktop Links - Hide on profile page */}
           {!isProfilePage && (
-            <nav className="hidden lg:flex items-center font-normal leading-6 gap-8 text-base text-[#2B2F38]">
+            <nav className="hidden lg:flex items-center font-normal leading-6 xl:gap-8 gap-4 text-base text-[#2B2F38]">
               {navLinks.map((item) => {
                 const isActive =
                   item.scrollTo && activeSection === item.scrollTo;
