@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useMemo } from "react";
 import PropertiesHeader from "@/components/frontend/common/PropertiesHeader";
 import PageHeading from "@/components/frontend/common/PageHeading";

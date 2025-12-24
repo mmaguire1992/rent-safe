@@ -1,8 +1,9 @@
+'use client'
+
 import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from '@/lib/react-router-compat';
 import { HiBars3 } from "react-icons/hi2";
 import { IoClose } from "react-icons/io5";
-import logo from "@/assests/websiteImg/mainLogo.png";
 import HouseIcon from "@/svg/websiteSvg/houseIcon";
 import HeartIcon from "@/svg/websiteSvg/heartIcon";
 import ProfileMenu from "./ProfileMenu";
@@ -136,7 +137,7 @@ const Navbar = () => {
           <div className="flex items-center gap-2">
             <Link to="/">
               <img
-                src={logo}
+                src="/images/website/mainLogo.png"
                 alt="Rent Safe logo"
                 className="h-auto w-[180px] object-contain cursor-pointer"
               />

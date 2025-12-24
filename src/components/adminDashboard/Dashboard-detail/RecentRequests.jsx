@@ -1,4 +1,6 @@
-import { useNavigate } from "react-router-dom";
+'use client'
+
+import { useNavigate } from '@/lib/react-router-compat';
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";

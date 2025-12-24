@@ -1,5 +1,7 @@
+'use client'
+
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from '@/lib/react-router-compat';
 import {
   FiSearch,
   FiBell,

@@ -1,5 +1,7 @@
+'use client'
+
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from '@/lib/react-router-compat';
 import ProfileStatusCheckIcon from "@/svg/websiteSvg/profileStatusCheckIcon";
 import LogoutIcon from "@/svg/websiteSvg/logoutIcon";
 import { FiChevronDown } from "react-icons/fi";

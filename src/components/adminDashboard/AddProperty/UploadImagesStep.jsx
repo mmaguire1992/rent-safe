@@ -1,6 +1,8 @@
+'use client'
+
 import { useState, useEffect } from "react";
 import { FiX, FiUpload } from "react-icons/fi";
-import MainIcon from "@/assests/images/mainIcon.png";
+
 function UploadImagesStep({ formData, setFormData }) {
   const [dragActive, setDragActive] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState(null);
@@ -168,7 +170,7 @@ function UploadImagesStep({ formData, setFormData }) {
                   {/* Main Label */}
                   {index === 0 && (
                     <span className="absolute top-[-1px] left-[-4px]   z-10 font-medium">
-                      <img src={MainIcon} alt="Main" />
+                      <img src="/images/dashboard/mainIcon.png" alt="Main" />
                     </span>
                   )}
 

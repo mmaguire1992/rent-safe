@@ -2,7 +2,7 @@ import { FiShare2, FiEdit, FiTrash2 } from "react-icons/fi";
 import BlueLocationIcon from "@/svg/blueLocationIcon";
 import GrayBedIcon from "@/svg/grayBedIcon";
 import GrayBathIcon from "@/svg/grayBathIcon";
-import mainHotelImg from "@/assests/images/mainHotelImg.png";
+
 import BlueEditIcon from "@/svg/blueEditIcon";
 
 function PropertyHeader({

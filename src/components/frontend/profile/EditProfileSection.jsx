@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from "react";
 import BasicInformationSection from "./editprofilesection/BasicInformationSection";
 import CreditCheckSection from "./editprofilesection/CreditCheckSection";

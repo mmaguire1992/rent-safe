@@ -1,5 +1,7 @@
+'use client'
+
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from '@/lib/react-router-compat';
 import Pagination from "@/components/adminDashboard/common/Pagination";
 import ThreeDotsIcon from "@/svg/threeDotsIcon";
 import { FiEdit, FiTrash2, FiShare2 } from "react-icons/fi";

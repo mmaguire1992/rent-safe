@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from "react";
 import BedIcon from "@/svg/websiteSvg/bedIcon";
 import BathIcon from "@/svg/websiteSvg/bathIcon";

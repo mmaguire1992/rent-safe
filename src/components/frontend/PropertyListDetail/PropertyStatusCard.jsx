@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useRef, useEffect } from "react";
 import { FiEye, FiUser } from "react-icons/fi";
 import GrayLeadsIcon from "@/svg/grayLeadsIcon";

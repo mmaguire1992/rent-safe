@@ -1,4 +1,6 @@
-import { useNavigate } from "react-router-dom";
+'use client'
+
+import { useNavigate } from '@/lib/react-router-compat';
 import HeartIcon from "@/svg/websiteSvg/heartIcon";
 import ShareIcon from "@/svg/websiteSvg/shareIcon";
 import LocationIcon from "@/svg/websiteSvg/locationIcon";

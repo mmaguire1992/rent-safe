@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from "react";
 import PaymentSection from "./PaymentSection";
 import GreenRoundCheckIcon from "../../../svg/websiteSvg/greenRoundCheckIcon";

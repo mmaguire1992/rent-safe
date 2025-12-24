@@ -6,7 +6,7 @@ import BuildingIcon from "@/svg/websiteSvg/buildingIcon";
 import CrownIcon from "@/svg/websiteSvg/crownIcon";
 import AgencyIcon from "@/svg/websiteSvg/agencyIcon";
 import StarIcon from "@/svg/websiteSvg/starIcon";
-import AgentsaleImage from "@/assests/websiteImg/agentsale.png";
+
 
 function OwnersAgentsSection() {
   const plans = [
@@ -56,7 +56,7 @@ function OwnersAgentsSection() {
       {/* Background image */}
       <div className="absolute inset-0 z-0">
         <img
-          src={AgentsaleImage}
+          src="/images/website/agentsale.png"
           alt="Background"
           className="w-full h-full object-cover"
         />

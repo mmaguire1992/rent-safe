@@ -1,5 +1,7 @@
+'use client'
+
 import { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from '@/lib/react-router-compat';
 import { IoClose } from "react-icons/io5";
 import { FiChevronUp, FiChevronDown } from "react-icons/fi";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";

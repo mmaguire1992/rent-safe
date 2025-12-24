@@ -1,5 +1,5 @@
 import { FiArrowUpRight } from "react-icons/fi";
-import Boxbg from "@/assests/images/boxgraybg.png";
+
 import GreenGrowthIcon from "@/svg/greenGrowthIcon";
 
 function SummaryCards({ summaryCards }) {
@@ -12,7 +12,7 @@ function SummaryCards({ summaryCards }) {
             key={index}
             className="rounded-lg p-5 md:p-6  bg-cover bg-center bg-no-repeat min-h-[170px] card_summary_box"
             style={{
-              backgroundImage: `url(${Boxbg})`,
+              backgroundImage: 'url("/images/dashboard/boxgraybg.png")',
               backgroundSize: "100% 170px",
               backgroundPosition: "left",
             }}

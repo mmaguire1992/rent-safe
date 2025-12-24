@@ -1,7 +1,9 @@
+'use client'
+
 import { useState } from "react";
 import { FiEdit, FiTrash2, FiCheckCircle } from "react-icons/fi";
 import FileUpload from "@/components/FileUpload";
-import UserImg from "@/assests/images/userImg.png";
+
 import LargeCheckIcon from "@/svg/largeCheckIcon";
 import MediumCheckedIcon from "@/svg/mediumCheckedIcon";
 import GrayPDFIcon from "@/svg/grayPDFIcon";
@@ -47,7 +49,7 @@ function RenterDetailsSection({
           <div className="flex items-center gap-4 border rounded-[20px] border-lightGray min-w-[286px] p-4">
             <div className="relative">
               <img
-                src={UserImg}
+                src="/images/dashboard/userImg.png"
                 alt="David Wanner"
                 className="w-[60px] h-[60px] rounded-full object-cover"
               />

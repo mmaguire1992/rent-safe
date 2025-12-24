@@ -1,6 +1,6 @@
 import React from "react";
 import { SecureIcon } from "@/svg/websiteSvg/icons";
-import streetwithhouse from "@/assests/websiteImg/streetwithhouse.png";
+
 import StarIcon from "@/svg/websiteSvg/starIcon";
 import WhiteCheckedIcon from "../../../svg/websiteSvg/whiteCheckedIcon";
 import WhiteSecureIcon from "../../../svg/websiteSvg/whiteSecureIcon";
@@ -84,7 +84,7 @@ const Features = () => {
             <div className="w-full bg-white   md:rounded-[20px] rounded-xl ">
               <div className="w-full lg:-ml-5 rounded-xl overflow-hidden  lg:-mb-5 lg:mt-5 mt-3 -ml-3 -mb-3">
                 <img
-                  src={streetwithhouse}
+                  src="/images/website/streetwithhouse.png"
                   alt="streetwithhouse"
                   className="object-cover w-full h-full"
                 />

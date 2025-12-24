@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from "react";
 import { FiUpload, FiCheckCircle } from "react-icons/fi";
 import BlueUploadIcon from "@/svg/blueUploadIcon";

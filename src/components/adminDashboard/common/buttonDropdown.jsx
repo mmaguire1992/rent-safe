@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useRef, useEffect } from "react";
 import { FiFilter } from "react-icons/fi";
 import DownArrowIcon from "@/svg/downArrowIcon";

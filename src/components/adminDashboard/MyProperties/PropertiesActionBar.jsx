@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useEffect } from "react";
 import { FiSearch, FiPlus, FiDownload, FiFilter } from "react-icons/fi";
 import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";

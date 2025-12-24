@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useRef, useState } from "react";
 import { FiX } from "react-icons/fi";
 import { maskEmail } from "@/utils/emailUtils";

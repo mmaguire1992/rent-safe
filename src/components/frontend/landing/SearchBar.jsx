@@ -1,5 +1,7 @@
+'use client'
+
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from '@/lib/react-router-compat';
 import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";
 import SearchIcon from "@/svg/websiteSvg/searchIcon";
 import LocationIcon from "@/svg/websiteSvg/locationIcon";

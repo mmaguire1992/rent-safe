@@ -1,7 +1,8 @@
+'use client'
+
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from '@/lib/react-router-compat';
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
-import MainLogo from "@/assests/images/whiteLogo.png";
 import LogoIcon from "@/svg/logoIcon";
 import { sidebarMenuItems } from "@/constant";
 
@@ -90,7 +91,7 @@ function Sidebar({ onClose }) {
           }`}
         >
           {!isCollapsed ? (
-            <img src={MainLogo} alt="Logo" className="w-[150px] h-auto" />
+            <img src="/images/dashboard/whiteLogo.png" alt="Logo" className="w-[150px] h-auto" />
           ) : (
             <LogoIcon />
           )}

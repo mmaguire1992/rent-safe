@@ -2,7 +2,7 @@ import BlueTrustedIcon from "../../../svg/websiteSvg/blueTrustedIcon";
 import Badge from "./Badge";
 import Button from "./Button";
 import ImageBadge from "./ImageBadge";
-import HeroBanner from "@/assests/websiteImg/hero-image.png";
+
 import ShielIcon from "@/svg/websiteSvg/shielIcon";
 import UsersIcon from "@/svg/websiteSvg/usersIcon";
 
@@ -43,7 +43,7 @@ function Hero() {
           <div className="flex-1 relative w-full lg:w-auto lg:max-w-4xl mt-10 md:mt-0">
             <div className="relative">
               <div className="rounded-tl-full rounded-tr-full">
-                <img src={HeroBanner} alt="Modern house" className="w-full" />
+                <img src="/images/website/hero-image.png" alt="Modern house" className="w-full" />
               </div>
               <ImageBadge
                 icon={<ShielIcon />}

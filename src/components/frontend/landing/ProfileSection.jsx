@@ -1,7 +1,7 @@
 import Badge from "./Badge";
 import Button from "./Button";
 import StarIcon from "@/svg/websiteSvg/starIcon";
-import ProfileSectionImage from "@/assests/websiteImg/profile-section-image.png";
+
 
 function ProfileSection() {
   return (
@@ -30,7 +30,7 @@ function ProfileSection() {
             </div>
             <div className="order-1 md:order-2 w-full lg:w-1/2  lg:-mt-10 -mt-16">
               <img
-                src={ProfileSectionImage}
+                src="/images/website/profile-section-image.png"
                 alt="Modern house"
                 className="w-full h-full object-cover"
               />

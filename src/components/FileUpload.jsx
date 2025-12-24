@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useEffect } from "react";
 import UploadIcon from "@/svg/uploadIcon";
 import DeleteIcon from "@/svg/deleteIcon";

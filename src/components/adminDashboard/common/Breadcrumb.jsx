@@ -1,4 +1,6 @@
-import { useNavigate, useLocation, useParams } from "react-router-dom";
+'use client'
+
+import { useNavigate, useLocation, useParams } from '@/lib/react-router-compat';
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { getTenantData, getPropertyData } from "@/constant";
 

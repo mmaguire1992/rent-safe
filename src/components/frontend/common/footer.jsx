@@ -1,5 +1,5 @@
 import React from "react";
-import Logofooter from "@/assests/websiteImg/footerLogo.png";
+
 import { FiPhone, FiMapPin } from "react-icons/fi";
 import {
   FaFacebookF,
@@ -21,7 +21,7 @@ const Footer = () => {
           {/* Brand / About */}
           <div className="md:col-span-4 col-span-2 lg:col-span-2 space-y-4">
             <img
-              src={Logofooter}
+              src="/images/website/footerLogo.png"
               alt="Rent Safe"
               className="h-auto w-[200px] object-contain"
             />

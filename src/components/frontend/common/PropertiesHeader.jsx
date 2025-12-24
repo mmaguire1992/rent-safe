@@ -1,10 +1,12 @@
+'use client'
+
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from '@/lib/react-router-compat';
 import { HiBars3 } from "react-icons/hi2";
 import HeaderIcons from "./HeaderIcons";
 import ProfileMenu from "./ProfileMenu";
 import MobileSidebar from "./MobileSidebar";
-import logo from "@/assests/websiteImg/logo.svg";
+
 
 function PropertiesHeader({
   favoriteCount = 0,
@@ -20,7 +22,7 @@ function PropertiesHeader({
         <div className="container mx-auto flex items-center justify-between h-[60px] sm:h-[70px] px-4 lg:px-6">
           <Link to="/" className="flex items-center gap-2">
             <img
-              src={logo}
+              src="/images/website/logo.svg"
               alt="Rent Safe logo"
               className="h-6 sm:h-8 w-auto object-contain"
             />

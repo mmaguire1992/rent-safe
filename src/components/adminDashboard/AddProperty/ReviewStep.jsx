@@ -1,6 +1,8 @@
+'use client'
+
 import { useState } from "react";
 import { FiMapPin, FiHome, FiCircle } from "react-icons/fi";
-import MainIcon from "@/assests/images/mainIcon.png";
+
 import BlueCarIcon from "@/svg/blueCarIcon";
 import BlueWIFIIcon from "@/svg/blueWIFIIcon";
 import BlueGardenIcon from "@/svg/blueGardenIcon";
@@ -185,7 +187,7 @@ function ReviewStep({ formData }) {
                     <div key={index} className="relative">
                       {index === 0 && (
                         <span className="absolute top-[-1px] left-[-4px] z-10">
-                          <img src={MainIcon} alt="Main" />
+                          <img src="/images/dashboard/mainIcon.png" alt="Main" />
                         </span>
                       )}
                       <img

@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from "react";
 import { BsEye, BsEyeSlash } from "react-icons/bs";
 

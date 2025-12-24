@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from "react";
 import { FiUpload } from "react-icons/fi";
 import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";

@@ -1,4 +1,6 @@
-import { useNavigate } from "react-router-dom";
+'use client'
+
+import { useNavigate } from '@/lib/react-router-compat';
 import LargeCheckIcon from "@/svg/largeCheckIcon";
 import SmallCheckIcon from "@/svg/smallCheckIcon";
 import DesignationIcon from "@/svg/designationIcon";

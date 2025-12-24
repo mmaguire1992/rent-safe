@@ -1,4 +1,6 @@
-import { useNavigate } from "react-router-dom";
+'use client'
+
+import { useNavigate } from '@/lib/react-router-compat';
 import BedIcon from "@/svg/websiteSvg/bedIcon";
 import BathIcon from "@/svg/websiteSvg/bathIcon";
 import HouseIcon from "@/svg/websiteSvg/houseIcon";

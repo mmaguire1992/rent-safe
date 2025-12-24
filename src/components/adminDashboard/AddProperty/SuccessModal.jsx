@@ -1,4 +1,6 @@
-import { useNavigate } from "react-router-dom";
+'use client'
+
+import { useNavigate } from '@/lib/react-router-compat';
 import { FiX, FiCheckCircle } from "react-icons/fi";
 import SuccessfullyCheck from "@/svg/successfullyCheck";
 function SuccessModal({ showSuccessModal, setShowSuccessModal, formData }) {
