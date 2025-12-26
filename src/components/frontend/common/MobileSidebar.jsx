@@ -10,10 +10,13 @@ import WhiteLogout from "@/svg/whiteLogout";
 import WhiteHomeIcon from "@/svg/whiteHomeIcon";
 import WhitePropertiesIcon from "../../../svg/whitePropertiesIcon";
 import WhiteMessageIcon from "../../../svg/whiteMessageIcon";
+import { useAuth } from "@/context/AuthContext";
+
 function MobileSidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuExpanded, setIsMenuExpanded] = useState(true);
+  const { isAuthenticated, userName, user, logout, userType } = useAuth();
 
   // Prevent body scroll when sidebar is open
   useEffect(() => {
@@ -36,9 +39,26 @@ function MobileSidebar({ isOpen, onClose }) {
     setIsMenuExpanded(!isMenuExpanded);
   };
 
+  const handleLogout = () => {
+    logout();
+    onClose();
+  };
+
   const isProfilePage =
     location.pathname === "/profileManagement" ||
     location.pathname.startsWith("/profile");
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!userName) return 'U';
+    const names = userName.trim().split(' ');
+    if (names.length >= 2) {
+      return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+    }
+    return userName[0].toUpperCase();
+  };
+
+  const userEmail = user?.email || '';
 
   return (
     <>
@@ -70,38 +90,40 @@ function MobileSidebar({ isOpen, onClose }) {
             </button>
           </div>
 
-          {/* User Profile Section */}
-          <div className="pt-2 pr-6 pl-8 pb-2 ">
-            <button
-              onClick={toggleMenu}
-              className="w-full flex items-center gap-4 transition-opacity"
-            >
-              <div className="relative">
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xl font-bold">JS</span>
+          {/* User Profile Section - Only show if authenticated renter */}
+          {isAuthenticated && userType === 'renter' ? (
+            <div className="pt-2 pr-6 pl-8 pb-2 ">
+              <button
+                onClick={toggleMenu}
+                className="w-full flex items-center gap-4 transition-opacity"
+              >
+                <div className="relative">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xl font-bold">{getUserInitials()}</span>
+                  </div>
+                  <div className="absolute -top-0 -right-1">
+                    <GreenCheckedIcon />
+                  </div>
                 </div>
-                <div className="absolute -top-0 -right-1">
-                  <GreenCheckedIcon />
+                <div className="flex-1 text-left">
+                  <p className="text-white font-semibold text-base font-nunito">
+                    {userName || 'User'}
+                  </p>
+                  <p className="text-[#F9F9FC] text-xs font-normal font-nunito">
+                    {userEmail}
+                  </p>
                 </div>
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-white font-semibold text-base font-nunito">
-                  John Smith
-                </p>
-                <p className="text-[#F9F9FC] text-xs font-normal font-nunito">
-                  johnsmith@gmail.com
-                </p>
-              </div>
-              {isMenuExpanded ? (
-                <FiChevronUp className="text-white text-xl" />
-              ) : (
-                <FiChevronDown className="text-white text-xl" />
-              )}
-            </button>
-          </div>
+                {isMenuExpanded ? (
+                  <FiChevronUp className="text-white text-xl" />
+                ) : (
+                  <FiChevronDown className="text-white text-xl" />
+                )}
+              </button>
+            </div>
+          ) : null}
 
-          {/* Menu Items - Toggleable */}
-          {isMenuExpanded && (
+          {/* Menu Items - Toggleable - Only show if authenticated renter */}
+          {isMenuExpanded && isAuthenticated && userType === 'renter' && (
             <div className="py-4 pr-4 pl-6 space-y-1 border-b border-white/20 pb-4">
               <button
                 onClick={() => handleNavigation("/profileManagement")}
@@ -124,7 +146,7 @@ function MobileSidebar({ isOpen, onClose }) {
                 Support
               </button>
               <button
-                onClick={() => handleNavigation("/")}
+                onClick={handleLogout}
                 className="w-full text-left px-4 py-2 text-sm font-normal font-nunito text-white hover:bg-white/10 rounded-lg transition-colors flex items-center justify-between"
               >
                 <span>Logout</span>
@@ -136,33 +158,51 @@ function MobileSidebar({ isOpen, onClose }) {
           {/* Navigation Items - Always Visible */}
           <div className="flex-1 overflow-y-auto">
             <div className="py-4 pr-4 pl-6 space-y-1">
-              <button
-                onClick={() => handleNavigation("/landing")}
-                className="w-full text-left px-4 py-2 text-[#F9F9FC] font-bold font-nunito text-sm rounded-lg transition-colors flex items-center gap-3"
-              >
-                <WhiteHomeIcon />
-
-                <span>Home</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("/properties")}
-                className="w-full text-left px-4 py-2 text-[#F9F9FC] font-bold font-nunito text-sm rounded-lg transition-colors flex items-center gap-3"
-              >
-                <WhitePropertiesIcon />
-                <span>Saved Properties</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("/chat")}
-                className="w-full text-left px-4 py-2 text-[#F9F9FC] font-bold font-nunito text-sm rounded-lg transition-colors flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <WhiteMessageIcon />
-                  <span>Messages</span>
+              {isAuthenticated && userType === 'renter' ? (
+                <>
+                  <button
+                    onClick={() => handleNavigation("/landing")}
+                    className="w-full text-left px-4 py-2 text-[#F9F9FC] font-bold font-nunito text-sm rounded-lg transition-colors flex items-center gap-3"
+                  >
+                    <WhiteHomeIcon />
+                    <span>Home</span>
+                  </button>
+                  <button
+                    onClick={() => handleNavigation("/properties")}
+                    className="w-full text-left px-4 py-2 text-[#F9F9FC] font-bold font-nunito text-sm rounded-lg transition-colors flex items-center gap-3"
+                  >
+                    <WhitePropertiesIcon />
+                    <span>Saved Properties</span>
+                  </button>
+                  <button
+                    onClick={() => handleNavigation("/chat")}
+                    className="w-full text-left px-4 py-2 text-[#F9F9FC] font-bold font-nunito text-sm rounded-lg transition-colors flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <WhiteMessageIcon />
+                      <span>Messages</span>
+                    </div>
+                    <span className="bg-white text-[#4A2FCC] text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                      3
+                    </span>
+                  </button>
+                </>
+              ) : (
+                <div className="px-4 space-y-2">
+                  <button
+                    onClick={() => handleNavigation("/login")}
+                    className="w-full px-4 py-2 text-[#4A2FCC] border border-[#4A2FCC] bg-white rounded-xl font-bold text-sm transition-colors hover:bg-[#4A2FCC] hover:text-white"
+                  >
+                    Login
+                  </button>
+                  <button
+                    onClick={() => handleNavigation("/signup")}
+                    className="w-full px-4 py-2 text-white bg-gradient-to-l from-[#4A2FCC] to-[#6B4EFF] rounded-xl font-bold text-sm transition-colors hover:opacity-90"
+                  >
+                    Sign Up
+                  </button>
                 </div>
-                <span className="bg-white text-[#4A2FCC] text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                  3
-                </span>
-              </button>
+              )}
             </div>
           </div>
         </div>

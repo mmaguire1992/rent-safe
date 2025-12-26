@@ -5,6 +5,7 @@ import { Link } from '@/lib/react-router-compat';
 import AuthLayout from "@/components/AuthLayout";
 import CustomCheckbox from "@/components/adminDashboard/common/CustomCheckbox";
 import { BsEye, BsEyeSlash } from "react-icons/bs";
+import { useAuth } from "@/context/AuthContext";
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -15,6 +16,8 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -53,20 +56,27 @@ function Login() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validate()) {
       return;
     }
 
-    // Simulate login attempt
-    // In real app, this would be an API call
-    console.log("Login attempt:", formData);
+    setIsLoading(true);
+    setLoginError("");
 
-    // For now, any email and password will work
-    // In real app, this would validate credentials and redirect to dashboard
-    // navigate("/dashboard");
+    try {
+      await login({
+        email: formData.email,
+        password: formData.password,
+      });
+      // Redirect is handled by AuthContext
+    } catch (error) {
+      setLoginError(error.message || "Login failed. Please check your credentials.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -175,9 +185,10 @@ function Login() {
           {/* Login Button */}
           <button
             type="submit"
-            className="w-full bg-blueGradient h-[56px] text-white text-base font-bold py-3 rounded-xl transition-all shadow-[0px_2px_10px_0px_#00000033]"
+            disabled={isLoading}
+            className="w-full bg-blueGradient h-[56px] text-white text-base font-bold py-3 rounded-xl transition-all shadow-[0px_2px_10px_0px_#00000033] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Log In
+            {isLoading ? "Logging in..." : "Log In"}
           </button>
         </form>
 

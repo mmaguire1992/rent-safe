@@ -1,4 +1,5 @@
 import './globals.css'
+import AuthProviderWrapper from '@/components/providers/AuthProviderWrapper'
 
 export const metadata = {
   title: 'RentSafe',
@@ -8,7 +9,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        <AuthProviderWrapper>
+          {children}
+        </AuthProviderWrapper>
+      </body>
     </html>
   )
 }

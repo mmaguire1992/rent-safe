@@ -32,6 +32,9 @@ export function useNavigate() {
   }
 }
 
+// usePathname compatibility - re-export from Next.js
+export { usePathname }
+
 // useLocation compatibility
 export function useLocation() {
   const pathname = usePathname()

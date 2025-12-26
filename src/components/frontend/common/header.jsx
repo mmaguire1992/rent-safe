@@ -1,19 +1,26 @@
 'use client'
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from '@/lib/react-router-compat';
 import { HiBars3 } from "react-icons/hi2";
 import { IoClose } from "react-icons/io5";
+import { FiChevronDown } from "react-icons/fi";
 import HouseIcon from "@/svg/websiteSvg/houseIcon";
 import HeartIcon from "@/svg/websiteSvg/heartIcon";
+import LogoutIcon from "@/svg/websiteSvg/logoutIcon";
+import GreenCheckedIcon from "@/svg/greenCheckedIcon";
 import ProfileMenu from "./ProfileMenu";
 import MobileSidebar from "./MobileSidebar";
+import { useAuth } from "@/context/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("");
+  const [renterMenuOpen, setRenterMenuOpen] = useState(false);
+  const renterMenuRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, userName, userType, user, logout } = useAuth();
 
   const handleScrollToSection = (e, sectionId) => {
     e.preventDefault();
@@ -51,6 +58,23 @@ const Navbar = () => {
     navigate("/properties");
     setIsOpen(false);
   };
+
+  // Close renter menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (renterMenuRef.current && !renterMenuRef.current.contains(event.target)) {
+        setRenterMenuOpen(false);
+      }
+    };
+
+    if (renterMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [renterMenuOpen]);
 
   // Detect active section on scroll
   useEffect(() => {
@@ -91,6 +115,16 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [location.pathname]);
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!userName) return 'U';
+    const names = userName.trim().split(' ');
+    if (names.length >= 2) {
+      return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+    }
+    return userName[0].toUpperCase();
+  };
 
   const navLinks = [
     { label: "Properties", path: "/", scrollTo: "properties" },
@@ -253,12 +287,78 @@ const Navbar = () => {
             </div>
           ) : (
             <div className="hidden lg:flex items-center gap-3">
-              <Link to="/login" className={loginDesktop}>
-                Login
-              </Link>
-              <Link to="/signup" className={signupDesktop}>
-                Sign Up
-              </Link>
+              {isAuthenticated && userType === 'renter' ? (
+                <div className="relative" ref={renterMenuRef}>
+                  <button
+                    onClick={() => setRenterMenuOpen(!renterMenuOpen)}
+                    className="flex items-center gap-2 cursor-pointer border border-lightGray rounded-full px-3 py-1.5 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="relative">
+                      <div className="w-8 h-8 bg-[#E8E2FF] rounded-full flex items-center justify-center text-primary font-bold text-sm">
+                        {getUserInitials()}
+                      </div>
+                      <span className="absolute -top-1 -right-1">
+                        <GreenCheckedIcon />
+                      </span>
+                    </div>
+                    <span className="text-secondary font-semibold text-base">
+                      {userName || 'User'}
+                    </span>
+                    <FiChevronDown
+                      className={`text-darkGray transition-transform ${
+                        renterMenuOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {/* Renter Dropdown Menu */}
+                  {renterMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                      <div className="px-4 py-3 border-b border-gray-200">
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <div className="w-12 h-12 bg-[#6B4EFF] rounded-full flex items-center justify-center text-white font-bold">
+                              {getUserInitials()}
+                            </div>
+                            <span className="absolute -top-1 -right-1">
+                              <GreenCheckedIcon />
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-text-primary">
+                              {userName || 'User'}
+                            </p>
+                            <p className="text-xs text-text-secondary">
+                              {user?.email || ''}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            setRenterMenuOpen(false);
+                            logout();
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-50 flex items-center justify-between"
+                        >
+                          <span>Logout</span>
+                          <LogoutIcon />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Link to="/login" className={loginDesktop}>
+                    Login
+                  </Link>
+                  <Link to="/signup" className={signupDesktop}>
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </div>
           )}
 

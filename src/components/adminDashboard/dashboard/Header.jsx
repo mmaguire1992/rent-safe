@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from '@/lib/react-router-compat';
+import { useAuth } from '@/context/AuthContext';
 import {
   FiSearch,
   FiBell,
@@ -18,6 +19,7 @@ import LogoutIcon from "@/svg/logoutIcon";
 
 function Header({ onMenuClick }) {
   const navigate = useNavigate();
+  const { logout, userName, user } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -39,9 +41,22 @@ function Header({ onMenuClick }) {
   }, [dropdownOpen]);
 
   const handleLogout = () => {
-    // Handle logout logic here
-    navigate("/login");
+    logout();
+    setDropdownOpen(false);
   };
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!userName) return 'U';
+    const names = userName.trim().split(' ');
+    if (names.length >= 2) {
+      return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+    }
+    return userName[0].toUpperCase();
+  };
+
+  const displayName = userName || 'User';
+  const displayEmail = user?.email || '';
 
   return (
     <div className="bg-white  px-3 sm:px-6 py-3 md:py-4 relative">
@@ -103,7 +118,7 @@ function Header({ onMenuClick }) {
             >
               <div className="relative">
                 <div className="w-8 h-8 md:w-10 md:h-10 bg-[#E8E2FF] rounded-full flex items-center justify-center text-primary font-bold text-sm md:text-base">
-                  JS
+                  {getUserInitials()}
                 </div>
                 <span className="absolute -top-1 -right-1">
                   <GreenCheckedIcon />
@@ -111,7 +126,7 @@ function Header({ onMenuClick }) {
               </div>
               <div className="hidden md:flex items-center gap-1">
                 <span className="text-secondary font-bold text-base font-nunito">
-                  John Smith
+                  {displayName}
                 </span>
                 <FiChevronDown
                   className={`text-darkGray transition-transform ${
@@ -129,7 +144,7 @@ function Header({ onMenuClick }) {
                   <div className="flex items-center gap-3">
                     <div className="relative">
                       <div className="w-12 h-12 bg-[#6B4EFF] rounded-full flex items-center justify-center text-white font-bold">
-                        JS
+                        {getUserInitials()}
                       </div>
                       <span className="absolute -top-1 -right-1">
                         <GreenCheckedIcon />
@@ -137,10 +152,10 @@ function Header({ onMenuClick }) {
                     </div>
                     <div>
                       <h3 className="font-semibold font-nunito text-secondary text-base">
-                        John Smith
+                        {displayName}
                       </h3>
                       <p className="text-xs text-[#52525B] font-normal">
-                        johnsmith@gmail.com
+                        {displayEmail}
                       </p>
                     </div>
                   </div>
