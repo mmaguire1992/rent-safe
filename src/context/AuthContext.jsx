@@ -112,18 +112,19 @@ export const AuthProvider = ({ children }) => {
     navigate('/login');
   };
 
-  const value = {
+  // Only compute these values on client side to avoid SSR issues
+  const authValue = {
     user,
     token,
-    isAuthenticated: isAuthenticated(),
-    userType: getUserType(),
-    userName: getUserName(),
+    isAuthenticated: loading ? false : isAuthenticated(),
+    userType: loading ? null : getUserType(),
+    userName: loading ? '' : getUserName(),
     login,
     logout,
     loading,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={authValue}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

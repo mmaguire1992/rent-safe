@@ -4,9 +4,15 @@
  */
 
 /**
+ * Check if we're on the client side
+ */
+const isClient = () => typeof window !== 'undefined';
+
+/**
  * Get stored user data from localStorage
  */
 export const getUserData = () => {
+  if (!isClient()) return null;
   try {
     const userData = localStorage.getItem('userData');
     if (!userData) return null;
@@ -21,6 +27,7 @@ export const getUserData = () => {
  * Get stored token from localStorage
  */
 export const getToken = () => {
+  if (!isClient()) return null;
   return localStorage.getItem('userToken');
 };
 
@@ -28,6 +35,7 @@ export const getToken = () => {
  * Check if user is authenticated
  */
 export const isAuthenticated = () => {
+  if (!isClient()) return false;
   const token = getToken();
   const userData = getUserData();
   return !!(token && userData);
@@ -49,6 +57,8 @@ export const getUserType = () => {
  * @param {string} [currentPath] - Optional current path to avoid unnecessary redirects
  */
 export const redirectBasedOnUserType = (navigate, currentPath = null) => {
+  if (!isClient()) return; // Don't redirect during SSR
+  
   if (!isAuthenticated()) {
     // Not authenticated - redirect to login
     if (currentPath !== '/login') {
@@ -109,6 +119,7 @@ export const canAccessRoute = (routePath) => {
  * @param {string} token - JWT token
  */
 export const storeAuthData = (userData, token) => {
+  if (!isClient()) return;
   localStorage.setItem('userData', JSON.stringify(userData));
   localStorage.setItem('userToken', token);
 };
@@ -117,6 +128,7 @@ export const storeAuthData = (userData, token) => {
  * Clear authentication data (logout)
  */
 export const clearAuthData = () => {
+  if (!isClient()) return;
   localStorage.removeItem('userData');
   localStorage.removeItem('userToken');
 };

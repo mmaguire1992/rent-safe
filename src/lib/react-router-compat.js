@@ -28,6 +28,10 @@ export function useNavigate() {
       }
     } else if (typeof to === 'number') {
       router.back()
+    } else {
+      // Handle unexpected types - log error and default to login
+      console.error('Invalid navigation target:', to);
+      router.push('/login')
     }
   }
 }
