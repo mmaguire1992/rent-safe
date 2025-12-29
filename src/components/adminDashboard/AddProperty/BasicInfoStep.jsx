@@ -1,18 +1,98 @@
+import { useState, useEffect } from "react";
 import { FiChevronUp, FiChevronDown } from "react-icons/fi";
 import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";
 import { addPropertyTypeOptions } from "@/constant";
 import BlueAIIcon from "@/svg/blueAIIcon";
 
-function BasicInfoStep({ formData, setFormData, setShowAIModal }) {
+function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setErrors }) {
+  const [touched, setTouched] = useState({});
+
+  // Mark all fields as touched when errors are set from parent (e.g., on Next click)
+  useEffect(() => {
+    if (errors && Object.keys(errors).length > 0) {
+      const allTouched = {
+        propertyTitle: true,
+        propertyType: true,
+        propertyDescription: true,
+        bedrooms: true,
+        bathrooms: true,
+      };
+      setTouched(allTouched);
+    }
+  }, [errors]);
+
+  // Validate fields
+  const validateField = (fieldName, value) => {
+    let error = "";
+    
+    switch (fieldName) {
+      case "propertyTitle":
+        if (!value || !value.trim()) {
+          error = "Property Title is required";
+        }
+        break;
+      case "propertyType":
+        if (!value || !value.trim()) {
+          error = "Property Type is required";
+        }
+        break;
+      case "propertyDescription":
+        if (!value || !value.trim()) {
+          error = "Property Description is required";
+        }
+        break;
+      case "bedrooms":
+        if (!value || value === "" || parseInt(value) < 0) {
+          error = "Bedrooms is required";
+        }
+        break;
+      case "bathrooms":
+        if (!value || value === "" || parseInt(value) < 0) {
+          error = "Bathrooms is required";
+        }
+        break;
+      default:
+        break;
+    }
+    
+    return error;
+  };
+
+  const handleBlur = (fieldName) => {
+    setTouched({ ...touched, [fieldName]: true });
+    const error = validateField(fieldName, formData[fieldName]);
+    if (setErrors) {
+      setErrors({ ...errors, [fieldName]: error });
+    }
+  };
+
+  const handleChange = (fieldName, value) => {
+    setFormData({ ...formData, [fieldName]: value });
+    // Clear error when user starts typing
+    if (errors && errors[fieldName] && setErrors) {
+      setErrors({ ...errors, [fieldName]: "" });
+    }
+  };
+
   const handleIncrement = (field) => {
     const currentValue = parseInt(formData[field]) || 0;
     setFormData({ ...formData, [field]: (currentValue + 1).toString() });
+    setTouched({ ...touched, [field]: true });
+    // Clear error when user increments
+    if (errors && errors[field] && setErrors) {
+      setErrors({ ...errors, [field]: "" });
+    }
   };
 
   const handleDecrement = (field) => {
     const currentValue = parseInt(formData[field]) || 0;
     if (currentValue > 0) {
       setFormData({ ...formData, [field]: (currentValue - 1).toString() });
+      setTouched({ ...touched, [field]: true });
+      // Clear error when user decrements
+      if (errors && errors[field] && setErrors) {
+        setErrors({ ...errors, [field]: "" });
+      }
     }
   };
   return (
@@ -35,15 +115,18 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal }) {
             <input
               type="text"
               value={formData.propertyTitle}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  propertyTitle: e.target.value,
-                })
-              }
+              onChange={(e) => handleChange("propertyTitle", e.target.value)}
+              onBlur={() => handleBlur("propertyTitle")}
               placeholder="Enter your property title"
-              className="w-full px-4 py-3 border h-[52px] border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0"
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
+                touched.propertyTitle && errors?.propertyTitle
+                  ? "border-red-500"
+                  : "border-lightGray"
+              }`}
             />
+            {touched.propertyTitle && errors?.propertyTitle && (
+              <p className="mt-1 text-sm text-red-600">{errors.propertyTitle}</p>
+            )}
           </div>
 
           <div>
@@ -53,11 +136,15 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal }) {
             <CustomDropdown
               options={addPropertyTypeOptions}
               value={formData.propertyType}
-              onChange={(value) =>
-                setFormData({ ...formData, propertyType: value })
-              }
+              onChange={(value) => {
+                handleChange("propertyType", value);
+                setTouched({ ...touched, propertyType: true });
+              }}
               placeholder="Select your property type"
             />
+            {touched.propertyType && errors?.propertyType && (
+              <p className="mt-1 text-sm text-red-600">{errors.propertyType}</p>
+            )}
           </div>
         </div>
         <div>
@@ -69,15 +156,15 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal }) {
           <div className="relative">
             <textarea
               value={formData.propertyDescription}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  propertyDescription: e.target.value,
-                })
-              }
+              onChange={(e) => handleChange("propertyDescription", e.target.value)}
+              onBlur={() => handleBlur("propertyDescription")}
               placeholder="Enter your property description"
               rows="6"
-              className="w-full px-4 py-3 border border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 resize-none"
+              className={`w-full px-4 py-3 border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 resize-none ${
+                touched.propertyDescription && errors?.propertyDescription
+                  ? "border-red-500"
+                  : "border-lightGray"
+              }`}
             />
             <button
               onClick={() => setShowAIModal(true)}
@@ -87,6 +174,9 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal }) {
               AI Content Generator
             </button>
           </div>
+          {touched.propertyDescription && errors?.propertyDescription && (
+            <p className="mt-1 text-sm text-red-600">{errors.propertyDescription}</p>
+          )}
         </div>
 
         <div className="grid lg:grid-cols-2 grid-cols-1 gap-4">
@@ -98,12 +188,15 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal }) {
               <input
                 type="number"
                 value={formData.bedrooms}
-                onChange={(e) =>
-                  setFormData({ ...formData, bedrooms: e.target.value })
-                }
+                onChange={(e) => handleChange("bedrooms", e.target.value)}
+                onBlur={() => handleBlur("bedrooms")}
                 placeholder="Enter number of bedrooms"
                 min="0"
-                className="w-full px-4 py-3 pr-12 h-[52px] border border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className={`w-full px-4 py-3 pr-12 h-[52px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                  touched.bedrooms && errors?.bedrooms
+                    ? "border-red-500"
+                    : "border-lightGray"
+                }`}
               />
               <div className="absolute bg-white right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-0.5">
                 <button
@@ -123,6 +216,9 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal }) {
                 </button>
               </div>
             </div>
+            {touched.bedrooms && errors?.bedrooms && (
+              <p className="mt-1 text-sm text-red-600">{errors.bedrooms}</p>
+            )}
           </div>
 
           <div>
@@ -133,12 +229,15 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal }) {
               <input
                 type="number"
                 value={formData.bathrooms}
-                onChange={(e) =>
-                  setFormData({ ...formData, bathrooms: e.target.value })
-                }
+                onChange={(e) => handleChange("bathrooms", e.target.value)}
+                onBlur={() => handleBlur("bathrooms")}
                 placeholder="Enter number of bathrooms"
                 min="0"
-                className="w-full px-4 py-3 pr-12 h-[52px] border border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className={`w-full px-4 py-3 pr-12 h-[52px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                  touched.bathrooms && errors?.bathrooms
+                    ? "border-red-500"
+                    : "border-lightGray"
+                }`}
               />
               <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-0.5">
                 <button
@@ -158,6 +257,9 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal }) {
                 </button>
               </div>
             </div>
+            {touched.bathrooms && errors?.bathrooms && (
+              <p className="mt-1 text-sm text-red-600">{errors.bathrooms}</p>
+            )}
           </div>
         </div>
       </div>

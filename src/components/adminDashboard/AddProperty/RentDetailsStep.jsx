@@ -1,3 +1,4 @@
+import { useState, useEffect, useMemo } from "react";
 import { FiX, FiPlus } from "react-icons/fi";
 import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";
 import CustomCalendar from "@/components/adminDashboard/common/CustomCalendar";
@@ -8,7 +9,73 @@ function RentDetailsStep({
   setFormData,
   handleAddCharge,
   handleRemoveCharge,
+  errors,
+  setErrors,
 }) {
+  const [touched, setTouched] = useState({});
+
+  // Mark all fields as touched when errors are set from parent
+  useEffect(() => {
+    if (errors && Object.keys(errors).length > 0) {
+      const allTouched = {
+        monthlyRent: true,
+        availableFrom: true,
+        furnishedStatus: true,
+      };
+      setTouched(allTouched);
+    }
+  }, [errors]);
+
+  // Validate fields
+  const validateField = (fieldName, value) => {
+    let error = "";
+    
+    switch (fieldName) {
+      case "monthlyRent":
+        if (!value || value === "" || parseFloat(value) <= 0) {
+          error = "Monthly Rent is required";
+        }
+        break;
+      case "availableFrom":
+        if (!value || !value.trim()) {
+          error = "Available From date is required";
+        }
+        break;
+      case "furnishedStatus":
+        if (!value || !value.trim()) {
+          error = "Furnished Status is required";
+        }
+        break;
+      default:
+        break;
+    }
+    
+    return error;
+  };
+
+  const handleBlur = (fieldName) => {
+    setTouched({ ...touched, [fieldName]: true });
+    const error = validateField(fieldName, formData[fieldName]);
+    if (setErrors) {
+      setErrors({ ...errors, [fieldName]: error });
+    }
+  };
+
+  const handleChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+    // Clear error for this field when user starts typing
+    if (errors && errors[field] && setErrors) {
+      setErrors({ ...errors, [field]: "" });
+    }
+  };
+
+  // Calculate minimum date (tomorrow)
+  const minDate = useMemo(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    return tomorrow.toISOString().split('T')[0];
+  }, []);
   return (
     <div className="space-y-6">
       <div>
@@ -29,12 +96,18 @@ function RentDetailsStep({
             <input
               type="number"
               value={formData.monthlyRent}
-              onChange={(e) =>
-                setFormData({ ...formData, monthlyRent: e.target.value })
-              }
+              onChange={(e) => handleChange("monthlyRent", e.target.value)}
+              onBlur={() => handleBlur("monthlyRent")}
               placeholder="Enter your monthly rent"
-              className="w-full px-4 py-3 border h-[52px] border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0"
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
+                touched.monthlyRent && errors?.monthlyRent
+                  ? "border-red-500"
+                  : "border-lightGray"
+              }`}
             />
+            {touched.monthlyRent && errors?.monthlyRent && (
+              <p className="mt-1 text-sm text-red-600">{errors.monthlyRent}</p>
+            )}
           </div>
 
           <div>
@@ -43,14 +116,16 @@ function RentDetailsStep({
             </label>
             <CustomCalendar
               value={formData.availableFrom}
-              onChange={(value) =>
-                setFormData({
-                  ...formData,
-                  availableFrom: value,
-                })
-              }
+              onChange={(value) => {
+                handleChange("availableFrom", value);
+                setTouched({ ...touched, availableFrom: true });
+              }}
+              minDate={minDate}
               placeholder="dd/mm/yyyy"
             />
+            {touched.availableFrom && errors?.availableFrom && (
+              <p className="mt-1 text-sm text-red-600">{errors.availableFrom}</p>
+            )}
           </div>
         </div>
         <div className="border border-lightGray rounded-xl p-4 bg-white">
@@ -129,12 +204,10 @@ function RentDetailsStep({
                       name="furnishedStatus"
                       value={status.toLowerCase()}
                       checked={isSelected}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          furnishedStatus: e.target.value,
-                        })
-                      }
+                      onChange={(e) => {
+                        handleChange("furnishedStatus", e.target.value);
+                        setTouched({ ...touched, furnishedStatus: true });
+                      }}
                       className="sr-only"
                     />
                     <div
@@ -158,6 +231,9 @@ function RentDetailsStep({
               );
             })}
           </div>
+          {touched.furnishedStatus && errors?.furnishedStatus && (
+            <p className="mt-1 text-sm text-red-600">{errors.furnishedStatus}</p>
+          )}
         </div>
       </div>
     </div>

@@ -3,9 +3,17 @@
 import { useState, useEffect } from "react";
 import { FiX, FiUpload } from "react-icons/fi";
 
-function UploadImagesStep({ formData, setFormData }) {
+function UploadImagesStep({ formData, setFormData, errors, setErrors }) {
   const [dragActive, setDragActive] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState(null);
+  const [touched, setTouched] = useState(false);
+
+  // Mark field as touched when errors are set from parent
+  useEffect(() => {
+    if (errors && errors.media) {
+      setTouched(true);
+    }
+  }, [errors]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -56,6 +64,12 @@ function UploadImagesStep({ formData, setFormData }) {
         ...formData,
         images: [...formData.images, ...newImages],
       });
+
+      // Clear error when user adds files
+      setTouched(true);
+      if (errors && errors.media && setErrors) {
+        setErrors({ ...errors, media: "" });
+      }
 
       // Simulate upload progress
       newImages.forEach((_, index) => {
@@ -216,6 +230,9 @@ function UploadImagesStep({ formData, setFormData }) {
               );
             })}
           </div>
+        )}
+        {touched && errors?.media && (
+          <p className="mt-2 text-sm text-red-600">{errors.media}</p>
         )}
       </div>
     </div>

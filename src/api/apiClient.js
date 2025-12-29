@@ -1,0 +1,141 @@
+/**
+ * API Client
+ * Central axios instance with authentication and error handling
+ */
+import axios from 'axios';
+import { BASE_URL } from './routes';
+
+// Create axios instance
+const apiClient = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor - Add auth token
+apiClient.interceptors.request.use(
+  (config) => {
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('userToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor - Handle errors
+apiClient.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    // Handle 401 - Unauthorized
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('userToken');
+      localStorage.removeItem('userData');
+      // Redirect to login page
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Helper function for GET requests
+export const useGetApi = async (url, requireAuth = true) => {
+  try {
+    const config = {};
+    if (requireAuth && typeof window !== 'undefined') {
+      const token = localStorage.getItem('userToken');
+      if (token) {
+        config.headers = { Authorization: `Bearer ${token}` };
+      }
+    }
+    const response = await apiClient.get(url, config);
+    return response.data;
+  } catch (error) {
+    console.error(`Error in GET ${url}:`, error);
+    throw error;
+  }
+};
+
+// Helper function for POST requests
+export const usePostApi = async (url, requireAuth = true, data = {}) => {
+  try {
+    const config = {};
+    if (requireAuth && typeof window !== 'undefined') {
+      const token = localStorage.getItem('userToken');
+      if (token) {
+        config.headers = { Authorization: `Bearer ${token}` };
+      }
+    }
+    const response = await apiClient.post(url, data, config);
+    return response.data;
+  } catch (error) {
+    console.error(`Error in POST ${url}:`, error);
+    throw error;
+  }
+};
+
+// Helper function for PUT requests
+export const usePutApi = async (url, requireAuth = true, data = {}) => {
+  try {
+    const config = {};
+    if (requireAuth && typeof window !== 'undefined') {
+      const token = localStorage.getItem('userToken');
+      if (token) {
+        config.headers = { Authorization: `Bearer ${token}` };
+      }
+    }
+    const response = await apiClient.put(url, data, config);
+    return response.data;
+  } catch (error) {
+    console.error(`Error in PUT ${url}:`, error);
+    throw error;
+  }
+};
+
+// Helper function for DELETE requests
+export const useDeleteApi = async (url, requireAuth = true) => {
+  try {
+    const config = {};
+    if (requireAuth && typeof window !== 'undefined') {
+      const token = localStorage.getItem('userToken');
+      if (token) {
+        config.headers = { Authorization: `Bearer ${token}` };
+      }
+    }
+    const response = await apiClient.delete(url, config);
+    return response.data;
+  } catch (error) {
+    console.error(`Error in DELETE ${url}:`, error);
+    throw error;
+  }
+};
+
+// Helper function for PATCH requests
+export const usePatchApi = async (url, requireAuth = true, data = {}) => {
+  try {
+    const config = {};
+    if (requireAuth && typeof window !== 'undefined') {
+      const token = localStorage.getItem('userToken');
+      if (token) {
+        config.headers = { Authorization: `Bearer ${token}` };
+      }
+    }
+    const response = await apiClient.patch(url, data, config);
+    return response.data;
+  } catch (error) {
+    console.error(`Error in PATCH ${url}:`, error);
+    throw error;
+  }
+};
+
+export default apiClient;
+

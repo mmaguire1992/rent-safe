@@ -51,17 +51,26 @@ function PropertiesMobileCards({
           <div className="block">
             <div className="flex p-3 sm:p-4 items-start justify-between mb-3 border-b border-lightGray">
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                <img
-                  src={property.image}
-                  alt={property.title}
-                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
-                />
+                {property.image ? (
+                  <img
+                    src={property.image}
+                    alt={property.description || property.title}
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
+                    onError={(e) => {
+                      e.target.src = "https://via.placeholder.com/64x64?text=No+Image";
+                    }}
+                  />
+                ) : (
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs text-gray-500">No Image</span>
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="font-bold font-nunito text-secondary mb-2 text-base truncate">
-                    {property.title}
+                    {property.description || property.title}
                   </p>
                   <p className="text-darkGray text-xs sm:text-sm font-nunito font-normal">
-                    {property.propertyId}
+                    ID: {property.id}
                   </p>
                 </div>
               </div>

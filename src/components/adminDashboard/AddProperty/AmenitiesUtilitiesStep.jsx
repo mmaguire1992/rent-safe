@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiX, FiPlus } from "react-icons/fi";
 import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";
 import CustomCheckbox from "@/components/adminDashboard/common/CustomCheckbox";
@@ -12,8 +12,42 @@ function AmenitiesUtilitiesStep({
   handleToggleAmenity,
   handleAddOtherAmenity,
   handleRemoveOtherAmenity,
+  errors,
+  setErrors,
 }) {
   const [otherAmenityInput, setOtherAmenityInput] = useState("");
+  const [touched, setTouched] = useState({});
+
+  // Mark all fields as touched when errors are set from parent
+  useEffect(() => {
+    if (errors && Object.keys(errors).length > 0) {
+      const allTouched = {
+        amenities: true,
+        utilities: true,
+      };
+      setTouched(allTouched);
+    }
+  }, [errors]);
+
+  const handleToggleAmenityWithValidation = (amenity) => {
+    handleToggleAmenity(amenity);
+    setTouched({ ...touched, amenities: true });
+    // Clear error when user selects an amenity
+    if (errors && errors.amenities && setErrors) {
+      setErrors({ ...errors, amenities: "" });
+    }
+  };
+
+  const handleUtilityChange = (index, value) => {
+    const newUtilities = [...formData.utilities];
+    newUtilities[index] = value;
+    setFormData({ ...formData, utilities: newUtilities });
+    setTouched({ ...touched, utilities: true });
+    // Clear error when user selects a utility
+    if (errors && errors.utilities && setErrors) {
+      setErrors({ ...errors, utilities: "" });
+    }
+  };
 
   const handleAddOtherAmenityClick = () => {
     if (otherAmenityInput.trim()) {
@@ -45,7 +79,7 @@ function AmenitiesUtilitiesStep({
               <CustomCheckbox
                 id={`amenity-${amenity}`}
                 checked={formData.amenities.includes(amenity)}
-                onChange={() => handleToggleAmenity(amenity)}
+                onChange={() => handleToggleAmenityWithValidation(amenity)}
                 label={amenity}
                 className="w-full"
                 labelClassName="text-sm"
@@ -53,6 +87,9 @@ function AmenitiesUtilitiesStep({
             </div>
           ))}
         </div>
+        {touched.amenities && errors?.amenities && (
+          <p className="mt-2 text-sm text-red-600">{errors.amenities}</p>
+        )}
       </div>
 
       <div>
@@ -136,11 +173,7 @@ function AmenitiesUtilitiesStep({
                   <CustomDropdown
                     options={utilitiesList}
                     value={utility}
-                    onChange={(value) => {
-                      const newUtilities = [...formData.utilities];
-                      newUtilities[index] = value;
-                      setFormData({ ...formData, utilities: newUtilities });
-                    }}
+                    onChange={(value) => handleUtilityChange(index, value)}
                     placeholder="Select an option"
                   />
                 </div>

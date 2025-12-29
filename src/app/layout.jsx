@@ -1,5 +1,6 @@
 import './globals.css'
 import AuthProviderWrapper from '@/components/providers/AuthProviderWrapper'
+import ReduxProvider from '@/components/providers/ReduxProvider'
 
 export const metadata = {
   title: 'RentSafe',
@@ -10,9 +11,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <AuthProviderWrapper>
-          {children}
-        </AuthProviderWrapper>
+        <ReduxProvider>
+          <AuthProviderWrapper>
+            {children}
+          </AuthProviderWrapper>
+        </ReduxProvider>
       </body>
     </html>
   )

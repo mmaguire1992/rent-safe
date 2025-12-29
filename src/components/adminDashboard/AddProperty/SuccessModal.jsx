@@ -3,7 +3,7 @@
 import { useNavigate } from '@/lib/react-router-compat';
 import { FiX, FiCheckCircle } from "react-icons/fi";
 import SuccessfullyCheck from "@/svg/successfullyCheck";
-function SuccessModal({ showSuccessModal, setShowSuccessModal, formData }) {
+function SuccessModal({ showSuccessModal, setShowSuccessModal, formData, propertyId }) {
   const navigate = useNavigate();
 
   if (!showSuccessModal) return null;
@@ -37,11 +37,11 @@ function SuccessModal({ showSuccessModal, setShowSuccessModal, formData }) {
             <button
               onClick={() => {
                 setShowSuccessModal(false);
-                navigate(
-                  `/dashboard/properties/${formData.propertyTitle
-                    .toLowerCase()
-                    .replace(/\s+/g, "-")}`
-                );
+                if (propertyId) {
+                  navigate(`/dashboard/properties/${propertyId}`);
+                } else {
+                  navigate("/dashboard/properties");
+                }
               }}
               className="px-6 w-full py-2 border-2 border-[#4A2FCC] text-[#4A2FCC] rounded-[10px] font-bold text-base font-nunito transition-colors"
             >

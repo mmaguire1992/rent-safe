@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FiMapPin, FiHome, FiCircle } from "react-icons/fi";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
+import { loadGoogleMaps } from "@/utils/googleMaps";
 
 import BlueCarIcon from "@/svg/blueCarIcon";
 import BlueWIFIIcon from "@/svg/blueWIFIIcon";
@@ -35,6 +37,11 @@ import GrayBathIcon from "@/svg/grayBathIcon";
 function ReviewStep({ formData }) {
   const [readMoreDescription, setReadMoreDescription] = useState(false);
   const [readMoreRequirements, setReadMoreRequirements] = useState(false);
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markerRef = useRef(null);
+  const infoWindowRef = useRef(null);
+  const { isLoaded: isGoogleMapsLoaded, error: googleMapsError } = useGoogleMaps();
 
   const getLabelFromValue = (options, value) => {
     return options.find((opt) => opt.value === value)?.label || value;
@@ -118,10 +125,105 @@ function ReviewStep({ formData }) {
     return null;
   };
 
+  // Format currency
+  const formatCurrency = (amount, currency = "GBP") => {
+    if (!amount) return "";
+    const currencySymbol = currency === "GBP" ? "£" : currency === "EUR" ? "€" : currency === "USD" ? "$" : "";
+    return `${currencySymbol}${parseFloat(amount).toLocaleString()}`;
+  };
+
+  // Initialize map for review
+  useEffect(() => {
+    const initMap = async () => {
+      if (!mapRef.current || typeof window === 'undefined') return;
+      if (!formData.coordinates || formData.coordinates.length !== 2) return;
+
+      try {
+        await loadGoogleMaps();
+
+        if (!window.google || !window.google.maps) {
+          return;
+        }
+
+        const [lng, lat] = formData.coordinates; // Coordinates are stored as [longitude, latitude]
+        const position = { lat, lng };
+
+        const mapOptions = {
+          center: position,
+          zoom: 15,
+          mapTypeId: "roadmap",
+          streetViewControl: true,
+          mapTypeControl: true,
+          fullscreenControl: true,
+          zoomControl: true,
+        };
+
+        mapInstanceRef.current = new window.google.maps.Map(mapRef.current, mapOptions);
+
+        // Create marker
+        markerRef.current = new window.google.maps.Marker({
+          position: position,
+          map: mapInstanceRef.current,
+          title: formData.address || "Property Location",
+          animation: window.google.maps.Animation.DROP,
+        });
+
+        // Create info window
+        infoWindowRef.current = new window.google.maps.InfoWindow({
+          content: `
+            <div style="padding: 8px; max-width: 250px;">
+              <h3 style="margin: 0 0 8px 0; font-size: 14px; font-weight: bold; color: #1f2937;">
+                ${formData.address || "Property Location"}
+              </h3>
+              ${formData.city ? `<p style="margin: 4px 0; font-size: 12px; color: #6b7280;">City: ${formData.city}</p>` : ""}
+              ${formData.postcode ? `<p style="margin: 4px 0; font-size: 12px; color: #6b7280;">Postcode: ${formData.postcode}</p>` : ""}
+              <p style="margin: 8px 0 0 0; font-size: 11px; color: #9ca3af;">
+                Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}
+              </p>
+            </div>
+          `,
+        });
+
+        // Add click listener to marker
+        markerRef.current.addListener("click", () => {
+          infoWindowRef.current.open(mapInstanceRef.current, markerRef.current);
+        });
+
+        // Open info window by default
+        infoWindowRef.current.open(mapInstanceRef.current, markerRef.current);
+      } catch (error) {
+        console.error("Failed to initialize map:", error);
+      }
+    };
+
+    if (isGoogleMapsLoaded && formData.coordinates && formData.coordinates.length === 2) {
+      initMap();
+    }
+
+    return () => {
+      if (markerRef.current) {
+        markerRef.current.setMap(null);
+        markerRef.current = null;
+      }
+      if (infoWindowRef.current) {
+        infoWindowRef.current.close();
+        infoWindowRef.current = null;
+      }
+    };
+  }, [isGoogleMapsLoaded, formData.coordinates, formData.address, formData.city, formData.postcode]);
+
   const descriptionText = formData.renterProfileDescription || "";
   const requirementsText = formData.additionalRequirements || "";
   const maxDescriptionLength = 200;
   const maxRequirementsLength = 200;
+  
+  // Get currency from formData or default to GBP
+  const currency = formData.currency || "GBP";
+  
+  // Filter additional charges to show only those with values
+  const validAdditionalCharges = formData.additionalCharges?.filter(
+    (charge) => charge.type && charge.type.trim() && charge.amount
+  ) || [];
 
   return (
     <div className="block">
@@ -227,10 +329,20 @@ function ReviewStep({ formData }) {
                   Monthly Rent:
                 </p>
                 <p className="text-sm md:text-base font-bold font-nunito text-secondary">
-                  €{formData.monthlyRent}
+                  {formatCurrency(formData.monthlyRent, currency)}
                 </p>
               </div>
             )}
+            {validAdditionalCharges.length > 0 && validAdditionalCharges.map((charge, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <p className="text-sm md:text-base min-w-[110px] font-normal font-nunito text-darkGray mb-1">
+                  {charge.type}:
+                </p>
+                <p className="text-sm md:text-base font-bold font-nunito text-secondary">
+                  {formatCurrency(charge.amount, currency)}
+                </p>
+              </div>
+            ))}
             {formData.propertyType && (
               <div className="flex items-center gap-2">
                 <p className="text-sm md:text-base min-w-[110px] font-normal font-nunito text-darkGray mb-1">
@@ -320,6 +432,27 @@ function ReviewStep({ formData }) {
               </div>
             </div>
           )}
+
+          {/* Other Amenities */}
+          {formData.otherAmenities && formData.otherAmenities.length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-base md:text-xl font-bold font-nunito text-secondary mb-3">
+                Other Amenities
+              </h4>
+              <div className="flex items-start md:items-center gap-4 md:flex-wrap flex-col md:flex-row">
+                {formData.otherAmenities.map((amenity, index) => (
+                  <div key={index} className="flex items-center gap-3">
+                    <span className="bg-[#E8E2FF] w-[36px] h-[36px] rounded-[10px] flex items-center justify-center">
+                      <DummyAmenityIcon />
+                    </span>
+                    <span className="text-base font-normal font-nunito text-secondary">
+                      {amenity}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div className="border border-lightGray rounded-xl p-3 md:p-6 mb-4">
           {/* Location */}
@@ -334,18 +467,46 @@ function ReviewStep({ formData }) {
                   {[
                     formData.address,
                     getLabelFromValue(addPropertyCityOptions, formData.city),
+                    formData.county,
+                    formData.state,
                     formData.postcode,
+                    formData.country,
                   ]
                     .filter(Boolean)
                     .join(", ")}
                 </p>
               </div>
-              {/* Map Placeholder */}
-              <div className="w-full h-64 bg-gray-100 rounded-xl flex items-center justify-center border border-lightGray">
-                <div className="text-center">
-                  <FiMapPin className="text-[#6B4EFF] text-4xl mx-auto mb-2" />
-                  <p className="text-darkGray">Map will be shown here</p>
-                </div>
+              {/* Map Display */}
+              <div className="w-full h-64 rounded-xl overflow-hidden border border-lightGray relative">
+                {isGoogleMapsLoaded && formData.coordinates && formData.coordinates.length === 2 ? (
+                  <div 
+                    ref={mapRef} 
+                    className="w-full h-full"
+                    style={{ background: "#e5e3df" }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                    <div className="text-center">
+                      {googleMapsError ? (
+                        <>
+                          <FiMapPin className="text-red-500 text-4xl mx-auto mb-2" />
+                          <p className="text-red-600 text-sm">
+                            {googleMapsError?.message || "Failed to load map"}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <FiMapPin className="text-[#6B4EFF] text-4xl mx-auto mb-2" />
+                          <p className="text-darkGray text-sm">
+                            {formData.coordinates && formData.coordinates.length === 2 
+                              ? "Loading map..." 
+                              : "No location coordinates available"}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -378,38 +539,45 @@ function ReviewStep({ formData }) {
         )}
 
         {/* Preferred Renter Type */}
-        <div className="block">
-          <h4 className="text-base md:text-xl font-bold font-nunito text-secondary mb-1">
-            Preferred Renter Type
-          </h4>
-          <div className="flex items-start md:items-center gap-2 md:gap-6  md:flex-wrap flex-col md:flex-row">
-            {preferredRenterTypeOptions.map((option) => {
-              const Icon = getPreferredRenterIcon(option.value);
-              const isSelected =
-                formData.preferredRenterType === option.value ||
-                (formData.preferredRenterTypes &&
-                  formData.preferredRenterTypes.includes(option.value));
-              return (
-                <div
-                  key={option.value}
-                  className={`flex items-center gap-2 py-1 md:py-3 transition-colors`}
-                >
-                  {Icon && (
-                    <span className="bg-[#FFDDEE] w-[36px] h-[36px] rounded-[10px] flex items-center justify-center">
-                      {" "}
-                      <Icon />
-                    </span>
-                  )}
-                  <span
-                    className={`text-base font-normal font-nunito text-darkGray`}
+        {formData.preferredRenterType && (
+          <div className="block">
+            <h4 className="text-base md:text-xl font-bold font-nunito text-secondary mb-1">
+              Preferred Renter Type
+            </h4>
+            <div className="flex items-start md:items-center gap-2 md:gap-6  md:flex-wrap flex-col md:flex-row">
+              {preferredRenterTypeOptions.map((option) => {
+                const Icon = getPreferredRenterIcon(option.value);
+                const isSelected =
+                  formData.preferredRenterType === option.value ||
+                  (formData.preferredRenterTypes &&
+                    formData.preferredRenterTypes.includes(option.value));
+                return (
+                  <div
+                    key={option.value}
+                    className={`flex items-center gap-2 py-1 md:py-3 transition-colors ${
+                      isSelected ? "opacity-100" : "opacity-40"
+                    }`}
                   >
-                    {option.label}
-                  </span>
-                </div>
-              );
-            })}
+                    {Icon && (
+                      <span className={`w-[36px] h-[36px] rounded-[10px] flex items-center justify-center ${
+                        isSelected ? "bg-[#FFDDEE]" : "bg-gray-100"
+                      }`}>
+                        <Icon />
+                      </span>
+                    )}
+                    <span
+                      className={`text-base font-normal font-nunito ${
+                        isSelected ? "text-secondary font-semibold" : "text-darkGray"
+                      }`}
+                    >
+                      {option.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Additional Requirements */}
         {formData.additionalRequirements && (

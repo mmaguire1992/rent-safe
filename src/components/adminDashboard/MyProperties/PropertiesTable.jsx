@@ -15,6 +15,7 @@ function PropertiesTable({
   totalItems,
   itemsPerPage,
   onPageChange,
+  loading = false,
 }) {
   const navigate = useNavigate();
   const [openDropdownId, setOpenDropdownId] = useState(null);
@@ -83,7 +84,23 @@ function PropertiesTable({
               </tr>
             </thead>
             <tbody>
-              {properties.map((property, index) => (
+              {loading ? (
+                <tr>
+                  <td colSpan="8" className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#6B4EFF] border-t-transparent"></div>
+                      <p className="mt-4 text-darkGray text-sm sm:text-base">Loading properties...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : properties.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="py-8 text-center text-darkGray text-base">
+                    No properties found.
+                  </td>
+                </tr>
+              ) : (
+                properties.map((property, index) => (
                 <tr
                   key={property.id}
                   className="border-b border-lightGray hover:bg-gray-50 cursor-pointer"
@@ -96,11 +113,20 @@ function PropertiesTable({
                       <span className="text-midGray text-base">
                         {startIndex + index + 1}.
                       </span>
-                      <img
-                        src={property.image}
-                        alt={property.description}
-                        className="w-12 h-12 rounded-lg object-cover"
-                      />
+                      {property.image ? (
+                        <img
+                          src={property.image}
+                          alt={property.description}
+                          className="w-12 h-12 rounded-lg object-cover"
+                          onError={(e) => {
+                            e.target.src = "https://via.placeholder.com/48x48?text=No+Image";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center">
+                          <span className="text-xs text-gray-500">No Image</span>
+                        </div>
+                      )}
                       <div>
                         <p className="font-bold font-nunito text-secondary text-base">
                           {property.description}
@@ -192,7 +218,8 @@ function PropertiesTable({
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>

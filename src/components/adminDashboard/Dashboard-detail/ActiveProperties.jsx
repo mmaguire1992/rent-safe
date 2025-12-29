@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from '@/lib/react-router-compat';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   FiFilter,
   FiDownload,
@@ -15,20 +16,98 @@ import SortingIcon from "@/svg/sortingIcon";
 import { FaPlus } from "react-icons/fa";
 import { GoPlus } from "react-icons/go";
 import ThreeDotsIcon from "@/svg/threeDotsIcon";
+import { fetchMyActiveProperties } from '@/redux/slices/propertySlice';
 
-function ActiveProperties({ activeProperties }) {
+function ActiveProperties() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { myActiveProperties: allProperties, loading, error, pagination } = useSelector((state) => state.property);
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const dropdownRefs = useRef({});
   const itemsPerPage = 4;
-  const totalItems = activeProperties.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  // Fetch active properties when component mounts or page changes
+  useEffect(() => {
+    dispatch(fetchMyActiveProperties({
+      page: currentPage,
+      limit: itemsPerPage,
+    }));
+  }, [dispatch, currentPage, itemsPerPage]);
+
+  // Transform properties to match component expectations
+  const transformedProperties = useMemo(() => {
+    if (!allProperties || allProperties.length === 0) return [];
+    
+    return allProperties.map((property) => {
+      // Extract image URL from primaryImageId or images array
+      let imageUrl = null;
+      if (property.primaryImageId) {
+        if (typeof property.primaryImageId === 'string') {
+          imageUrl = property.primaryImageId;
+        } else if (property.primaryImageId.url) {
+          imageUrl = property.primaryImageId.url;
+        }
+      }
+      // Fallback to images array if primaryImageId is not available
+      if (!imageUrl && property.images && property.images.length > 0) {
+        const firstImage = property.images[0];
+        imageUrl = typeof firstImage === 'string' ? firstImage : firstImage.url;
+      }
+      // Fallback to property.image if exists
+      if (!imageUrl && property.image) {
+        imageUrl = property.image;
+      }
+      
+      // Build location string from address
+      const locationParts = [];
+      if (property.address) {
+        if (property.address.city) locationParts.push(property.address.city);
+        if (property.address.county) locationParts.push(property.address.county);
+        if (property.address.postcode) locationParts.push(property.address.postcode);
+      }
+      const location = locationParts.length > 0 
+        ? locationParts.join(", ") 
+        : property.location || "N/A";
+      
+      // Format rent with currency
+      const currency = property.currency || "GBP";
+      const rentSymbol = currency === "GBP" ? "£" : currency === "EUR" ? "€" : currency === "USD" ? "$" : "";
+      const rent = property.rent 
+        ? `${rentSymbol}${property.rent.toLocaleString()}`
+        : "N/A";
+      
+      // Format status (capitalize first letter)
+      const status = property.status 
+        ? property.status.charAt(0).toUpperCase() + property.status.slice(1).replace(/_/g, " ")
+        : "Active";
+      
+      return {
+        id: property._id || property.id,
+        image: imageUrl,
+        title: property.title || "Untitled Property",
+        propertyId: property._id || property.id,
+        location: location,
+        type: property.propertyType 
+          ? property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)
+          : "N/A",
+        rent: rent,
+        leads: property.leads || property.leadCount || 0,
+        views: property.views || property.viewCount || 0,
+        status: status,
+        // Keep original property data for reference
+        _original: property,
+      };
+    });
+  }, [allProperties]);
+
+  const totalItems = pagination?.total || pagination?.count || transformedProperties.length;
+  const totalPages = pagination?.totalPages || Math.ceil(totalItems / itemsPerPage);
 
   // Calculate pagination indices
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProperties = activeProperties.slice(startIndex, endIndex);
+  const currentProperties = transformedProperties;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -51,10 +130,18 @@ function ActiveProperties({ activeProperties }) {
   };
 
   const handleAction = (action, propertyId) => {
-    console.log(`${action} clicked for property:`, propertyId);
     setOpenDropdownId(null);
-    // Add your action handlers here
+    if (action === "edit") {
+      navigate(`/dashboard/properties/${propertyId}`);
+    } else if (action === "delete") {
+      console.log("Delete property:", propertyId);
+      // TODO: Implement delete functionality
+    } else if (action === "share") {
+      console.log("Share property:", propertyId);
+      // TODO: Implement share functionality
+    }
   };
+
   return (
     <div className="bg-white mt-4 sm:mt-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
@@ -84,8 +171,22 @@ function ActiveProperties({ activeProperties }) {
         </div>
       </div>
 
+      {/* Error State */}
+      {error && !loading && (
+        <div className="border border-red-500 rounded-[20px] p-8 text-center">
+          <p className="text-red-600 text-sm sm:text-base">Error loading properties: {error.message || "Unknown error"}</p>
+          <button
+            onClick={() => dispatch(fetchMyActiveProperties({ page: currentPage, limit: itemsPerPage }))}
+            className="mt-4 px-4 py-2 bg-[#6B4EFF] text-white rounded-lg hover:bg-opacity-90 text-sm sm:text-base"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Desktop Table */}
-      <div className="hidden md:block border border-lightGray rounded-[20px] overflow-x-auto overflow-y-visible">
+      {!error && (
+        <div className="hidden md:block border border-lightGray rounded-[20px] overflow-x-auto overflow-y-visible">
         <div className="min-w-[1200px]">
           <table className="w-full">
             <thead>
@@ -117,7 +218,23 @@ function ActiveProperties({ activeProperties }) {
               </tr>
             </thead>
             <tbody>
-              {currentProperties.map((property, index) => (
+              {loading ? (
+                <tr>
+                  <td colSpan="8" className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#6B4EFF] border-t-transparent"></div>
+                      <p className="mt-4 text-darkGray text-sm sm:text-base">Loading active properties...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : currentProperties.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="py-8 text-center text-darkGray text-base">
+                    No active properties found.
+                  </td>
+                </tr>
+              ) : (
+                currentProperties.map((property, index) => (
                 <tr
                   key={property.id}
                   className="border-b border-lightGray hover:bg-gray-50"
@@ -127,11 +244,20 @@ function ActiveProperties({ activeProperties }) {
                       <span className="text-midGray text-base">
                         {startIndex + index + 1}
                       </span>
-                      <img
-                        src={property.image}
-                        alt={property.title}
-                        className="w-12 h-12 rounded-lg object-cover"
-                      />
+                      {property.image ? (
+                        <img
+                          src={property.image}
+                          alt={property.title}
+                          className="w-12 h-12 rounded-lg object-cover"
+                          onError={(e) => {
+                            e.target.src = "https://via.placeholder.com/48x48?text=No+Image";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center">
+                          <span className="text-xs text-gray-500">No Image</span>
+                        </div>
+                      )}
                       <div>
                         <p className="font-bold font-nunito text-secondary text-base">
                           {property.title}
@@ -220,7 +346,8 @@ function ActiveProperties({ activeProperties }) {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -235,11 +362,25 @@ function ActiveProperties({ activeProperties }) {
             itemName="properties"
           />
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Mobile Cards */}
-      <div className="md:hidden space-y-3">
-        {currentProperties.map((property, index) => (
+      {!error && (
+        <div className="md:hidden space-y-3">
+        {loading ? (
+          <div className="border border-lightGray rounded-[20px] p-8 text-center">
+            <div className="flex flex-col items-center justify-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#6B4EFF] border-t-transparent"></div>
+              <p className="mt-4 text-darkGray text-sm sm:text-base">Loading active properties...</p>
+            </div>
+          </div>
+        ) : currentProperties.length === 0 ? (
+          <div className="border border-lightGray rounded-[20px] p-8 text-center">
+            <p className="text-darkGray text-sm sm:text-base">No active properties found.</p>
+          </div>
+        ) : (
+          currentProperties.map((property, index) => (
           <div
             key={property.id}
             className="border border-lightGray rounded-[20px] overflow-hidden bg-white"
@@ -247,11 +388,20 @@ function ActiveProperties({ activeProperties }) {
             <div className="block">
               <div className="flex p-3 sm:p-4 items-start justify-between mb-3 border-b border-lightGray">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <img
-                    src={property.image}
-                    alt={property.title}
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
-                  />
+                  {property.image ? (
+                    <img
+                      src={property.image}
+                      alt={property.title}
+                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
+                      onError={(e) => {
+                        e.target.src = "https://via.placeholder.com/64x64?text=No+Image";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs text-gray-500">No Image</span>
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="font-bold font-nunito text-secondary mb-2 text-base truncate">
                       {property.title}
@@ -360,7 +510,8 @@ function ActiveProperties({ activeProperties }) {
               </div>
             </div>
           </div>
-        ))}
+          ))
+        )}
 
         {/* Mobile Pagination */}
         <div className="pt-2">
@@ -373,7 +524,8 @@ function ActiveProperties({ activeProperties }) {
             itemName="properties"
           />
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
