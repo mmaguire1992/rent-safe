@@ -1,4 +1,10 @@
 import PropertyHistoryCard from "./PropertyHistoryCard";
+import homelistOne from '@/assests/websiteImg/homelistOne.png';
+import homelistTwo from '@/assests/websiteImg/homelistTwo.png';
+import homelistThree from '@/assests/websiteImg/homelistThree.png';
+import homelistFour from '@/assests/websiteImg/homelistFour.png';
+import homelistFive from '@/assests/websiteImg/homelistFive.png';
+import homelistSix from '@/assests/websiteImg/homelistSix.png';
 
 
 
