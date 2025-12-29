@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { useNavigate } from '@/lib/react-router-compat';
 import { BsEye, BsEyeSlash } from "react-icons/bs";
+import { toast } from 'react-toastify';
 
 import AuthLayout from "@/components/AuthLayout";
 import ProgressIndicator from "@/components/adminDashboard/common/ProgressIndicator";
+import { signupUser } from "@/api/auth";
+import { storeAuthData } from "@/utils/auth";
 
 function RenterBasicInformation() {
   const [formData, setFormData] = useState({
@@ -29,6 +32,7 @@ function RenterBasicInformation() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -46,16 +50,96 @@ function RenterBasicInformation() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Split fullName into firstName and lastName
+    const nameParts = formData.fullName.trim().split(/\s+/);
+    if (nameParts.length < 2) {
+      newErrors.fullName = "Please enter your first and last name";
+    }
+
+    if (!formData.email || !formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+
+    if (!formData.password || formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Clear any errors - all fields are optional, no validation required
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
     setErrors({});
 
-    // Navigate to next step with form data - no required fields
-    navigate("/signup/renter/share-thoughts", {
-      state: { formData },
-    });
+    try {
+      // Split fullName into firstName and lastName
+      const nameParts = formData.fullName.trim().split(/\s+/);
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ') || nameParts[0]; // If only one name, use it for both
+
+      // Call signup API
+      const result = await signupUser({
+        firstName,
+        lastName,
+        email: formData.email.trim(),
+        password: formData.password,
+        userType: 'renter',
+        phone: formData.phoneNumber || undefined,
+      });
+
+      // Store user data and token (will be activated after OTP verification)
+      // We store it in a temporary location first, then move it after OTP verification
+      localStorage.setItem('signup_user_data', JSON.stringify(result.user));
+      localStorage.setItem('signup_token', result.token);
+      localStorage.setItem('signup_email', result.user.email);
+
+      toast.success(result.message || 'Account created! Please verify your email with the OTP sent.');
+
+      // Navigate to OTP verification page
+      navigate("/signup/renter/verify-account", {
+        state: { 
+          email: result.user.email,
+          userType: 'renter',
+          formData: {
+            ...formData,
+            firstName,
+            lastName,
+          }
+        },
+      });
+    } catch (error) {
+      console.error('Signup error:', error);
+      const errorMessage = error.message || 'Failed to create account. Please try again.';
+      toast.error(errorMessage);
+      
+      // Set specific field errors if available
+      if (error.data && error.data.errors) {
+        const fieldErrors = {};
+        error.data.errors.forEach(err => {
+          if (err.field === 'email') fieldErrors.email = err.message;
+          if (err.field === 'password') fieldErrors.password = err.message;
+        });
+        setErrors(fieldErrors);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -429,9 +513,10 @@ function RenterBasicInformation() {
           {/* Next Button */}
           <button
             type="submit"
-            className="w-full bg-blueGradient h-[56px] text-white text-base font-bold py-3 rounded-xl transition-all shadow-[0px_2px_10px_0px_#00000033]"
+            disabled={loading}
+            className="w-full bg-blueGradient h-[56px] text-white text-base font-bold py-3 rounded-xl transition-all shadow-[0px_2px_10px_0px_#00000033] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Next
+            {loading ? 'Creating Account...' : 'Next'}
           </button>
         </form>
       </div>

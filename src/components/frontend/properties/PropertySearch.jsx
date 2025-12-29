@@ -1,17 +1,10 @@
 import SearchIcon from "@/svg/websiteSvg/searchIcon";
 import LocationIcon from "@/svg/websiteSvg/locationIcon";
 import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";
+import { addPropertyTypeOptions } from "@/constant";
 
-// Property type options for search (matching SearchBar format)
-const propertyTypeOptions = [
-  { value: "flat/apartment", label: "Flat/Apartment" },
-  { value: "house", label: "House" },
-  { value: "studio", label: "Studio" },
-  { value: "villa", label: "Villa" },
-  { value: "penthouse", label: "Penthouse" },
-  { value: "floor", label: "Independent Floor" },
-  { value: "plot", label: "Plot/Land" },
-];
+// Use addPropertyTypeOptions - flat and apartment are separate options
+const propertyTypeOptions = addPropertyTypeOptions;
 
 function PropertySearch({
   value,
@@ -35,9 +28,9 @@ function PropertySearch({
           <div className="w-full sm:hidden">
             <CustomDropdown
               options={propertyTypeOptions}
-              value={selectedType || "flat/apartment"}
+              value={selectedType || "apartment"}
               onChange={onTypeChange}
-              placeholder="Flat/Apartment"
+              placeholder="Select Property Type"
               className="h-[52px]"
             />
           </div>

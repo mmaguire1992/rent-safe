@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { addPropertyTypeOptions, amenitiesList } from "@/constant";
 import {
   bhkOptions,
@@ -47,14 +47,22 @@ const amenityOptions = amenitiesList.map((amenity) => ({
   label: amenity,
 }));
 
-function PropertyFilters({ onFilterChange }) {
-  const [filters, setFilters] = useState({
+function PropertyFilters({ onFilterChange, initialFilters = null }) {
+  const [filters, setFilters] = useState(initialFilters || {
     propertyType: "all",
     amenities: [],
     bhk: "all",
     priceMin: 0,
     priceMax: 10000,
   });
+
+  // Sync filters when initialFilters prop changes (e.g., from URL params)
+  // Only update if initialFilters is provided and propertyType is different
+  useEffect(() => {
+    if (initialFilters && initialFilters.propertyType !== filters.propertyType) {
+      setFilters(initialFilters);
+    }
+  }, [initialFilters?.propertyType]);
 
   const updateFilter = (key, value) => {
     const newFilters = { ...filters, [key]: value };

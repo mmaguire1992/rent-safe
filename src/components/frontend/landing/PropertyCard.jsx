@@ -9,6 +9,7 @@ import BathIcon from "@/svg/websiteSvg/bathIcon";
 import HouseIcon from "@/svg/websiteSvg/houseIcon";
 import LocationTwo from "@/svg/websiteSvg/locationTwo";
 import ApartmentIcon from "../../../svg/apartmentIcon";
+import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
 
 function PropertyCard({ property, isFavorited = false, onToggleFavorite }) {
   const navigate = useNavigate();
@@ -38,7 +39,10 @@ function PropertyCard({ property, isFavorited = false, onToggleFavorite }) {
             alt={property.title}
             className="w-full h-[200px] sm:h-[240px] object-cover rounded-xl"
             onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+              // Prevent infinite loop by checking if already set to placeholder
+              if (!e.target.src.includes('data:image/svg+xml')) {
+                e.target.src = PROPERTY_PLACEHOLDER_IMAGE;
+              }
             }}
           />
           {property.isRecent && (

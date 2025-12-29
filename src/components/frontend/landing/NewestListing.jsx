@@ -8,6 +8,7 @@ import Button from "./Button";
 import PropertyCard from "./PropertyCard";
 import ShielIcon from "@/svg/websiteSvg/shielIcon";
 import { getRecentActiveProperties } from "@/api/properties";
+import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
 
 function NewestListing() {
   const navigate = useNavigate();
@@ -53,7 +54,7 @@ function NewestListing() {
     }
     // Fallback placeholder
     if (!imageUrl) {
-      imageUrl = 'https://via.placeholder.com/400x300?text=No+Image';
+      imageUrl = PROPERTY_PLACEHOLDER_IMAGE;
     }
 
     // Build address string

@@ -1,6 +1,6 @@
 import OtpVerification from '@/components/pages/OtpVerification'
 
-export default function OwnerVerifyAccountPage() {
+export default function RenterVerifyAccountPage() {
   return <OtpVerification />
 }
 

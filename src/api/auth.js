@@ -119,3 +119,166 @@ export const loginUser = async (credentials) => {
   }
 };
 
+/**
+ * Signup user
+ * 
+ * @param {Object} userData - User signup data
+ * @param {string} userData.firstName - User first name
+ * @param {string} userData.lastName - User last name
+ * @param {string} userData.email - User email address
+ * @param {string} userData.password - User password
+ * @param {string} userData.userType - User type ('renter' or 'owner')
+ * @param {string} [userData.phone] - User phone number (optional)
+ * @returns {Promise<Object>} - Signup response with user data and token
+ * 
+ * @throws {Error} - If signup fails
+ */
+export const signupUser = async (userData) => {
+  // Validate required fields
+  if (!userData || !userData.firstName || !userData.lastName || !userData.email || !userData.password || !userData.userType) {
+    throw new Error('First name, last name, email, password, and user type are required');
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        firstName: userData.firstName.trim(),
+        lastName: userData.lastName.trim(),
+        email: userData.email.trim().toLowerCase(),
+        password: userData.password,
+        userType: userData.userType,
+        phone: userData.phone || undefined,
+      }),
+    });
+
+    const data = await handleApiResponse(response);
+
+    // Validate response structure
+    if (!data.data || !data.data.user || !data.data.token) {
+      throw new Error('Invalid response structure from server');
+    }
+
+    return {
+      user: {
+        id: data.data.user.id,
+        firstName: data.data.user.firstName,
+        lastName: data.data.user.lastName,
+        email: data.data.user.email,
+        userType: data.data.user.userType,
+        isEmailVerified: data.data.user.isEmailVerified,
+      },
+      token: data.data.token,
+      message: data.message || 'User registered successfully. Please verify your email with the OTP sent.',
+    };
+  } catch (error) {
+    if (error.message) {
+      throw error;
+    }
+    
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Network error. Please check your connection and try again.');
+    }
+    
+    console.error('Signup API error:', error);
+    throw new Error(error.message || 'Signup failed. Please try again.');
+  }
+};
+
+/**
+ * Verify OTP for email verification
+ * 
+ * @param {string} email - User email address
+ * @param {string} otp - 6-digit OTP code
+ * @returns {Promise<Object>} - Verification response
+ * 
+ * @throws {Error} - If verification fails
+ */
+export const verifyOTP = async (email, otp) => {
+  if (!email || !otp) {
+    throw new Error('Email and OTP are required');
+  }
+
+  if (!/^\d{6}$/.test(otp)) {
+    throw new Error('OTP must be a 6-digit number');
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+        otp: otp,
+      }),
+    });
+
+    const data = await handleApiResponse(response);
+
+    return {
+      success: true,
+      message: data.message || 'Email verified successfully',
+    };
+  } catch (error) {
+    if (error.message) {
+      throw error;
+    }
+    
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Network error. Please check your connection and try again.');
+    }
+    
+    console.error('Verify OTP API error:', error);
+    throw new Error(error.message || 'OTP verification failed. Please try again.');
+  }
+};
+
+/**
+ * Resend OTP for email verification
+ * 
+ * @param {string} email - User email address
+ * @returns {Promise<Object>} - Resend response
+ * 
+ * @throws {Error} - If resend fails
+ */
+export const resendOTP = async (email) => {
+  if (!email) {
+    throw new Error('Email is required');
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/resend-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+      }),
+    });
+
+    const data = await handleApiResponse(response);
+
+    return {
+      success: true,
+      message: data.message || 'OTP has been resent to your email',
+    };
+  } catch (error) {
+    if (error.message) {
+      throw error;
+    }
+    
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Network error. Please check your connection and try again.');
+    }
+    
+    console.error('Resend OTP API error:', error);
+    throw new Error(error.message || 'Failed to resend OTP. Please try again.');
+  }
+};
+

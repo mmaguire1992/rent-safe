@@ -16,6 +16,7 @@ import ContactOwnerModal from "@/components/frontend/PropertyListDetail/ContactO
 import { getPropertyById } from "@/api/properties";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { toast } from "react-toastify";
+import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
 
 function PropertyDetailPage() {
   const { id } = useParams();
@@ -132,7 +133,7 @@ function PropertyDetailPage() {
     }
     // Fallback placeholder
     if (!imageUrl) {
-      imageUrl = 'https://via.placeholder.com/800x600?text=No+Image';
+      imageUrl = PROPERTY_PLACEHOLDER_IMAGE;
     }
 
     // Build gallery images array

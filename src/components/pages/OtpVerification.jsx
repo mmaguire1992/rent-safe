@@ -2,19 +2,29 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, Link } from '@/lib/react-router-compat';
+import { toast } from 'react-toastify';
 import AuthLayout from "@/components/AuthLayout";
 import { maskEmail } from "@/utils/emailUtils";
+import { verifyOTP, resendOTP } from "@/api/auth";
+import { useAuth } from "@/context/AuthContext";
+import { storeAuthData } from "@/utils/auth";
 
 function OtpVerification() {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState("");
-  const [timer, setTimer] = useState(30);
+  const [timer, setTimer] = useState(60); // 60 seconds timer
   const [canResend, setCanResend] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const inputRefs = useRef([]);
   const navigate = useNavigate();
   const location = useLocation();
-  const originalEmail = location.state?.email || "abc123@example.com";
+  const { login } = useAuth();
+  
+  // Get email from location state or localStorage
+  const originalEmail = location.state?.email || localStorage.getItem('signup_email') || "";
   const maskedEmail = maskEmail(originalEmail);
+  const userType = location.state?.userType || null; // Get userType from navigation state
 
   useEffect(() => {
     if (timer > 0) {
@@ -64,7 +74,7 @@ function OtpVerification() {
     inputRefs.current[nextIndex]?.focus();
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const otpString = otp.join("");
@@ -79,18 +89,96 @@ function OtpVerification() {
       return;
     }
 
-    // Simulate OTP verification - in real app, this would be an API call
-    // Navigate to create new password page
-    navigate("/create-password", { state: { email: originalEmail } });
+    if (!originalEmail) {
+      setError("Email not found. Please start the signup process again.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      // Verify OTP
+      await verifyOTP(originalEmail, otpString);
+
+      toast.success("Email verified successfully!");
+
+      // Get the stored user data and token from signup
+      const signupUserData = localStorage.getItem('signup_user_data');
+      const signupToken = localStorage.getItem('signup_token');
+      
+      if (signupUserData && signupToken) {
+        try {
+          // Parse user data
+          const userData = JSON.parse(signupUserData);
+          
+          // Store auth data properly using the utility function
+          storeAuthData(userData, signupToken);
+          
+          // Update AuthContext state by triggering a page reload or using the login function
+          // Since we can't directly update AuthContext state, we'll reload the page
+          // which will cause AuthContext to read from localStorage
+          
+          // Clear signup temporary data
+          localStorage.removeItem('signup_user_data');
+          localStorage.removeItem('signup_token');
+          localStorage.removeItem('signup_email');
+
+          // Redirect based on user type
+          if (userType === 'owner' || userData.userType === 'owner') {
+            // Reload to ensure AuthContext picks up the new auth data
+            window.location.href = "/signup/owner/success";
+          } else if (userType === 'renter' || userData.userType === 'renter') {
+            window.location.href = "/signup/renter/success";
+          } else {
+            // Default redirect to dashboard
+            window.location.href = "/dashboard";
+          }
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+          toast.error("Error completing signup. Please login.");
+          navigate("/login");
+        }
+      } else {
+        // If no token, just redirect to login
+        toast.info("Please login with your verified email.");
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      const errorMessage = error.message || 'OTP verification failed. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleResend = () => {
-    setTimer(30);
-    setCanResend(false);
-    setOtp(["", "", "", "", "", ""]);
+  const handleResend = async () => {
+    if (!originalEmail) {
+      toast.error("Email not found. Please start the signup process again.");
+      return;
+    }
+
+    setResending(true);
     setError("");
-    // In real app, this would trigger a new OTP to be sent
-    console.log("Resending OTP to:", originalEmail);
+
+    try {
+      await resendOTP(originalEmail);
+      toast.success("OTP has been resent to your email");
+      
+      // Reset timer and OTP fields
+      setTimer(60);
+      setCanResend(false);
+      setOtp(["", "", "", "", "", ""]);
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+      const errorMessage = error.message || 'Failed to resend OTP. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setResending(false);
+    }
   };
 
   return (
@@ -144,9 +232,10 @@ function OtpVerification() {
           {/* Verify Button */}
           <button
             type="submit"
-            className="w-full bg-blueGradient h-[56px] text-white text-base font-bold py-3 rounded-xl transition-all shadow-[0px_2px_10px_0px_#00000033]"
+            disabled={loading}
+            className="w-full bg-blueGradient h-[56px] text-white text-base font-bold py-3 rounded-xl transition-all shadow-[0px_2px_10px_0px_#00000033] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Verify
+            {loading ? 'Verifying...' : 'Verify'}
           </button>
         </form>
 
@@ -158,9 +247,10 @@ function OtpVerification() {
           {canResend ? (
             <button
               onClick={handleResend}
-              className="text-primary text-base font-bold"
+              disabled={resending}
+              className="text-primary text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Send again
+              {resending ? 'Sending...' : 'Send again'}
             </button>
           ) : (
             <span className="text-yellow text-base font-bold">{timer}s</span>

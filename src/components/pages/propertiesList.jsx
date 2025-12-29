@@ -10,14 +10,13 @@ import PropertyList from "@/components/frontend/properties/PropertyList";
 import { getAllProperties, getPropertiesByCity } from "@/api/properties";
 import { FiSliders } from "react-icons/fi";
 import Footer from "@/components/frontend/common/footer";
+import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
 
 function PropertiesList() {
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const searchTimeoutRef = useRef(null);
-  const [selectedPropertyType, setSelectedPropertyType] =
-    useState("flat/apartment");
   const [favoritedIds, setFavoritedIds] = useState(new Set());
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -30,38 +29,133 @@ function PropertiesList() {
     total: 0,
     totalPages: 0,
   });
+  // Extract city from URL params (only once on mount or when city changes)
+  const cityParam = searchParams.get("city");
+
+  // Initialize filters - check URL params on mount
+  const getInitialPropertyType = () => {
+    const typeParam = searchParams.get("type");
+    if (typeParam) {
+      return typeParam.toLowerCase();
+    }
+    return "all";
+  };
+
+  const getInitialSelectedType = () => {
+    const typeParam = searchParams.get("type");
+    if (typeParam) {
+      return typeParam.toLowerCase();
+    }
+    return "apartment"; // Default to apartment
+  };
+
   const [filters, setFilters] = useState({
-    propertyType: "all",
+    propertyType: getInitialPropertyType(),
     amenities: [],
     bhk: "all",
     priceMin: 0,
     priceMax: 10000,
   });
 
-  // Debounced filters state - used for API calls
-  const [debouncedFilters, setDebouncedFilters] = useState(filters);
+  // Debounced filters state - used for API calls (initialize immediately with URL params)
+  const [debouncedFilters, setDebouncedFilters] = useState({
+    propertyType: getInitialPropertyType(),
+    amenities: [],
+    bhk: "all",
+    priceMin: 0,
+    priceMax: 10000,
+  });
   const filterTimeoutRef = useRef(null);
 
-  // Extract city from URL params (only once on mount or when city changes)
-  const cityParam = searchParams.get("city");
+  // Initialize selectedPropertyType from URL
+  const [selectedPropertyType, setSelectedPropertyType] = useState(getInitialSelectedType);
+  
+  // Track if we've initialized from URL to prevent infinite loops
+  const initializedFromUrlRef = useRef(false);
 
-  // Read search query and type from URL on component mount
+  // Read search query and type from URL on component mount or when URL changes
   useEffect(() => {
     const queryParam = searchParams.get("q");
-    if (queryParam) {
-      setSearchQuery(queryParam);
-    }
     const typeParam = searchParams.get("type");
-    if (typeParam) {
-      setFilters((prev) => ({
-        ...prev,
-        propertyType: typeParam.toLowerCase(),
-      }));
+    
+    // Only update if values actually changed to prevent unnecessary re-renders
+    const currentType = typeParam ? typeParam.toLowerCase() : null;
+    const currentQuery = queryParam || "";
+    
+    // Check if we need to update - compare with both current state and debounced state
+    const shouldUpdateType = currentType !== debouncedFilters.propertyType && 
+                             currentType !== filters.propertyType &&
+                             (currentType || debouncedFilters.propertyType !== "all");
+    const shouldUpdateQuery = currentQuery !== debouncedSearchQuery && 
+                              currentQuery !== searchQuery;
+    
+    // Only proceed if something actually changed
+    if (!shouldUpdateType && !shouldUpdateQuery && initializedFromUrlRef.current) {
+      return; // No changes, skip update
     }
+    
+    if (shouldUpdateQuery) {
+      if (currentQuery) {
+        setSearchQuery(currentQuery);
+        setDebouncedSearchQuery(currentQuery); // Set debounced immediately for URL params
+      } else {
+        // Clear if param removed
+        setSearchQuery("");
+        setDebouncedSearchQuery("");
+      }
+    }
+    
+    if (shouldUpdateType) {
+      if (currentType) {
+        const normalizedType = currentType;
+        
+        // Update filters immediately
+        const newFilters = {
+          propertyType: normalizedType,
+          amenities: [],
+          bhk: "all",
+          priceMin: 0,
+          priceMax: 10000,
+        };
+        setFilters(newFilters);
+        // Also update debouncedFilters immediately for URL params (no debounce delay)
+        setDebouncedFilters(newFilters);
+        
+        // Update selectedPropertyType for PropertySearch component
+        setSelectedPropertyType(normalizedType);
+      } else if (!initializedFromUrlRef.current) {
+        // Only reset to defaults on initial mount if no type param
+        const defaultFilters = {
+          propertyType: "all",
+          amenities: [],
+          bhk: "all",
+          priceMin: 0,
+          priceMax: 10000,
+        };
+        setFilters(defaultFilters);
+        setDebouncedFilters(defaultFilters);
+        setSelectedPropertyType("apartment");
+      }
+    }
+    
+    initializedFromUrlRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  // Track previous filters to prevent unnecessary updates
+  const prevFiltersRef = useRef(filters);
 
   // Debounce filter changes - wait 500ms after user stops changing filters
   useEffect(() => {
+    // Check if filters actually changed
+    const filtersChanged = JSON.stringify(filters) !== JSON.stringify(prevFiltersRef.current);
+    
+    if (!filtersChanged) {
+      return; // No change, skip debounce
+    }
+
+    prevFiltersRef.current = filters;
+
     if (filterTimeoutRef.current) {
       clearTimeout(filterTimeoutRef.current);
     }
@@ -79,8 +173,18 @@ function PropertiesList() {
     };
   }, [filters]);
 
+  // Track previous search query to prevent unnecessary updates
+  const prevSearchQueryRef = useRef(searchQuery);
+
   // Debounce search query changes - wait 500ms after user stops typing
   useEffect(() => {
+    // Check if search query actually changed
+    if (searchQuery === prevSearchQueryRef.current) {
+      return; // No change, skip debounce
+    }
+
+    prevSearchQueryRef.current = searchQuery;
+
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
@@ -119,7 +223,7 @@ function PropertiesList() {
       }
       // Fallback placeholder
       if (!imageUrl) {
-        imageUrl = 'https://via.placeholder.com/400x300?text=No+Image';
+        imageUrl = PROPERTY_PLACEHOLDER_IMAGE;
       }
 
       // Build address string
@@ -196,9 +300,8 @@ function PropertiesList() {
         }
 
         // Add amenities filter (using debounced filters)
-        if (debouncedFilters.amenities && debouncedFilters.amenities.length > 0) {
+        if (debouncedFilters.amenities && Array.isArray(debouncedFilters.amenities) && debouncedFilters.amenities.length > 0) {
           apiParams.amenities = debouncedFilters.amenities.join(',');
-          console.log('Sending amenities filter to API:', debouncedFilters.amenities);
         }
 
         // Use general properties endpoint with all filters
@@ -223,7 +326,17 @@ function PropertiesList() {
 
     fetchProperties();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, debouncedFilters.propertyType, debouncedFilters.bhk, debouncedFilters.priceMin, debouncedFilters.priceMax, debouncedFilters.amenities, pagination.page, pagination.limit, cityParam]);
+  }, [
+    debouncedSearchQuery, 
+    debouncedFilters.propertyType, 
+    debouncedFilters.bhk, 
+    debouncedFilters.priceMin, 
+    debouncedFilters.priceMax, 
+    debouncedFilters.amenities?.length || 0, // Use length to avoid object reference issues
+    pagination.page, 
+    pagination.limit, 
+    cityParam
+  ]);
 
   // Prevent body scroll when filter is open
   useEffect(() => {
@@ -291,7 +404,7 @@ function PropertiesList() {
               setSelectedPropertyType(value);
               setFilters((prev) => ({
                 ...prev,
-                propertyType: value === "flat/apartment" ? "all" : value,
+                propertyType: value,
               }));
               setPagination(prev => ({ ...prev, page: 1 }));
             }}
@@ -353,6 +466,7 @@ function PropertiesList() {
               </div>
               <div className="p-4">
                 <PropertyFilters 
+                  initialFilters={filters}
                   onFilterChange={(newFilters) => {
                     setFilters(newFilters);
                     setPagination(prev => ({ ...prev, page: 1 }));
@@ -366,6 +480,7 @@ function PropertiesList() {
             {!showSavedOnly && (
               <aside className="hidden lg:block w-full lg:w-1/3">
                 <PropertyFilters 
+                  initialFilters={filters}
                   onFilterChange={(newFilters) => {
                     setFilters(newFilters);
                     setPagination(prev => ({ ...prev, page: 1 }));

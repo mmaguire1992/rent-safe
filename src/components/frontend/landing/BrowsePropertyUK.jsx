@@ -94,10 +94,10 @@ function BrowsePropertyUK() {
     autoplay: true,
     autoplaySpeed: 3000,
     pauseOnHover: true,
-    arrows: false,
-    swipe: false,
-    touchMove: false,
-    draggable: false,
+    arrows: false, // No arrow buttons
+    swipe: true, // Enable swipe on touch devices
+    touchMove: true, // Enable touch move
+    draggable: true, // Enable dragging with mouse
     responsive: [
       {
         breakpoint: 1280,
@@ -106,9 +106,10 @@ function BrowsePropertyUK() {
           slidesToScroll: 1,
           autoplay: true,
           autoplaySpeed: 3000,
-          swipe: false,
-          touchMove: false,
-          draggable: false,
+          arrows: false,
+          swipe: true,
+          touchMove: true,
+          draggable: true,
         },
       },
       {
@@ -118,9 +119,10 @@ function BrowsePropertyUK() {
           slidesToScroll: 1,
           autoplay: true,
           autoplaySpeed: 3000,
-          swipe: false,
-          touchMove: false,
-          draggable: false,
+          arrows: false,
+          swipe: true,
+          touchMove: true,
+          draggable: true,
         },
       },
     ],
@@ -165,7 +167,7 @@ function BrowsePropertyUK() {
           {/* Desktop View - Slick Slider (Container aligned left, full width right) */}
           {isDesktop && (
             <div className="hidden lg:block relative -mx-4 sm:-mx-6 lg:-mx-8 browserSlider">
-              <div className="city-slider-container-full pl-4 sm:pl-6 lg:pl-8 overflow-hidden">
+              <div className="city-slider-container-full pl-4 sm:pl-6 lg:pl-8">
                 <Slider {...browserSliderSettings}>
                   {citiesWithCounts.map((city) => (
                     <div key={city.id} className="px-3" onClick={() => handleCityClick(city.name)}>
