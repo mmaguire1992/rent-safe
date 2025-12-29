@@ -1036,7 +1036,9 @@ export const addPropertyTypeOptions = [
   { value: "apartment", label: "Apartment" },
   { value: "house", label: "House" },
   { value: "studio", label: "Studio" },
-  { value: "condo", label: "Condo" },
+  { value: "flat", label: "Flat" },
+  { value: "bungalow", label: "Bungalow" },
+  { value: "other", label: "Other" },
 ];
 
 export const addPropertyCityOptions = [

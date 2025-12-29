@@ -459,7 +459,7 @@ function AddProperty() {
       }
 
       // Show success modal
-      setShowSuccessModal(true);
+    setShowSuccessModal(true);
     } catch (error) {
       console.error("Error creating property:", error);
       setSubmitError(

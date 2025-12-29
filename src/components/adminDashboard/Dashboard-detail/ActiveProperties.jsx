@@ -186,7 +186,7 @@ function ActiveProperties() {
 
       {/* Desktop Table */}
       {!error && (
-        <div className="hidden md:block border border-lightGray rounded-[20px] overflow-x-auto overflow-y-visible">
+      <div className="hidden md:block border border-lightGray rounded-[20px] overflow-x-auto overflow-y-visible">
         <div className="min-w-[1200px]">
           <table className="w-full">
             <thead>
@@ -245,14 +245,14 @@ function ActiveProperties() {
                         {startIndex + index + 1}
                       </span>
                       {property.image ? (
-                        <img
-                          src={property.image}
-                          alt={property.title}
-                          className="w-12 h-12 rounded-lg object-cover"
+                      <img
+                        src={property.image}
+                        alt={property.title}
+                        className="w-12 h-12 rounded-lg object-cover"
                           onError={(e) => {
                             e.target.src = "https://via.placeholder.com/48x48?text=No+Image";
                           }}
-                        />
+                      />
                       ) : (
                         <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center">
                           <span className="text-xs text-gray-500">No Image</span>
@@ -362,12 +362,12 @@ function ActiveProperties() {
             itemName="properties"
           />
         </div>
-        </div>
+      </div>
       )}
 
       {/* Mobile Cards */}
       {!error && (
-        <div className="md:hidden space-y-3">
+      <div className="md:hidden space-y-3">
         {loading ? (
           <div className="border border-lightGray rounded-[20px] p-8 text-center">
             <div className="flex flex-col items-center justify-center">
@@ -389,14 +389,14 @@ function ActiveProperties() {
               <div className="flex p-3 sm:p-4 items-start justify-between mb-3 border-b border-lightGray">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {property.image ? (
-                    <img
-                      src={property.image}
-                      alt={property.title}
-                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
+                  <img
+                    src={property.image}
+                    alt={property.title}
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
                       onError={(e) => {
                         e.target.src = "https://via.placeholder.com/64x64?text=No+Image";
                       }}
-                    />
+                  />
                   ) : (
                     <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
                       <span className="text-xs text-gray-500">No Image</span>
@@ -524,7 +524,7 @@ function ActiveProperties() {
             itemName="properties"
           />
         </div>
-        </div>
+      </div>
       )}
     </div>
   );

@@ -1,11 +1,94 @@
+'use client'
+
+import { useState, useEffect } from "react";
+import { useNavigate } from '@/lib/react-router-compat';
 import BlueTrustedIcon from "../../../svg/websiteSvg/blueTrustedIcon";
 import Badge from "./Badge";
 import Button from "./Button";
 import PropertyCard from "./PropertyCard";
 import ShielIcon from "@/svg/websiteSvg/shielIcon";
-import { propertyListings } from "@/websitedata/propertyListings";
+import { getRecentActiveProperties } from "@/api/properties";
 
 function NewestListing() {
+  const navigate = useNavigate();
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getRecentActiveProperties(6);
+        setProperties(data);
+      } catch (err) {
+        console.error('Error fetching recent properties:', err);
+        setError(err.message || 'Failed to load properties');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperties();
+  }, []);
+
+  // Transform API data to match PropertyCard component structure
+  const transformedProperties = properties.map((property) => {
+    // Extract image URL from primaryImageId
+    let imageUrl = null;
+    if (property.primaryImageId) {
+      if (typeof property.primaryImageId === 'string') {
+        imageUrl = property.primaryImageId;
+      } else if (property.primaryImageId.url) {
+        imageUrl = property.primaryImageId.url;
+      }
+    }
+    // Fallback to images array if primaryImageId is not available
+    if (!imageUrl && property.media && property.media.length > 0) {
+      const firstImage = property.media.find(m => m.mediaType === 'image');
+      if (firstImage) {
+        imageUrl = typeof firstImage === 'string' ? firstImage : firstImage.url;
+      }
+    }
+    // Fallback placeholder
+    if (!imageUrl) {
+      imageUrl = 'https://via.placeholder.com/400x300?text=No+Image';
+    }
+
+    // Build address string
+    const addressParts = [];
+    if (property.address) {
+      if (property.address.address) addressParts.push(property.address.address);
+      if (property.address.city) addressParts.push(property.address.city);
+      if (property.address.county) addressParts.push(property.address.county);
+      if (property.address.postcode) addressParts.push(property.address.postcode);
+    }
+    const address = addressParts.length > 0 ? addressParts.join(', ') : 'Address not available';
+
+    // Format price with currency
+    const currency = property.currency || 'GBP';
+    const currencySymbol = currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : currency === 'USD' ? '$' : '';
+    const price = property.rent ? `${currencySymbol}${property.rent.toLocaleString()}` : 'N/A';
+
+    // Format property type
+    const type = property.propertyType 
+      ? property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)
+      : 'N/A';
+
+    return {
+      id: property._id || property.id,
+      image: imageUrl,
+      title: property.title || 'Untitled Property',
+      price: price,
+      address: address,
+      beds: property.bedrooms || 0,
+      baths: property.bathrooms || 0,
+      type: type,
+      isRecent: true, // All properties from this endpoint are recent
+    };
+  });
+
   return (
     <section
       id="newest-listing"
@@ -32,15 +115,50 @@ function NewestListing() {
         </div>
 
         {/* Property Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-10 md:mb-12">
-          {propertyListings.map((property) => (
-            <PropertyCard key={property.id} property={property} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-10 md:mb-12">
+            {[...Array(6)].map((_, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-[20px] shadow-[0px_4px_20px_0px_rgba(0,0,0,0.08)] border border-lightGray p-4 animate-pulse"
+              >
+                <div className="w-full h-[200px] sm:h-[240px] bg-gray-200 rounded-xl mb-3"></div>
+                <div className="h-6 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="text-center py-10 mb-10 md:mb-12">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2 bg-blueGradient text-white rounded-lg hover:bg-opacity-90 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        ) : transformedProperties.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-10 md:mb-12">
+            {transformedProperties.map((property) => (
+              <PropertyCard key={property.id} property={property} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-10 mb-10 md:mb-12">
+            <p className="text-[#5A5E67] text-lg">No properties available at the moment.</p>
+          </div>
+        )}
 
         {/* Browse Listings Button */}
         <div className="flex justify-center w-full md:w-auto">
-          <Button variant="primary">Browse listings</Button>
+          <Button 
+            variant="primary" 
+            onClick={() => navigate('/properties')}
+          >
+            Browse listings
+          </Button>
         </div>
       </div>
     </section>

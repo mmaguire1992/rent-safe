@@ -19,8 +19,9 @@ function PropertyCard({ property, isFavorited = false, onToggleFavorite }) {
       return;
     }
     // Navigate to property detail page with property ID
+    // Route is /properties/[id] (plural) not /property/[id] (singular)
     if (property?.id) {
-      navigate(`/property/${property.id}`);
+      navigate(`/properties/${property.id}`);
     } else {
       navigate("/properties");
     }
@@ -36,6 +37,9 @@ function PropertyCard({ property, isFavorited = false, onToggleFavorite }) {
             src={property.image}
             alt={property.title}
             className="w-full h-[200px] sm:h-[240px] object-cover rounded-xl"
+            onError={(e) => {
+              e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+            }}
           />
           {property.isRecent && (
             <div className="absolute top-0 right-[0px] bg-[#FFC14D] text-text-primary px-4 py-2 rounded-bl-full text-xs sm:text-sm font-medium min-w-[85px] text-center">

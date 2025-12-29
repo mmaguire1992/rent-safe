@@ -1,6 +1,9 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from '@/lib/react-router-compat';
+import { toast } from "react-toastify";
 import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
 import Breadcrumb from "@/components/adminDashboard/common/Breadcrumb";
 import EditProfileTab from "@/components/adminDashboard/ProfileSettings/EditProfileTab";
@@ -10,35 +13,290 @@ import DeleteAccountModal from "@/components/adminDashboard/ProfileSettings/Dele
 import PasswordSuccessModal from "@/components/adminDashboard/ProfileSettings/PasswordSuccessModal";
 import ProfileOtpModal from "@/components/adminDashboard/ProfileSettings/ProfileOtpModal";
 import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";
-import { profileSettingsData } from "@/constant";
+import {
+  fetchUserInfo,
+  updateUserInfo,
+  uploadUserProfilePicture,
+  changeUserPassword,
+  requestUserPhoneUpdate,
+  verifyUserPhoneUpdate,
+  deleteUserAccount,
+  clearUserInfo,
+} from "@/redux/slices/userSlice";
+import { logout } from "@/redux/slices/authSlice";
 
 function ProfileSettings() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { userInfo, loading, updating, uploading, changingPassword, error } = useSelector((state) => state.user);
   const [activeTab, setActiveTab] = useState("edit");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isPasswordSuccessModalOpen, setIsPasswordSuccessModalOpen] =
-    useState(false);
+  const [isPasswordSuccessModalOpen, setIsPasswordSuccessModalOpen] = useState(false);
   const [isProfileOtpOpen, setIsProfileOtpOpen] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
+  const [pendingPhoneUpdate, setPendingPhoneUpdate] = useState(null);
+  const [pendingProfileUpdate, setPendingProfileUpdate] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
-  const handleSaveProfile = (data) => {
-    console.log("Saving profile:", data);
-    // After save, open OTP verification modal
-    setIsProfileOtpOpen(true);
+  // Fetch user info on mount and when component becomes visible
+  // Always fetch to get latest data from server
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      try {
+        await dispatch(fetchUserInfo()).unwrap();
+      } catch (error) {
+        console.error('Failed to load user profile:', error);
+        // Error is handled by Redux state
+      }
+    };
+    
+    loadUserProfile();
+  }, [dispatch]);
+
+  // Refresh user info when tab changes to edit (to get latest data)
+  useEffect(() => {
+    if (activeTab === 'edit' && userInfo) {
+      // Optionally refresh when switching to edit tab to ensure fresh data
+      // This is debounced to avoid excessive API calls
+      const refreshTimer = setTimeout(() => {
+        dispatch(fetchUserInfo());
+      }, 300);
+      
+      return () => clearTimeout(refreshTimer);
+    }
+  }, [activeTab, dispatch]); // Only depend on activeTab to avoid loops
+
+  // Transform userInfo to profileSettingsData format
+  const profileSettingsData = userInfo ? {
+    fullName: userInfo.userInfo?.name?.first && userInfo.userInfo?.name?.last
+      ? `${userInfo.userInfo.name.first} ${userInfo.userInfo.name.last}`.trim()
+      : `${userInfo.firstName || ''} ${userInfo.lastName || ''}`.trim() || '',
+    email: userInfo.email || '',
+    phoneNumber: userInfo.phone || userInfo.userInfo?.phone || '',
+    businessName: userInfo.userInfo?.businessName || '',
+    address: userInfo.userInfo?.address?.street || '',
+    city: userInfo.userInfo?.address?.city || '',
+    county: userInfo.userInfo?.address?.county || '',
+    country: userInfo.userInfo?.address?.country || '',
+    postcode: userInfo.userInfo?.address?.postcode || '',
+    profileImage: userInfo.userInfo?.profileImage || userInfo.userInfo?.profilePicture || userInfo.profileImage || userInfo.profilePicture || null,
+    isEmailVerified: userInfo.isEmailVerified || false,
+    isPhoneVerified: userInfo.isPhoneVerified || userInfo.phone ? true : false,
+  } : {
+    fullName: '',
+    email: '',
+    phoneNumber: '',
+    businessName: '',
+    address: '',
+    city: '',
+    county: '',
+    country: '',
+    postcode: '',
+    profileImage: null,
+    isEmailVerified: false,
+    isPhoneVerified: false,
   };
 
-  const handleSavePassword = (data) => {
-    console.log("Saving password:", data);
-    // Handle password save logic
-    setIsPasswordSuccessModalOpen(true);
+  const handleSaveProfile = async (data) => {
+    try {
+      // Prepare update data
+      // Split full name into first and last
+      const nameParts = data.fullName.trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      const updateData = {
+        firstName: firstName,
+        lastName: lastName,
+        userInfo: {
+          name: {
+            first: firstName,
+            last: lastName,
+          },
+          address: {
+            street: data.address || '',
+            city: data.city || '',
+            county: data.county || '', // Include county in address
+            postcode: data.postcode || '',
+            country: data.country || '',
+          },
+          // Note: businessName is not in the allowed fields list in backend
+          // If needed, it should be added to the backend service
+        },
+      };
+
+      // If phone number changed, request OTP first
+      if (data.phoneNumber && data.phoneNumber !== profileSettingsData.phoneNumber) {
+        // Request phone update (sends OTP)
+        await dispatch(requestUserPhoneUpdate(data.phoneNumber)).unwrap();
+        setPendingPhoneUpdate(data.phoneNumber);
+        setPendingProfileUpdate(updateData); // Store profile update data for after OTP verification
+        setOtpEmail(userInfo?.email || '');
+        setIsProfileOtpOpen(true);
+        // Don't update profile yet - wait for OTP verification
+        return;
+      }
+
+      // Upload profile picture first if provided (so it's included in the profile)
+      if (data.profileImage && data.profileImage instanceof File) {
+        await dispatch(uploadUserProfilePicture(data.profileImage)).unwrap();
+        // Refresh user info after picture upload to get updated profile
+        await dispatch(fetchUserInfo());
+      }
+
+      // Update profile (no phone change or phone already verified)
+      const updatedProfile = await dispatch(updateUserInfo(updateData)).unwrap();
+      
+      // The updateUserInfo already returns the complete updated profile from backend
+      // But we'll refresh to ensure we have the latest data including any server-side changes
+      await dispatch(fetchUserInfo());
+      
+      // Show success message
+      toast.success('Profile updated successfully!');
+      setSuccessMessage('Profile updated successfully!');
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      // Extract error message - could be string (from Redux) or object (from axios)
+      let errorMessage = "Failed to update profile. Please try again.";
+      
+      if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
+      throw error; // Re-throw to let component handle it
+    }
+  };
+
+  const handleVerifyOtp = async (otp) => {
+    try {
+      if (pendingPhoneUpdate) {
+        // Verify phone update
+        await dispatch(verifyUserPhoneUpdate(otp)).unwrap();
+        setPendingPhoneUpdate(null);
+        
+        // If there's a pending profile update, complete it now
+        if (pendingProfileUpdate) {
+          // Upload profile picture first if it was part of the update
+          // Note: profileImage would need to be stored separately if needed
+          await dispatch(updateUserInfo(pendingProfileUpdate)).unwrap();
+          setPendingProfileUpdate(null);
+        }
+        
+        // Always refresh user info after phone verification to get complete updated profile
+        await dispatch(fetchUserInfo());
+        
+        // Show success message
+        toast.success('Phone number verified and profile updated successfully!');
+        setSuccessMessage('Phone number verified and profile updated successfully!');
+        setTimeout(() => setSuccessMessage(null), 5000);
+      }
+      setIsProfileOtpOpen(false);
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      // Extract error message - could be string (from Redux) or object (from axios)
+      let errorMessage = "Failed to verify OTP. Please try again.";
+      
+      if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
+      throw error; // Let the modal handle the error display
+    }
+  };
+
+  const handleSavePassword = async (data) => {
+    try {
+      if (!userInfo?.email) {
+        toast.error('User email not found');
+        throw new Error('User email not found');
+      }
+
+      await dispatch(changeUserPassword({
+        email: userInfo.email,
+        oldPassword: data.oldPassword,
+        newPassword: data.newPassword,
+      })).unwrap();
+
+      // Show success message
+      toast.success('Password changed successfully. Please login again with your new password.');
+      
+      // Clear user info from userSlice
+      dispatch(clearUserInfo());
+      
+      // Logout user after successful password change (security best practice)
+      await dispatch(logout()).unwrap();
+      
+      // Navigate to login page
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Error changing password:', error);
+      // Extract error message from Redux rejected action or axios error
+      // When using .unwrap(), rejectWithValue(string) throws the string directly
+      // API returns { success: false, error: "message" } or { success: false, message: "message" }
+      let errorMessage = "Failed to change password. Please try again.";
+      
+      if (typeof error === 'string') {
+        // Redux thunk rejected with a string message
+        errorMessage = error;
+      } else if (error?.response?.data?.error) {
+        // API returned { success: false, error: "message" }
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.data?.message) {
+        // API returned { success: false, message: "message" }
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        // Standard error object
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
+      throw error;
+    }
   };
 
   const handleDeleteAccount = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    console.log("Deleting account");
-    setIsDeleteModalOpen(false);
-    // Handle account deletion logic
+  const handleConfirmDelete = async () => {
+    try {
+      await dispatch(deleteUserAccount()).unwrap();
+      setIsDeleteModalOpen(false);
+      // Redirect to login after account deletion
+      toast.success('Account deleted successfully');
+      navigate('/login');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      // Extract error message - could be string (from Redux) or object (from axios)
+      let errorMessage = "Failed to delete account. Please try again.";
+      
+      if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
+    }
   };
 
   const tabs = [
@@ -102,24 +360,45 @@ function ProfileSettings() {
             ))}
           </div>
           <div className="bg-white rounded-xl border border-lightGray p-4">
+            {/* Success Message */}
+            {successMessage && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-green-600 text-sm font-medium">{successMessage}</p>
+              </div>
+            )}
+
+            {/* Loading State */}
+            {loading && !userInfo && (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6B4EFF]"></div>
+                <p className="ml-4 text-darkGray">Loading profile...</p>
+              </div>
+            )}
+
             {/* Tab Content */}
-            <div>
-              {activeTab === "edit" && (
-                <EditProfileTab
-                  profileData={profileSettingsData}
-                  onSave={handleSaveProfile}
-                />
-              )}
+            {(!loading || userInfo) && (
+              <div>
+                {activeTab === "edit" && (
+                  <EditProfileTab
+                    profileData={profileSettingsData}
+                    onSave={handleSaveProfile}
+                    loading={updating || uploading}
+                    error={error}
+                  />
+                )}
               {activeTab === "password" && (
                 <ChangePasswordTab
                   onSave={handleSavePassword}
                   onSuccess={() => setIsPasswordSuccessModalOpen(true)}
+                  loading={changingPassword}
+                  error={error}
                 />
               )}
-              {activeTab === "delete" && (
-                <DeleteAccountTab onDelete={handleDeleteAccount} />
-              )}
-            </div>
+                {activeTab === "delete" && (
+                  <DeleteAccountTab onDelete={handleDeleteAccount} />
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -136,10 +415,13 @@ function ProfileSettings() {
       />
       <ProfileOtpModal
         isOpen={isProfileOtpOpen}
-        onClose={() => setIsProfileOtpOpen(false)}
-        onVerify={(otp) => {
-          console.log("Verified profile change OTP:", otp);
+        onClose={() => {
+          setIsProfileOtpOpen(false);
+          setPendingPhoneUpdate(null);
+          setPendingProfileUpdate(null);
         }}
+        onVerify={handleVerifyOtp}
+        email={otpEmail}
       />
     </DashboardLayout>
   );

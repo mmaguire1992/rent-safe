@@ -13,6 +13,9 @@ export const properties = {
   getAllProperties: '/properties',
   getMyProperties: '/properties/my-properties',
   getMyActiveProperties: '/properties/my-properties/active',
+  getRecentActiveProperties: '/properties/recent',
+  getPropertiesByCity: (city) => `/properties/by-city/${encodeURIComponent(city)}`,
+  getCityPropertyCounts: '/properties/cities/counts',
   getPropertyById: (id) => `/properties/${id}`,
   updateProperty: (id) => `/properties/${id}`,
   deleteProperty: (id) => `/properties/${id}`,
@@ -29,5 +32,13 @@ export const auth = {
   resetPassword: '/auth/reset-password',
   verifyOTP: '/auth/verify-otp',
   resendOTP: '/auth/resend-otp',
+};
+
+// Verification Routes
+export const verification = {
+  uploadToS3: '/verification/upload-to-s3',
+  storeDocument: '/verification/store-document',
+  getMyDocuments: '/verification/my-documents',
+  downloadDocument: (id) => `/verification/download/${id}`,
 };
 

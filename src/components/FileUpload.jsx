@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import UploadIcon from "@/svg/uploadIcon";
 import DeleteIcon from "@/svg/deleteIcon";
 import PdfIcon from "@/svg/pdfIcon";
@@ -8,13 +8,14 @@ import CloseIcon from "@/svg/closeIcon";
 
 function FileUpload({
   label,
-  acceptedTypes = ".pdf,.docx,.png",
+  acceptedTypes = ".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp",
   maxFiles = 3,
-  maxSize = 5 * 1024 * 1024, // 5MB
+  maxSize = 10 * 1024 * 1024, // 10MB (matches backend)
   onFilesChange,
   uploadedFiles = [],
 }) {
   const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef(null);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -33,31 +34,81 @@ function FileUpload({
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleFiles(e.dataTransfer.files);
+      // Reset input value after processing to allow selecting the same file again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
   const handleFileInput = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       handleFiles(e.target.files);
+      // Reset input value after processing to allow selecting the same file again
+      e.target.value = '';
     }
   };
 
   const handleFiles = (files) => {
-    const validFiles = Array.from(files)
+    const acceptedExtensions = acceptedTypes.split(",").map(ext => ext.trim().toLowerCase());
+    const allFiles = Array.from(files);
+    
+    // MIME type mapping for validation
+    const mimeTypeMap = {
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+    };
+    
+    // Filter valid files
+    const validFiles = allFiles
       .filter((file) => {
         const fileExtension = "." + file.name.split(".").pop().toLowerCase();
-        return acceptedTypes.split(",").includes(fileExtension);
+        const isValidExtension = acceptedExtensions.includes(fileExtension);
+        
+        // Also check MIME type if available
+        const expectedMimeType = mimeTypeMap[fileExtension];
+        const isValidMimeType = !expectedMimeType || !file.type || file.type === expectedMimeType;
+        
+        const isValid = isValidExtension && isValidMimeType;
+        if (!isValid) {
+          console.warn(`File ${file.name} has invalid type. Accepted: ${acceptedTypes}`);
+        }
+        return isValid;
       })
-      .filter((file) => file.size <= maxSize)
+      .filter((file) => {
+        const isValidSize = file.size <= maxSize;
+        if (!isValidSize) {
+          console.warn(`File ${file.name} exceeds maximum size of ${maxSize / (1024 * 1024)}MB`);
+        }
+        return isValidSize;
+      })
       .slice(0, maxFiles - uploadedFiles.length);
+
+    // Show warning if some files were rejected
+    const rejectedCount = allFiles.length - validFiles.length;
+    if (rejectedCount > 0) {
+      console.warn(`${rejectedCount} file(s) were rejected. Please ensure files are valid images or documents and under ${maxSize / (1024 * 1024)}MB.`);
+    }
 
     if (validFiles.length > 0 && onFilesChange) {
       // Add files with uploading state
-      const filesWithUploadState = validFiles.map((file) => ({
-        ...file,
-        uploading: true,
-        progress: 0,
-      }));
+      // IMPORTANT: Don't spread the File object as it loses the File prototype
+      // Instead, add properties directly to the File object (Files are mutable for property addition)
+      const filesWithUploadState = validFiles.map((file) => {
+        // Add properties directly to the File instance
+        // This preserves the File prototype so instanceof File still works
+        if (file instanceof File) {
+          file.uploading = true;
+          file.progress = 0;
+        }
+        return file;
+      });
       onFilesChange([...uploadedFiles, ...filesWithUploadState]);
     }
   };
@@ -72,11 +123,9 @@ function FileUpload({
       const updatedFiles = uploadedFiles.map((file) => {
         if (file.uploading && file.progress < 100) {
           const newProgress = Math.min(file.progress + 10, 100);
-          return {
-            ...file,
-            progress: newProgress,
-            uploading: newProgress < 100,
-          };
+          // Update properties directly on the File instance to preserve File prototype
+          file.progress = newProgress;
+          file.uploading = newProgress < 100;
         }
         return file;
       });
@@ -101,11 +150,19 @@ function FileUpload({
   const handleRemove = (index) => {
     const newFiles = uploadedFiles.filter((_, i) => i !== index);
     onFilesChange(newFiles);
+    // Reset file input to allow selecting the same file again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleCancel = (index) => {
     const newFiles = uploadedFiles.filter((_, i) => i !== index);
     onFilesChange(newFiles);
+    // Reset file input to allow selecting the same file again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const formatFileSize = (bytes) => {
@@ -133,6 +190,7 @@ function FileUpload({
           } bg-[#F9F9FC]`}
         >
           <input
+            ref={fileInputRef}
             type="file"
             id={`file-input-${label}`}
             className="hidden"
@@ -152,7 +210,7 @@ function FileUpload({
               Drop your files here or browse
             </p>
             <p className="text-sm text-midGray font-medium">
-              pdf, docs, and png. Max {maxFiles} docs.
+              Images (JPG, PNG, GIF, WEBP) and Documents (PDF, DOC, DOCX). Max {maxFiles} files, {maxSize / (1024 * 1024)}MB each.
             </p>
           </label>
           {uploadedFiles.length > 0 && (

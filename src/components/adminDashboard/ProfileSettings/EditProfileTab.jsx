@@ -1,33 +1,116 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiUpload, FiCheckCircle } from "react-icons/fi";
 import BlueUploadIcon from "@/svg/blueUploadIcon";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
 
-function EditProfileTab({ profileData, onSave }) {
+function EditProfileTab({ profileData, onSave, loading = false, error = null }) {
+  const [isMounted, setIsMounted] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: profileData.fullName || "",
-    email: profileData.email || "",
-    phoneNumber: profileData.phoneNumber || "",
-    businessName: profileData.businessName || "",
-    address: profileData.address || "",
-    city: profileData.city || "",
-    country: profileData.country || "",
-    postcode: profileData.postcode || "",
+    fullName: profileData?.fullName || "",
+    email: profileData?.email || "",
+    phoneNumber: profileData?.phoneNumber || "",
+    businessName: profileData?.businessName || "",
+    address: profileData?.address || "",
+    city: profileData?.city || "",
+    county: profileData?.county || "",
+    country: profileData?.country || "",
+    postcode: profileData?.postcode || "",
   });
   const [profileImage, setProfileImage] = useState(
-    profileData.profileImage || null
+    profileData?.profileImage || null
   );
+  const [imagePreview, setImagePreview] = useState(null);
+
+  // Handle client-side mounting
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Update form data when profileData changes
+  useEffect(() => {
+    if (profileData) {
+      setFormData({
+        fullName: profileData.fullName || "",
+        email: profileData.email || "",
+        phoneNumber: profileData.phoneNumber || "",
+        businessName: profileData.businessName || "",
+        address: profileData.address || "",
+        city: profileData.city || "",
+        county: profileData.county || "",
+        country: profileData.country || "",
+        postcode: profileData.postcode || "",
+      });
+      
+      // Handle profile image - can be URL string or File object
+      if (profileData.profileImage) {
+        if (typeof profileData.profileImage === 'string') {
+          // It's a URL string from the API
+          setProfileImage(null); // Don't set as File
+          setImagePreview(profileData.profileImage); // Set preview to URL
+        } else if (profileData.profileImage instanceof File) {
+          // It's a File object (newly selected)
+          setProfileImage(profileData.profileImage);
+          // imagePreview will be set by the other useEffect
+        }
+      } else {
+        setProfileImage(null);
+        setImagePreview(null);
+      }
+    }
+  }, [profileData]);
+
+  // Update image preview when profileImage (File) changes
+  // Note: URL strings from API are handled in the profileData useEffect above
+  useEffect(() => {
+    if (profileImage instanceof File) {
+      const preview = URL.createObjectURL(profileImage);
+      setImagePreview(preview);
+      return () => URL.revokeObjectURL(preview);
+    }
+    // Only clear preview if profileImage is explicitly null and no profileData image exists
+    if (!profileImage && !profileData?.profileImage) {
+      setImagePreview(null);
+    }
+  }, [profileImage, profileData?.profileImage]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleImageUpload = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setProfileImage(e.target.files[0]);
+  const handleImageUpload = (files) => {
+    // Handle both event object and FileList
+    const fileList = files instanceof FileList ? files : (files?.target?.files || files);
+    
+    if (fileList && fileList.length > 0) {
+      const file = fileList[0];
+      
+      // Validate file type
+      const validTypes = ['image/heic', 'image/webp', 'image/png', 'image/jpeg', 'image/jpg'];
+      const fileType = file.type.toLowerCase();
+      const fileName = file.name.toLowerCase();
+      const isValidType = validTypes.includes(fileType) || 
+                         fileName.endsWith('.heic') || 
+                         fileName.endsWith('.webp') || 
+                         fileName.endsWith('.png') || 
+                         fileName.endsWith('.jpg') || 
+                         fileName.endsWith('.jpeg');
+      
+      if (!isValidType) {
+        alert('Please select a valid image file (HEIC, WEBP, PNG, or JPG)');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      if (file.size > maxSize) {
+        alert('Image size must be less than 5MB');
+        return;
+      }
+      
+      setProfileImage(file);
     }
   };
 
@@ -41,18 +124,22 @@ function EditProfileTab({ profileData, onSave }) {
       {/* Profile Image Upload */}
       <div className="flex flex-col md:flex-row gap-6">
         <div className="w-[74px] h-[74px] mx-auto md:mx-0 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
-          {profileImage ? (
+          {isMounted && imagePreview ? (
             <img
-              src={
-                typeof profileImage === "string"
-                  ? profileImage
-                  : URL.createObjectURL(profileImage)
-              }
+              src={imagePreview}
               alt="Profile"
               className="w-full h-full object-cover rounded-full"
+              onError={(e) => {
+                // Fallback if image fails to load
+                e.target.style.display = 'none';
+                e.target.nextElementSibling?.classList.remove('hidden');
+              }}
             />
-          ) : (
-            <div className="text-6xl text-gray-400">🏔️</div>
+          ) : null}
+          {(!isMounted || !imagePreview) && (
+            <div className="text-6xl text-gray-400 flex items-center justify-center">
+              <span>🏔️</span>
+            </div>
           )}
         </div>
         <div className="flex-1 flex flex-col items-center md:items-start justify-center">
@@ -74,9 +161,13 @@ function EditProfileTab({ profileData, onSave }) {
           <input
             id="profile-image-upload"
             type="file"
-            accept=".heic,.webp,.png,.jpg"
+            accept=".heic,.webp,.png,.jpg,.jpeg,image/heic,image/webp,image/png,image/jpeg"
             className="hidden"
-            onChange={(e) => handleImageUpload(e.target.files)}
+            onChange={(e) => {
+              if (e.target && e.target.files) {
+                handleImageUpload(e.target.files);
+              }
+            }}
           />
           <p className="text-xs font-normal text-center md:text-left font-nunito text-[#BCBCBC] mt-2">
             HEIC, WEBP, PNG, or JPG. Recommended: 512x512 pixels minimum.
@@ -115,7 +206,7 @@ function EditProfileTab({ profileData, onSave }) {
               className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
               placeholder="Enter your email"
             />
-            {profileData.isEmailVerified && (
+            {isMounted && profileData?.isEmailVerified && (
               <span className="absolute right-3 top-1/2 transform -translate-y-1/2">
                 <GreenCheckedIcon />
               </span>
@@ -137,7 +228,7 @@ function EditProfileTab({ profileData, onSave }) {
               className="flex-1 px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
               placeholder="Enter your phone number"
             />
-            {!profileData.isPhoneVerified && (
+            {isMounted && !profileData?.isPhoneVerified && (
               <button
                 type="button"
                 className="px-4 py-3 text-[#2177CE] text-sm font-bold font-nunito hover:underline absolute right-0 top-1/2 transform -translate-y-1/2"
@@ -226,13 +317,21 @@ function EditProfileTab({ profileData, onSave }) {
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600 text-sm">{error}</p>
+        </div>
+      )}
+
       {/* Save Button */}
       <div className="flex justify-end">
         <button
           type="submit"
-          className="px-8 w-full sm:w-auto py-3 bg-blueGradient text-white rounded-[10px] text-base shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors font-bold font-nunito"
+          disabled={loading}
+          className="px-8 w-full sm:w-auto py-3 bg-blueGradient text-white rounded-[10px] text-base shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors font-bold font-nunito disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Save Changes
+          {loading ? "Saving..." : "Save Changes"}
         </button>
       </div>
     </form>

@@ -114,14 +114,14 @@ function PropertiesTable({
                         {startIndex + index + 1}.
                       </span>
                       {property.image ? (
-                        <img
-                          src={property.image}
-                          alt={property.description}
-                          className="w-12 h-12 rounded-lg object-cover"
+                      <img
+                        src={property.image}
+                        alt={property.description}
+                        className="w-12 h-12 rounded-lg object-cover"
                           onError={(e) => {
                             e.target.src = "https://via.placeholder.com/48x48?text=No+Image";
                           }}
-                        />
+                      />
                       ) : (
                         <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center">
                           <span className="text-xs text-gray-500">No Image</span>

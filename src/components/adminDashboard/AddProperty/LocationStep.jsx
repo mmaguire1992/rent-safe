@@ -787,7 +787,7 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
               />
             ) : (
               <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                <div className="text-center">
+            <div className="text-center">
                   {googleMapsError ? (
                     <>
                       <FiMapPin className="text-red-500 text-4xl mx-auto mb-2" />
@@ -802,7 +802,7 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
                     </>
                   )}
                 </div>
-              </div>
+            </div>
             )}
           </div>
           {isGeocoding && (

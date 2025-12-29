@@ -91,7 +91,7 @@ export const loginUser = async (credentials) => {
     }
 
     // Return normalized user data
-    return {
+      return {
       user: {
         id: data.data.user.id,
         firstName: data.data.user.firstName,
@@ -100,12 +100,12 @@ export const loginUser = async (credentials) => {
         userType: data.data.user.userType,
         isEmailVerified: data.data.user.isEmailVerified,
       },
-      token: data.data.token,
-    };
+        token: data.data.token,
+      };
   } catch (error) {
     // Re-throw with better error messages
     if (error.message) {
-      throw error;
+    throw error;
     }
     
     // Handle network errors

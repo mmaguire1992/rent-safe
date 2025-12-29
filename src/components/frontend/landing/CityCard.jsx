@@ -1,6 +1,6 @@
 function CityCard({ city }) {
   return (
-    <div className="bg-white  p-3 rounded-2xl shadow-md hover:shadow-lg transition-shadow overflow-hidden border border-border flex-shrink-0">
+    <div className="bg-white p-3 rounded-2xl shadow-md hover:shadow-lg transition-shadow overflow-hidden border border-border flex-shrink-0 cursor-pointer">
       {/* City Image */}
       <div className="w-full h-[200px] sm:h-[200px] rounded-2xl overflow-hidden">
         <img

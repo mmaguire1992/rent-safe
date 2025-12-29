@@ -2,12 +2,19 @@ import ChatWhiteIcon from "../../../svg/websiteSvg/chatWhiteIcon";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
 import RemainingIcon from "../../../svg/websiteSvg/remainingIcon";
 function OwnerProfile({
-  ownerName = "Sarah Mitchell",
-  propertiesCount = 12,
+  owner,
+  ownerName,
+  propertiesCount,
   freeContacts = 3,
   onContactClick,
 }) {
-  const initials = ownerName
+  // Get owner name from owner object or prop
+  const displayName = ownerName || 
+    (owner?.firstName && owner?.lastName 
+      ? `${owner.firstName} ${owner.lastName}` 
+      : owner?.firstName || owner?.email || "Property Owner");
+  
+  const initials = displayName
     .split(" ")
     .map((n) => n[0])
     .join("")
@@ -24,12 +31,12 @@ function OwnerProfile({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0">
               <span className="text-sm sm:text-base font-bold text-[#0F172B] truncate">
-                {ownerName}
+                {displayName}
               </span>
-              <GreenCheckedIcon />
+              {owner?.isEmailVerified && <GreenCheckedIcon />}
             </div>
             <p className="text-text-secondary text-xs sm:text-sm">
-              {propertiesCount} properties listed
+              {propertiesCount !== undefined ? `${propertiesCount} properties listed` : 'Property Owner'}
             </p>
           </div>
         </div>

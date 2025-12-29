@@ -64,6 +64,7 @@ export const AuthProvider = ({ children }) => {
     const isPublicRoute = publicRoutes.includes(pathname) || 
                          pathname.startsWith('/signup') || 
                          pathname.startsWith('/properties') ||
+                         pathname.startsWith('/property/') || // Property detail pages (singular)
                          pathname.startsWith('/profile') ||
                          pathname.startsWith('/support');
     
@@ -76,8 +77,14 @@ export const AuthProvider = ({ children }) => {
       }
     } else {
       // User IS authenticated
+      // Don't redirect from property detail pages, properties list, or support pages
+      const isPropertyOrSupportRoute = pathname.startsWith('/property/') || 
+                                       pathname.startsWith('/properties') ||
+                                       pathname.startsWith('/support');
+      
       // Redirect from public auth routes to appropriate dashboard/landing
-      if (isPublicRoute) {
+      // But allow property detail pages and properties list to be accessible
+      if (isPublicRoute && !isPropertyOrSupportRoute) {
         redirectBasedOnUserType(navigate, pathname);
         return;
       }

@@ -17,9 +17,115 @@ import { properties as propertyRoutes } from './routes';
  * @param {string} params.propertyType - Filter by property type
  * @returns {Promise<Object>} - Properties data with pagination
  */
+/**
+ * Get properties by city
+ * @param {string} city - City name
+ * @param {Object} params - Query parameters (page, limit, status)
+ * @returns {Promise<Object>} - Properties with pagination
+ */
+export async function getPropertiesByCity(city, params = {}) {
+  try {
+    if (!city) {
+      throw new Error('City name is required');
+    }
+    
+    const { page = 1, limit = 10, status = 'active' } = params;
+    const queryParams = new URLSearchParams();
+    
+    if (page) queryParams.append('page', page);
+    if (limit) queryParams.append('limit', limit);
+    if (status) queryParams.append('status', status);
+    
+    const responseData = await useGetApi(
+      `${propertyRoutes.getPropertiesByCity(city)}?${queryParams.toString()}`,
+      false // Public route
+    );
+    
+    if (responseData && responseData.success && responseData.data) {
+      const { properties = [], count = 0, total = 0 } = responseData.data;
+      return {
+        properties: Array.isArray(properties) ? properties : [],
+        total: count || total || 0,
+        page: responseData.data.page || page,
+        limit: responseData.data.limit || limit,
+        totalPages: responseData.data.totalPages || Math.ceil((count || total || 0) / limit),
+      };
+    }
+    
+    return {
+      properties: [],
+      total: 0,
+      page: 1,
+      limit: 10,
+      totalPages: 0,
+    };
+  } catch (error) {
+    console.error('Error in getPropertiesByCity:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get city property counts
+ * @returns {Promise<Array>} - Array of cities with property counts
+ */
+export async function getCityPropertyCounts() {
+  try {
+    const responseData = await useGetApi(
+      propertyRoutes.getCityPropertyCounts,
+      false // Public route
+    );
+    
+    if (responseData && responseData.success && responseData.data) {
+      return responseData.data.cities || [];
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('Error in getCityPropertyCounts:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get recent active properties for landing page
+ * @param {number} limit - Number of properties to return (default: 6)
+ * @returns {Promise<Array>} - Array of recent active properties
+ */
+export async function getRecentActiveProperties(limit = 6) {
+  try {
+    const queryParams = new URLSearchParams();
+    if (limit) queryParams.append('limit', limit);
+    
+    const response = await apiClient.get(
+      `${propertyRoutes.getRecentActiveProperties}?${queryParams.toString()}`
+    );
+    
+    // Handle response structure
+    const responseData = response.data?.data || response.data;
+    const properties = responseData?.properties || [];
+    
+    return properties;
+  } catch (error) {
+    console.error('Error fetching recent active properties:', error);
+    throw error;
+  }
+}
+
 export async function getAllProperties(params = {}) {
   try {
-    const { page = 1, limit = 10, search = '', status = '', city = '', propertyType = '' } = params;
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '', 
+      status = '', 
+      city = '', 
+      propertyType = '',
+      bedrooms = '',
+      priceMin = '',
+      priceMax = '',
+      amenities = '',
+    } = params;
     const queryParams = new URLSearchParams();
     
     if (page) queryParams.append('page', page);
@@ -27,7 +133,11 @@ export async function getAllProperties(params = {}) {
     if (search) queryParams.append('search', search);
     if (status) queryParams.append('status', status);
     if (city) queryParams.append('city', city);
-    if (propertyType) queryParams.append('propertyType', propertyType);
+    if (propertyType && propertyType !== 'all') queryParams.append('propertyType', propertyType);
+    if (bedrooms && bedrooms !== 'all') queryParams.append('bedrooms', bedrooms);
+    if (priceMin) queryParams.append('priceMin', priceMin);
+    if (priceMax) queryParams.append('priceMax', priceMax);
+    if (amenities) queryParams.append('amenities', amenities);
     
     const responseData = await useGetApi(
       `${propertyRoutes.getAllProperties}?${queryParams.toString()}`,

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { BsEye, BsEyeSlash } from "react-icons/bs";
+import { toast } from "react-toastify";
 
-function ChangePasswordTab({ onSave, onSuccess }) {
+function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null }) {
   const [formData, setFormData] = useState({
     oldPassword: "",
     newPassword: "",
@@ -24,22 +25,41 @@ function ChangePasswordTab({ onSave, onSuccess }) {
     setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.newPassword !== formData.confirmPassword) {
-      alert("New password and confirm password do not match");
+      toast.error("New password and confirm password do not match");
       return;
     }
-    onSave(formData);
-    // Reset form
-    setFormData({
-      oldPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
-    // Show success modal
-    if (onSuccess) {
-      onSuccess();
+    try {
+      await onSave(formData);
+      // Reset form
+      setFormData({
+        oldPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      // Show success modal
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
+      // Error is handled by parent component and toast
+      console.error('Password change error:', error);
+      // Extract error message - could be string (from Redux) or object (from axios)
+      let errorMessage = "Failed to change password. Please try again.";
+      
+      if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     }
   };
 
@@ -121,13 +141,15 @@ function ChangePasswordTab({ onSave, onSuccess }) {
         </div>
       </div>
 
+
       {/* Save Button */}
       <div className="flex justify-end">
         <button
           type="submit"
-          className="px-8 w-full sm:w-auto py-3 bg-blueGradient text-white rounded-[10px] text-base shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors font-bold font-nunito"
+          disabled={loading}
+          className="px-8 w-full sm:w-auto py-3 bg-blueGradient text-white rounded-[10px] text-base shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors font-bold font-nunito disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Save Changes
+          {loading ? "Changing Password..." : "Save Changes"}
         </button>
       </div>
     </form>

@@ -12,6 +12,7 @@ function CustomDropdown({
   placeholder = "Select an option",
   className = "",
   showFilterIcon = false,
+  error = false,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -44,8 +45,8 @@ function CustomDropdown({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full px-4 py-1.5 h-[52px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 flex gap-1 items-center justify-between bg-white ${
-          value ? "border-lightGray" : "border-lightGray"
-        } `}
+          error ? "border-red-500" : value ? "border-lightGray" : "border-lightGray"
+        } ${className}`}
       >
         {/* {showFilterIcon && (
           <FiFilter className="absolute left-3 text-darkGray" />

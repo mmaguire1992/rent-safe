@@ -1,24 +1,35 @@
 'use client'
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from '@/lib/react-router-compat';
 import PropertiesHeader from "@/components/frontend/common/PropertiesHeader";
 import PageHeading from "@/components/frontend/common/PageHeading";
 import PropertySearch from "@/components/frontend/properties/PropertySearch";
 import PropertyFilters from "@/components/frontend/properties/PropertyFilters";
 import PropertyList from "@/components/frontend/properties/PropertyList";
-import { propertyListings } from "@/websitedata/propertyListings";
+import { getAllProperties, getPropertiesByCity } from "@/api/properties";
 import { FiSliders } from "react-icons/fi";
-import Footer from "../components/frontend/common/footer";
+import Footer from "@/components/frontend/common/footer";
 
 function PropertiesList() {
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const searchTimeoutRef = useRef(null);
   const [selectedPropertyType, setSelectedPropertyType] =
     useState("flat/apartment");
   const [favoritedIds, setFavoritedIds] = useState(new Set());
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 12,
+    total: 0,
+    totalPages: 0,
+  });
   const [filters, setFilters] = useState({
     propertyType: "all",
     amenities: [],
@@ -27,7 +38,14 @@ function PropertiesList() {
     priceMax: 10000,
   });
 
-  // Read search query from URL on component mount
+  // Debounced filters state - used for API calls
+  const [debouncedFilters, setDebouncedFilters] = useState(filters);
+  const filterTimeoutRef = useRef(null);
+
+  // Extract city from URL params (only once on mount or when city changes)
+  const cityParam = searchParams.get("city");
+
+  // Read search query and type from URL on component mount
   useEffect(() => {
     const queryParam = searchParams.get("q");
     if (queryParam) {
@@ -41,6 +59,171 @@ function PropertiesList() {
       }));
     }
   }, [searchParams]);
+
+  // Debounce filter changes - wait 500ms after user stops changing filters
+  useEffect(() => {
+    if (filterTimeoutRef.current) {
+      clearTimeout(filterTimeoutRef.current);
+    }
+
+    filterTimeoutRef.current = setTimeout(() => {
+      setDebouncedFilters(filters);
+      // Reset to page 1 when filters change
+      setPagination(prev => ({ ...prev, page: 1 }));
+    }, 500); // 500ms debounce delay
+
+    return () => {
+      if (filterTimeoutRef.current) {
+        clearTimeout(filterTimeoutRef.current);
+      }
+    };
+  }, [filters]);
+
+  // Debounce search query changes - wait 500ms after user stops typing
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      // Reset to page 1 when search changes
+      setPagination(prev => ({ ...prev, page: 1 }));
+    }, 500); // 500ms debounce delay
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery]);
+
+  // Transform API properties to match PropertyCard format
+  const transformProperties = (apiProperties) => {
+    return apiProperties.map((property) => {
+      // Extract image URL from primaryImageId
+      let imageUrl = null;
+      if (property.primaryImageId) {
+        if (typeof property.primaryImageId === 'string') {
+          imageUrl = property.primaryImageId;
+        } else if (property.primaryImageId.url) {
+          imageUrl = property.primaryImageId.url;
+        }
+      }
+      // Fallback to media array if primaryImageId is not available
+      if (!imageUrl && property.media && property.media.length > 0) {
+        const firstImage = property.media.find(m => m.mediaType === 'image');
+        if (firstImage) {
+          imageUrl = typeof firstImage === 'string' ? firstImage : firstImage.url;
+        }
+      }
+      // Fallback placeholder
+      if (!imageUrl) {
+        imageUrl = 'https://via.placeholder.com/400x300?text=No+Image';
+      }
+
+      // Build address string
+      const addressParts = [];
+      if (property.address) {
+        if (property.address.address) addressParts.push(property.address.address);
+        if (property.address.city) addressParts.push(property.address.city);
+        if (property.address.county) addressParts.push(property.address.county);
+        if (property.address.postcode) addressParts.push(property.address.postcode);
+      }
+      const address = addressParts.length > 0 ? addressParts.join(', ') : 'Address not available';
+
+      // Format price with currency
+      const currency = property.currency || 'GBP';
+      const currencySymbol = currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : currency === 'USD' ? '$' : '';
+      const price = property.rent ? `${currencySymbol}${property.rent.toLocaleString()}` : 'N/A';
+
+      // Format property type
+      const type = property.propertyType 
+        ? property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)
+        : 'N/A';
+
+      return {
+        id: property._id || property.id,
+        image: imageUrl,
+        title: property.title || 'Untitled Property',
+        price: price,
+        address: address,
+        beds: property.bedrooms || 0,
+        baths: property.bathrooms || 0,
+        type: type,
+      };
+    });
+  };
+
+  // Fetch properties from API
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        let result;
+
+        // Build API parameters with all filters
+        const apiParams = {
+          page: pagination.page,
+          limit: pagination.limit,
+          status: 'active',
+          search: debouncedSearchQuery || '',
+        };
+
+        // Add city filter if present
+        if (cityParam) {
+          apiParams.city = cityParam;
+        }
+
+        // Add property type filter (using debounced filters)
+        if (debouncedFilters.propertyType && debouncedFilters.propertyType !== "all") {
+          apiParams.propertyType = debouncedFilters.propertyType;
+        }
+
+        // Add bedrooms filter (using debounced filters)
+        if (debouncedFilters.bhk && debouncedFilters.bhk !== "all") {
+          apiParams.bedrooms = debouncedFilters.bhk;
+        }
+
+        // Add price range filters (using debounced filters)
+        if (debouncedFilters.priceMin && debouncedFilters.priceMin > 0) {
+          apiParams.priceMin = debouncedFilters.priceMin.toString();
+        }
+        if (debouncedFilters.priceMax && debouncedFilters.priceMax > 0 && debouncedFilters.priceMax < 100000) {
+          apiParams.priceMax = debouncedFilters.priceMax.toString();
+        }
+
+        // Add amenities filter (using debounced filters)
+        if (debouncedFilters.amenities && debouncedFilters.amenities.length > 0) {
+          apiParams.amenities = debouncedFilters.amenities.join(',');
+          console.log('Sending amenities filter to API:', debouncedFilters.amenities);
+        }
+
+        // Use general properties endpoint with all filters
+        result = await getAllProperties(apiParams);
+
+        const transformed = transformProperties(result.properties || []);
+
+        setProperties(transformed);
+        setPagination(prev => ({
+          ...prev,
+          total: result.total || 0,
+          totalPages: result.totalPages || 0,
+        }));
+      } catch (err) {
+        console.error('Error fetching properties:', err);
+        setError(err.message || 'Failed to load properties');
+        setProperties([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperties();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchQuery, debouncedFilters.propertyType, debouncedFilters.bhk, debouncedFilters.priceMin, debouncedFilters.priceMax, debouncedFilters.amenities, pagination.page, pagination.limit, cityParam]);
 
   // Prevent body scroll when filter is open
   useEffect(() => {
@@ -68,57 +251,13 @@ function PropertiesList() {
 
   const favoriteCount = favoritedIds.size;
 
+  // Filter for saved properties only
   const filteredProperties = useMemo(() => {
-    let result = [...propertyListings];
-
     if (showSavedOnly) {
-      result = result.filter((property) => favoritedIds.has(property.id));
+      return properties.filter((property) => favoritedIds.has(property.id));
     }
-
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (property) =>
-          property.title.toLowerCase().includes(query) ||
-          property.address.toLowerCase().includes(query)
-      );
-    }
-
-    if (filters.propertyType !== "all") {
-      const typeMap = {
-        apartments: ["apartment", "flat"],
-        house: ["house"],
-        floor: ["floor"],
-        plot: ["plot", "land"],
-        studio: ["studio"],
-        penthouse: ["penthouse"],
-        villa: ["villa"],
-        agriculture: ["agriculture"],
-      };
-      const searchTypes = typeMap[filters.propertyType] || [];
-      result = result.filter((property) => {
-        const propType = property.type.toLowerCase();
-        return searchTypes.some((type) => propType.includes(type));
-      });
-    }
-
-    if (filters.bhk !== "all") {
-      if (filters.bhk === "6+") {
-        result = result.filter((property) => property.beds >= 6);
-      } else {
-        const bhkNum = parseInt(filters.bhk);
-        result = result.filter((property) => property.beds === bhkNum);
-      }
-    }
-
-    const priceNum = (price) => parseInt(price.replace("€", ""));
-    result = result.filter((property) => {
-      const propPrice = priceNum(property.price);
-      return propPrice >= filters.priceMin && propPrice <= filters.priceMax;
-    });
-
-    return result;
-  }, [searchQuery, filters, showSavedOnly, favoritedIds]);
+    return properties;
+  }, [properties, showSavedOnly, favoritedIds]);
 
   const handleHomeClick = () => {
     // Reset saved view to show all properties
@@ -142,8 +281,11 @@ function PropertiesList() {
           )}
           <PropertySearch
             value={searchQuery}
-            onChange={setSearchQuery}
-            onSearch={() => {}}
+            onChange={(value) => {
+              setSearchQuery(value);
+              // Page reset is handled by debounce useEffect
+            }}
+            onSearch={() => fetchProperties()}
             selectedType={selectedPropertyType}
             onTypeChange={(value) => {
               setSelectedPropertyType(value);
@@ -151,6 +293,7 @@ function PropertiesList() {
                 ...prev,
                 propertyType: value === "flat/apartment" ? "all" : value,
               }));
+              setPagination(prev => ({ ...prev, page: 1 }));
             }}
           />
 
@@ -209,7 +352,12 @@ function PropertiesList() {
                 </button>
               </div>
               <div className="p-4">
-                <PropertyFilters onFilterChange={setFilters} />
+                <PropertyFilters 
+                  onFilterChange={(newFilters) => {
+                    setFilters(newFilters);
+                    setPagination(prev => ({ ...prev, page: 1 }));
+                  }} 
+                />
               </div>
             </div>
           </>
@@ -217,16 +365,39 @@ function PropertiesList() {
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
             {!showSavedOnly && (
               <aside className="hidden lg:block w-full lg:w-1/3">
-                <PropertyFilters onFilterChange={setFilters} />
+                <PropertyFilters 
+                  onFilterChange={(newFilters) => {
+                    setFilters(newFilters);
+                    setPagination(prev => ({ ...prev, page: 1 }));
+                  }} 
+                />
               </aside>
             )}
             <main className={showSavedOnly ? "w-full" : "flex-1"}>
-              <PropertyList
-                properties={filteredProperties}
-                favoritedIds={favoritedIds}
-                onToggleFavorite={toggleFavorite}
-                isSavedView={showSavedOnly}
-              />
+              {loading ? (
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#6B4EFF] border-t-transparent"></div>
+                  <p className="mt-4 text-[#5A5E67]">Loading properties...</p>
+                </div>
+              ) : error ? (
+                <div className="text-center py-12">
+                  <p className="text-red-600 mb-4">{error}</p>
+                  <button
+                    onClick={fetchProperties}
+                    className="px-6 py-2 bg-blueGradient text-white rounded-lg hover:bg-opacity-90 transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : (
+                <PropertyList
+                  properties={filteredProperties}
+                  favoritedIds={favoritedIds}
+                  onToggleFavorite={toggleFavorite}
+                  isSavedView={showSavedOnly}
+                  pagination={pagination}
+                />
+              )}
             </main>
           </div>
         </div>

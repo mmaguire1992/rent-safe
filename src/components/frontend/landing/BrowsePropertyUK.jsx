@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from '@/lib/react-router-compat';
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -10,11 +11,54 @@ import CityCard from "./CityCard";
 import ShielIcon from "@/svg/websiteSvg/shielIcon";
 import { ukCities } from "@/websitedata/ukCities";
 import BlueTrustedIcon from "../../../svg/websiteSvg/blueTrustedIcon";
+import { getCityPropertyCounts } from "@/api/properties";
 
 function BrowsePropertyUK() {
+  const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
-  const displayedCities = showAll ? ukCities : ukCities.slice(0, 6);
+  const [cityCounts, setCityCounts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Merge static city data with API counts
+  const citiesWithCounts = useMemo(() => {
+    if (!cityCounts || cityCounts.length === 0) {
+      return ukCities; // Fallback to static data
+    }
+
+    return ukCities.map(city => {
+      const apiCity = cityCounts.find(c => 
+        c.name.toLowerCase() === city.name.toLowerCase()
+      );
+      return {
+        ...city,
+        propertiesCount: apiCity ? apiCity.count : 0,
+      };
+    });
+  }, [cityCounts]);
+
+  const displayedCities = showAll ? citiesWithCounts : citiesWithCounts.slice(0, 6);
+
+  // Fetch city property counts
+  useEffect(() => {
+    const fetchCityCounts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const counts = await getCityPropertyCounts();
+        setCityCounts(counts);
+      } catch (err) {
+        console.error('Error fetching city counts:', err);
+        setError(err.message || 'Failed to load city data');
+        // Don't set error state, just use static data
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCityCounts();
+  }, []);
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -33,6 +77,11 @@ function BrowsePropertyUK() {
 
   const handleViewMore = () => {
     setShowAll(!showAll);
+  };
+
+  const handleCityClick = (cityName) => {
+    // Navigate to properties page with city filter
+    navigate(`/properties?city=${encodeURIComponent(cityName)}`);
   };
 
   // Slider settings - only used on desktop (lg and above)
@@ -107,7 +156,9 @@ function BrowsePropertyUK() {
           {/* Mobile View - Grid */}
           <div className="grid grid-cols-2 lg:hidden gap-4 sm:gap-6">
             {displayedCities.map((city) => (
-              <CityCard key={city.id} city={city} />
+              <div key={city.id} onClick={() => handleCityClick(city.name)}>
+                <CityCard city={city} />
+              </div>
             ))}
           </div>
 
@@ -116,8 +167,8 @@ function BrowsePropertyUK() {
             <div className="hidden lg:block relative -mx-4 sm:-mx-6 lg:-mx-8 browserSlider">
               <div className="city-slider-container-full pl-4 sm:pl-6 lg:pl-8 overflow-hidden">
                 <Slider {...browserSliderSettings}>
-                  {ukCities.map((city) => (
-                    <div key={city.id} className="px-3">
+                  {citiesWithCounts.map((city) => (
+                    <div key={city.id} className="px-3" onClick={() => handleCityClick(city.name)}>
                       <CityCard city={city} />
                     </div>
                   ))}

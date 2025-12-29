@@ -1,6 +1,6 @@
-import { FiLoader, FiX, FiFileText } from "react-icons/fi";
+import { FiLoader, FiX, FiFileText, FiDownload } from "react-icons/fi";
 
-function UnderReviewDocumentsSection({ documents, onDelete }) {
+function UnderReviewDocumentsSection({ documents, onDelete, onDownload }) {
   if (!documents || documents.length === 0) return null;
 
   return (
@@ -23,7 +23,12 @@ function UnderReviewDocumentsSection({ documents, onDelete }) {
                   {doc.name}
                   <FiLoader className="text-[#6B4EFF] text-xl animate-spin flex-shrink-0" />
                 </p>
-                <div className="flex items-center gap-4 mt-1">
+                <div className="flex items-center gap-4 mt-1 flex-wrap">
+                  {doc.docTypeLabel && (
+                    <span className="text-xs font-semibold font-nunito text-[#6B4EFF] bg-[#EEEAFF] px-2 py-0.5 rounded">
+                      {doc.docTypeLabel}
+                    </span>
+                  )}
                   <span className="text-xs font-normal font-nunito text-midGray">
                     {doc.size}
                   </span>
@@ -34,10 +39,18 @@ function UnderReviewDocumentsSection({ documents, onDelete }) {
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => onDelete(doc.id)}
-                  className="p-0 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                  onClick={() => onDownload(doc)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                  title="Download document"
                 >
-                  <FiX className="text-darkGray" />
+                  <FiDownload className="text-[#6B4EFF] text-lg" />
+                </button>
+                <button
+                  onClick={() => onDelete(doc.id)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                  title="Delete document"
+                >
+                  <FiX className="text-darkGray text-lg" />
                 </button>
               </div>
             </div>

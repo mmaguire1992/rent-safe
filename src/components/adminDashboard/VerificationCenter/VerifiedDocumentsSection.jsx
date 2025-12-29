@@ -1,7 +1,7 @@
-import { FiCheck, FiX, FiFileText } from "react-icons/fi";
+import { FiCheck, FiX, FiFileText, FiDownload } from "react-icons/fi";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
 
-function VerifiedDocumentsSection({ documents, onDelete }) {
+function VerifiedDocumentsSection({ documents, onDelete, onDownload }) {
   if (!documents || documents.length === 0) return null;
 
   return (
@@ -23,7 +23,12 @@ function VerifiedDocumentsSection({ documents, onDelete }) {
                 <p className="text-sm font-normal flex items-center gap-2 font-nunito text-secondary truncate">
                   {doc.name} <GreenCheckedIcon />
                 </p>
-                <div className="flex items-center gap-4 mt-1">
+                <div className="flex items-center gap-4 mt-1 flex-wrap">
+                  {doc.docTypeLabel && (
+                    <span className="text-xs font-semibold font-nunito text-[#00893A] bg-white px-2 py-0.5 rounded border border-[#B6E9C9]">
+                      {doc.docTypeLabel}
+                    </span>
+                  )}
                   <span className="text-xs font-normal font-nunito text-midGray">
                     {doc.size}
                   </span>
@@ -34,10 +39,18 @@ function VerifiedDocumentsSection({ documents, onDelete }) {
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => onDelete(doc.id)}
-                  className="p-0 md:p-2 rounded-lg transition-colors flex-shrink-0"
+                  onClick={() => onDownload(doc)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                  title="Download document"
                 >
-                  <FiX className="text-darkGray text-xl" />
+                  <FiDownload className="text-[#00893A] text-lg" />
+                </button>
+                <button
+                  onClick={() => onDelete(doc.id)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                  title="Delete document"
+                >
+                  <FiX className="text-darkGray text-lg" />
                 </button>
               </div>
             </div>
