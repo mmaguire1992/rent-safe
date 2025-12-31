@@ -14,6 +14,8 @@ import LocationSection from "@/components/frontend/PropertyListDetail/LocationSe
 import RenterProfileDescription from "@/components/frontend/PropertyListDetail/RenterProfileDescription";
 import ContactOwnerModal from "@/components/frontend/PropertyListDetail/ContactOwnerModal";
 import { getPropertyById } from "@/api/properties";
+import { getCurrentUser } from "@/api/users";
+import { createOrGetChatroom } from "@/api/chat";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { toast } from "react-toastify";
 import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
@@ -28,6 +30,8 @@ function PropertyDetailPage() {
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [remainingContacts, setRemainingContacts] = useState(null);
+  const [isContacting, setIsContacting] = useState(false);
 
   // Fetch property data from API
   useEffect(() => {
@@ -53,6 +57,85 @@ function PropertyDetailPage() {
 
     fetchProperty();
   }, [id]);
+
+  // Fetch current user's remaining contacts
+  useEffect(() => {
+    const fetchUserContacts = async () => {
+      try {
+        const userData = await getCurrentUser();
+        if (userData && userData.remainingContacts !== undefined) {
+          setRemainingContacts(userData.remainingContacts);
+        }
+      } catch (err) {
+        console.error('Error fetching user contacts:', err);
+        // Don't show error to user, just use default
+        setRemainingContacts(5);
+      }
+    };
+
+    fetchUserContacts();
+  }, []);
+
+  // Handle contact owner click
+  const handleContactOwner = async () => {
+    if (!property?.owner?._id && !property?.ownerId) {
+      toast.error('Owner information not available');
+      return;
+    }
+
+    const ownerId = property.owner?._id || property.ownerId;
+
+    // Check if user has remaining contacts
+    if (remainingContacts !== null && remainingContacts <= 0) {
+      setIsContactModalOpen(true);
+      return;
+    }
+
+    try {
+      setIsContacting(true);
+      
+      // Create or get chatroom with owner
+      const chatroom = await createOrGetChatroom(ownerId);
+      
+      if (chatroom && (chatroom._id || chatroom.id)) {
+        // Ensure chatroomId is a string
+        const chatroomId = String(chatroom._id || chatroom.id || '');
+        
+        if (!chatroomId || chatroomId === 'undefined' || chatroomId === 'null' || chatroomId === '[object Object]') {
+          toast.error('Invalid chatroom ID. Please try again.');
+          return;
+        }
+        
+        // Refresh user data to get updated remaining contacts
+        try {
+          const userData = await getCurrentUser();
+          if (userData && userData.remainingContacts !== undefined) {
+            setRemainingContacts(userData.remainingContacts);
+          }
+        } catch (err) {
+          console.error('Error refreshing user contacts:', err);
+        }
+        
+        // Redirect to chat page with chatroom ID
+        navigate(`/chat?chatroomId=${chatroomId}`);
+        toast.success('Chat initiated successfully!');
+      } else {
+        toast.error('Failed to create chatroom. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error contacting owner:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to contact owner';
+      
+      // If limit reached, show modal
+      if (errorMessage.includes('limit') || errorMessage.includes('Contact limit')) {
+        setIsContactModalOpen(true);
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsContacting(false);
+    }
+  };
 
   // Calculate favorite count
   const favoriteCount = favoritedIds.size;
@@ -281,10 +364,12 @@ function PropertyDetailPage() {
             />
             {/* Owner Profile */}
             <OwnerProfile 
-              onContactClick={() => setIsContactModalOpen(true)}
+              onContactClick={handleContactOwner}
               owner={property.owner}
               ownerName={property.owner ? `${property.owner.firstName || ''} ${property.owner.lastName || ''}`.trim() : undefined}
               propertiesCount={property.owner?.propertiesCount}
+              remainingContacts={remainingContacts}
+              isContacting={isContacting}
             />
 
             {/* Description */}

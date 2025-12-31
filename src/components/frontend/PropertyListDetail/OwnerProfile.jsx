@@ -5,8 +5,9 @@ function OwnerProfile({
   owner,
   ownerName,
   propertiesCount,
-  freeContacts = 3,
+  remainingContacts,
   onContactClick,
+  isContacting = false,
 }) {
   // Get owner name from owner object or prop
   const displayName = ownerName || 
@@ -41,18 +42,21 @@ function OwnerProfile({
           </div>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
-          <div className="bg-[#FFF5CC] border border-[#FFE699] rounded-lg px-3 py-2 sm:py-2.5 mb-0 flex items-center gap-2">
-            <RemainingIcon />
-            <p className="text-xs text-[#973C00] font-normal">
-              You have 3 free contacts remaining
-            </p>
-          </div>
+          {remainingContacts !== null && (
+            <div className="bg-[#FFF5CC] border border-[#FFE699] rounded-lg px-3 py-2 sm:py-2.5 mb-0 flex items-center gap-2">
+              <RemainingIcon />
+              <p className="text-xs text-[#973C00] font-normal">
+                You have {remainingContacts} {remainingContacts === 1 ? 'contact' : 'contacts'} remaining
+              </p>
+            </div>
+          )}
           <button 
             onClick={onContactClick}
-            className="flex items-center justify-center gap-2 bg-blueGradient text-white py-2 px-4 sm:px-6 text-sm sm:text-base rounded-[10px] font-bold hover:bg-opacity-90 transition-colors whitespace-nowrap"
+            disabled={isContacting}
+            className="flex items-center justify-center gap-2 bg-blueGradient text-white py-2 px-4 sm:px-6 text-sm sm:text-base rounded-[10px] font-bold hover:bg-opacity-90 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChatWhiteIcon />
-            Contact Owner
+            {isContacting ? 'Connecting...' : 'Contact Owner'}
           </button>
         </div>
       </div>

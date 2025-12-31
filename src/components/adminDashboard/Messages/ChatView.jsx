@@ -23,6 +23,12 @@ function ChatView({
   onSendMessage,
   onSendOffer,
   onProfileClick,
+  messagesEndRef,
+  messagesTopRef,
+  onScroll,
+  loadingMoreMessages,
+  hasMoreMessages,
+  messagesContainerRef,
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
@@ -120,8 +126,29 @@ function ChatView({
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 max-h-[calc(100vh-280px)] sm:max-h-[calc(100vh-300px)] md:max-h-[calc(100vh-200px)]">
-        {chatMessages.map((msg) => (
+      <div 
+        ref={messagesContainerRef}
+        onScroll={onScroll}
+        className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 max-h-[calc(100vh-280px)] sm:max-h-[calc(100vh-300px)] md:max-h-[calc(100vh-200px)]"
+        style={{ overflowAnchor: 'none' }}
+      >
+        {chatMessages.length === 0 ? (
+          <div className="flex items-center justify-center h-full min-h-[400px]">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#6B4EFF] border-t-transparent mb-4"></div>
+              <p className="text-[#62748E] text-sm font-normal font-nunito">Loading messages...</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Load more messages indicator */}
+            {loadingMoreMessages && (
+              <div className="flex items-center justify-center py-2">
+                <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-[#6B4EFF] border-t-transparent"></div>
+              </div>
+            )}
+            {messagesTopRef && <div ref={messagesTopRef} className="h-1" />}
+            {chatMessages.map((msg) => (
           <div
             key={msg.id}
             className={`flex ${
@@ -185,7 +212,10 @@ function ChatView({
               </div>
             )}
           </div>
-        ))}
+            ))}
+            {messagesEndRef && <div ref={messagesEndRef} className="h-1" />}
+          </>
+        )}
       </div>
 
       {/* Message Input */}

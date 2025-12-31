@@ -42,3 +42,10 @@ export const verification = {
   downloadDocument: (id) => `/verification/download/${id}`,
 };
 
+// Chat Routes
+export const chat = {
+  createOrGetChatroom: '/chat/chatroom',
+  getChatrooms: '/chat/chatrooms',
+  getChatroomMessages: (chatroomId) => `/chat/chatrooms/${chatroomId}/messages`,
+};
+
