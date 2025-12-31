@@ -43,3 +43,11 @@ export const verification = {
   deleteDocument: (id) => `/verification/document/${id}`,
 };
 
+// Chat Routes
+export const chat = {
+  createOrGetChatroom: '/chat/chatroom',
+  getChatrooms: '/chat/chatrooms',
+  getChatroomMessages: (chatroomId) => `/chat/chatrooms/${chatroomId}/messages`,
+  uploadMedia: '/chat/upload-media',
+};
+

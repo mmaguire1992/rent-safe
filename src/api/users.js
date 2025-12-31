@@ -156,6 +156,26 @@ export const verifyPhoneUpdate = async (otp) => {
 };
 
 /**
+ * Get user by ID (Owner/Admin only)
+ * Fetches complete user profile including userInfo
+ * @param {string} userId - User ID to fetch
+ * @returns {Promise<Object>} - Complete user profile data with userInfo
+ */
+export const getUserById = async (userId) => {
+  try {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    const response = await apiClient.get(`/users/${userId}`);
+    const userData = response.data?.data || response.data;
+    return userData;
+  } catch (error) {
+    console.error('Error fetching user by ID:', error);
+    throw error;
+  }
+};
+
+/**
  * Delete user account
  * Note: This endpoint may not exist yet, but we'll prepare for it
  * @returns {Promise<Object>} - Success response

@@ -23,9 +23,17 @@ function ChatView({
   onSendMessage,
   onSendOffer,
   onProfileClick,
+  messagesEndRef,
+  messagesTopRef,
+  onScroll,
+  loadingMoreMessages,
+  hasMoreMessages,
+  messagesContainerRef,
+  onFileSelect,
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -40,6 +48,21 @@ function ChatView({
 
   const handleToggleMenu = () => {
     setShowMenu((prev) => !prev);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file && onFileSelect) {
+      onFileSelect(file);
+    }
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleAttachClick = () => {
+    fileInputRef.current?.click();
   };
 
   const handleSelectOption = (action) => {
@@ -120,8 +143,29 @@ function ChatView({
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 max-h-[calc(100vh-280px)] sm:max-h-[calc(100vh-300px)] md:max-h-[calc(100vh-200px)]">
-        {chatMessages.map((msg) => (
+      <div 
+        ref={messagesContainerRef}
+        onScroll={onScroll}
+        className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 max-h-[calc(100vh-280px)] sm:max-h-[calc(100vh-300px)] md:max-h-[calc(100vh-200px)]"
+        style={{ overflowAnchor: 'none' }}
+      >
+        {chatMessages.length === 0 ? (
+          <div className="flex items-center justify-center h-full min-h-[400px]">
+            <div className="text-center">
+              <p className="text-[#62748E] text-base font-normal font-nunito">No messages yet</p>
+              <p className="text-[#62748E] text-sm font-normal font-nunito mt-2">Start the conversation by sending a message</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Load more messages indicator */}
+            {loadingMoreMessages && (
+              <div className="flex items-center justify-center py-2">
+                <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-[#6B4EFF] border-t-transparent"></div>
+              </div>
+            )}
+            {messagesTopRef && <div ref={messagesTopRef} className="h-1" />}
+            {chatMessages.map((msg) => (
           <div
             key={msg.id}
             className={`flex ${
@@ -168,6 +212,57 @@ function ChatView({
                     </div>
                   </div>
                 </div>
+              ) : msg.type === "image" || msg.type === "video" || msg.type === "document" ? (
+                <div className="bg-[#F1F5F9] rounded-[18px] p-2 sm:p-3 overflow-hidden">
+                  {msg.type === "image" && msg.fileUrl && (
+                    <div className="mb-2">
+                      <img 
+                        src={msg.fileUrl} 
+                        alt={msg.fileName || "Image"} 
+                        className="max-w-full h-auto rounded-lg cursor-pointer"
+                        onClick={() => window.open(msg.fileUrl, '_blank')}
+                      />
+                    </div>
+                  )}
+                  {msg.type === "video" && msg.fileUrl && (
+                    <div className="mb-2">
+                      <video 
+                        src={msg.fileUrl} 
+                        controls 
+                        className="max-w-full h-auto rounded-lg"
+                        style={{ maxHeight: '400px' }}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  )}
+                  {msg.type === "document" && msg.fileUrl && (
+                    <div className="mb-2 flex items-center gap-2 p-2 bg-white rounded-lg">
+                      <FiPaperclip className="text-[#6B4EFF] text-xl" />
+                      <a 
+                        href={msg.fileUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-[#6B4EFF] hover:underline text-sm sm:text-base font-normal font-nunito flex-1"
+                      >
+                        {msg.fileName || "Document"}
+                      </a>
+                      {msg.fileSize && (
+                        <span className="text-xs text-[#62748E]">
+                          {(msg.fileSize / 1024).toFixed(1)} KB
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {msg.message && (
+                    <p className="text-[#0F172B] text-sm sm:text-base font-normal font-nunito break-words">
+                      {msg.message}
+                    </p>
+                  )}
+                  <p className="text-xs sm:text-sm font-normal font-nunito text-[#62748E] mt-1">
+                    {msg.time}
+                  </p>
+                </div>
               ) : (
                 <div className="bg-[#F1F5F9] rounded-[18px] px-3 sm:px-4 py-2 sm:py-3">
                   <p className="text-[#0F172B] text-sm sm:text-base font-normal font-nunito break-words">
@@ -185,13 +280,29 @@ function ChatView({
               </div>
             )}
           </div>
-        ))}
+            ))}
+            {messagesEndRef && <div ref={messagesEndRef} className="h-1" />}
+          </>
+        )}
       </div>
+
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+        className="hidden"
+      />
 
       {/* Message Input */}
       <div className="p-3 sm:p-4 md:p-6 border-t border-lightGray">
         <div className="flex items-center gap-2 sm:gap-3">
-          <button className="p-0 transition-colors flex-shrink-0">
+          <button 
+            onClick={handleAttachClick}
+            className="p-0 transition-colors flex-shrink-0 hover:opacity-70"
+            type="button"
+          >
             <FiPaperclip className="text-secondary text-lg sm:text-xl" />
           </button>
           <input
