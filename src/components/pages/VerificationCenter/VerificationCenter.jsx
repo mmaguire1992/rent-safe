@@ -20,16 +20,10 @@ import { documentTypeOptions } from "@/constant";
 import { downloadDocument } from "@/api/verification";
 
 // Map backend docType to frontend document type options
+// Convert underscores to hyphens: "tax_document" → "tax-document"
 const mapDocTypeToOption = (docType) => {
-  const mapping = {
-    identity_proof: 'passport',
-    id_proof: 'national-id',
-    pay_slip: 'tax-document',
-    bank_statement: 'bank-statement',
-    property_papers: 'proof-of-address',
-    licenses: 'driving-license',
-  };
-  return mapping[docType] || docType;
+  // Convert underscores to hyphens for frontend option format
+  return docType.replace(/_/g, '-');
 };
 
 // Convert frontend document type to backend docType format
@@ -169,13 +163,23 @@ function VerificationCenter() {
     ? {
         id: transformedDocuments.rejected[0].id,
         name: transformedDocuments.rejected[0].name,
+        docType: transformedDocuments.rejected[0].docType,
         docTypeLabel: transformedDocuments.rejected[0].docTypeLabel,
         reason: transformedDocuments.rejected[0].reason || 'Document was rejected. Please re-upload with clearer images.',
       }
     : null;
 
+  // State for reupload tracking
+  const [reuploadingDocumentId, setReuploadingDocumentId] = useState(null);
+  const [reuploadingDocType, setReuploadingDocType] = useState(null);
+
   const handleReupload = () => {
-    // Scroll to upload section or trigger upload
+    // Store the rejected document's ID and docType for reupload
+    if (rejectedDocument) {
+      setReuploadingDocumentId(rejectedDocument.id);
+      setReuploadingDocType(rejectedDocument.docType);
+    }
+    // Scroll to upload section
     const uploadSection = document.querySelector('[data-upload-section]');
     if (uploadSection) {
       uploadSection.scrollIntoView({ behavior: 'smooth' });
@@ -238,14 +242,17 @@ function VerificationCenter() {
       }
 
       // Map frontend document type to backend docType
-      const docType = mapOptionToDocType(documentType);
+      // If reuploading, use the rejected document's docType, otherwise use selected
+      const docType = reuploadingDocType || mapOptionToDocType(documentType);
       
-      // Check if this document type is already uploaded
-      const existingDocs = documentsByType[docType] || [];
-      if (existingDocs.length > 0) {
-        const docTypeLabel = formatDocumentType(docType);
-        toast.error(`${docTypeLabel} is already uploaded. Please delete the existing document first or select a different document type.`);
-        return;
+      // Check if this document type is already uploaded (skip check if reuploading rejected document)
+      if (!reuploadingDocumentId) {
+        const existingDocs = documentsByType[docType] || [];
+        if (existingDocs.length > 0) {
+          const docTypeLabel = formatDocumentType(docType);
+          toast.error(`${docTypeLabel} is already uploaded. Please delete the existing document first or select a different document type.`);
+          return;
+        }
       }
       
       // Ensure we have valid File objects
@@ -394,6 +401,12 @@ function VerificationCenter() {
       // Step 3: Refresh documents list
       await dispatch(fetchMyDocuments());
 
+      // Reset reupload state after successful upload
+      if (reuploadingDocumentId) {
+        setReuploadingDocumentId(null);
+        setReuploadingDocType(null);
+      }
+
       toast.success('Documents uploaded successfully and submitted for review!');
     } catch (error) {
       console.error('Error submitting documents:', error);
@@ -501,6 +514,8 @@ function VerificationCenter() {
                 onSubmit={handleSubmitDocuments}
                 documentTypes={documentTypeOptions}
                 loading={uploading || storing}
+                reuploadMode={!!reuploadingDocumentId}
+                preSelectedDocumentType={reuploadingDocType ? mapDocTypeToOption(reuploadingDocType) : null}
               />
             </div>
 

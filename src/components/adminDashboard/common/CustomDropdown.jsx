@@ -13,6 +13,7 @@ function CustomDropdown({
   className = "",
   showFilterIcon = false,
   error = false,
+  disabled = false,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -34,6 +35,7 @@ function CustomDropdown({
   const displayText = selectedOption ? selectedOption.label : placeholder;
 
   const handleSelect = (optionValue) => {
+    if (disabled) return; // Don't allow selection if disabled
     onChange(optionValue);
     setIsOpen(false);
   };
@@ -43,8 +45,11 @@ function CustomDropdown({
       {/* Dropdown Button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-4 py-1.5 h-[52px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 flex gap-1 items-center justify-between bg-white ${
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        className={`w-full px-4 py-1.5 h-[52px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 flex gap-1 items-center justify-between ${
+          disabled ? "bg-gray-100 cursor-not-allowed opacity-60" : "bg-white"
+        } ${
           error ? "border-red-500" : value ? "border-lightGray" : "border-lightGray"
         } ${className}`}
       >
@@ -65,7 +70,7 @@ function CustomDropdown({
       </button>
 
       {/* Dropdown Options */}
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-lightGray rounded-xl shadow-lg max-h-60 overflow-auto">
           {options.map((option) => (
             <button

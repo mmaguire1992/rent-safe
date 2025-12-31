@@ -1,21 +1,38 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiUpload } from "react-icons/fi";
 import { toast } from "react-toastify";
 import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";
 import FileUpload from "@/components/FileUpload";
 import { documentTypeOptions } from "@/constant";
 
-function UploadVerificationDocuments({ onSubmit, documentTypes, loading = false }) {
-  const [selectedDocumentType, setSelectedDocumentType] = useState("");
+function UploadVerificationDocuments({ 
+  onSubmit, 
+  documentTypes, 
+  loading = false,
+  reuploadMode = false,
+  preSelectedDocumentType = null
+}) {
+  const [selectedDocumentType, setSelectedDocumentType] = useState(preSelectedDocumentType || "");
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [errors, setErrors] = useState({});
+
+  // Update selected document type when preSelectedDocumentType changes (reupload mode)
+  useEffect(() => {
+    if (preSelectedDocumentType) {
+      setSelectedDocumentType(preSelectedDocumentType);
+    } else if (!reuploadMode && !preSelectedDocumentType) {
+      // Clear selection when reupload mode is turned off
+      setSelectedDocumentType("");
+    }
+  }, [preSelectedDocumentType, reuploadMode]);
 
   const validateForm = () => {
     const newErrors = {};
     
-    if (!selectedDocumentType) {
+    // In reupload mode, document type is pre-selected, so skip validation
+    if (!reuploadMode && !selectedDocumentType) {
       newErrors.documentType = 'Please select a document type';
     }
     
@@ -35,7 +52,7 @@ function UploadVerificationDocuments({ onSubmit, documentTypes, loading = false 
     
     // Validate form
     if (!validateForm()) {
-      if (!selectedDocumentType) {
+      if (!reuploadMode && !selectedDocumentType) {
         toast.error('Please select a document type');
       }
       if (!uploadedFiles || uploadedFiles.length === 0) {
@@ -49,13 +66,17 @@ function UploadVerificationDocuments({ onSubmit, documentTypes, loading = false 
       files: uploadedFiles,
     });
     
-    // Reset form
-    setSelectedDocumentType("");
+    // Reset form (preserve document type in reupload mode)
+    if (!reuploadMode) {
+      setSelectedDocumentType("");
+    }
     setUploadedFiles([]);
     setErrors({});
   };
 
   const handleDocumentTypeChange = (value) => {
+    // Don't allow changes in reupload mode
+    if (reuploadMode) return;
     setSelectedDocumentType(value);
     // Clear error when user selects a type
     if (errors.documentType) {
@@ -74,7 +95,7 @@ function UploadVerificationDocuments({ onSubmit, documentTypes, loading = false 
   return (
     <div className="bg-white rounded-[14px] border border-lightGray md:p-4 p-3">
       <h2 className="text-xl font-semibold font-nunito text-secondary md:mb-6 mb-4">
-        Upload Verification Documents
+        {reuploadMode ? 'Re-upload Document' : 'Upload Verification Documents'}
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -88,7 +109,13 @@ function UploadVerificationDocuments({ onSubmit, documentTypes, loading = false 
             onChange={handleDocumentTypeChange}
             placeholder="Select your document type"
             error={!!errors.documentType}
+            disabled={reuploadMode}
           />
+          {reuploadMode && (
+            <p className="mt-1 text-sm text-gray-500">
+              Document type is fixed for re-upload. Please upload the corrected file.
+            </p>
+          )}
           {errors.documentType && (
             <p className="mt-1 text-sm text-red-600">{errors.documentType}</p>
           )}
