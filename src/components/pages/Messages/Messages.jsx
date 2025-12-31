@@ -9,7 +9,7 @@ import SendOfferModal from "@/components/adminDashboard/TenantProfile/SendOfferM
 import BlueSearchIcon from "@/svg/blueSearchIcon";
 import MediumCheckedIcon from "@/svg/mediumCheckedIcon";
 import ChatBlueStartIcon from "@/svg/chatBlueStartIcon";
-import { getChatrooms, getChatroomMessages } from "@/api/chat";
+import { getChatrooms, getChatroomMessages, uploadChatMedia } from "@/api/chat";
 import { getCurrentUser, getUserById } from "@/api/users";
 import { useSocket, SOCKET_EVENTS } from "@/hooks/useSocket";
 import { toast } from "react-toastify";
@@ -45,7 +45,7 @@ function Messages() {
 
   const {
     isConnected,
-    sendMessage: socketSendMessage,
+    sendMessage,
     joinChatroom,
     leaveChatroom,
     markMessagesAsRead,
@@ -75,7 +75,14 @@ function Messages() {
         const data = await getChatrooms();
         // Normalize lastMessage to object format if it's a string
         const normalizedChatrooms = (data || []).map(chatroom => {
-          if (chatroom.lastMessage && typeof chatroom.lastMessage === 'string') {
+          if (!chatroom.lastMessage) {
+            return {
+              ...chatroom,
+              lastMessage: null,
+            };
+          }
+          
+          if (typeof chatroom.lastMessage === 'string') {
             return {
               ...chatroom,
               lastMessage: {
@@ -83,18 +90,31 @@ function Messages() {
                 createdAt: chatroom.lastMessageAt,
               },
             };
-          } else if (chatroom.lastMessage && typeof chatroom.lastMessage === 'object' && !chatroom.lastMessage.text) {
-            // If it's an object but doesn't have text property, extract it
+          }
+          
+          if (typeof chatroom.lastMessage === 'object') {
+            // Ensure it has a text property - check multiple possible fields
+            const text = chatroom.lastMessage.text || 
+                        chatroom.lastMessage.textDecrypted || 
+                        chatroom.lastMessage.textEncrypted || 
+                        '';
+            
             return {
               ...chatroom,
               lastMessage: {
-                text: chatroom.lastMessage.text || chatroom.lastMessage || '',
+                text: text,
                 createdAt: chatroom.lastMessage.createdAt || chatroom.lastMessageAt,
                 userId: chatroom.lastMessage.userId,
+                type: chatroom.lastMessage.type || 'text',
+                fileUrl: chatroom.lastMessage.fileUrl || null,
               },
             };
           }
-          return chatroom;
+          
+          return {
+            ...chatroom,
+            lastMessage: null,
+          };
         });
         setChatrooms(normalizedChatrooms);
       } catch (error) {
@@ -131,7 +151,13 @@ function Messages() {
         photoUrl: null,
         unread: chatroom.unreadCount || 0,
         property: '',
-        message: chatroom.lastMessage?.text || '',
+        message: (() => {
+          const lastMsg = chatroom.lastMessage;
+          if (!lastMsg) return '';
+          if (typeof lastMsg === 'string') return lastMsg;
+          if (typeof lastMsg === 'object' && lastMsg.text) return lastMsg.text;
+          return '';
+        })(),
         time: chatroom.lastMessageAt ? new Date(chatroom.lastMessageAt).toLocaleDateString() : '',
         otherUser,
       };
@@ -427,6 +453,12 @@ function Messages() {
       type: msg.type || 'text',
       isRead: msg.isRead,
       isDelivered: msg.isDelivered,
+      // Media fields
+      fileUrl: msg.fileUrl || null,
+      fileName: msg.fileName || null,
+      fileSize: msg.fileSize || null,
+      mimeType: msg.mimeType || null,
+      thumbnailUrl: msg.thumbnailUrl || null,
       tempId: msg.uniqueId,
     };
   };
@@ -460,6 +492,64 @@ function Messages() {
     setSelectedConversation(conversation);
   };
 
+  const handleFileSelect = async (file) => {
+    if (!selectedConversation || !isConnected) return;
+
+    const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
+    if (!chatroomId || chatroomId === 'undefined' || chatroomId === 'null') return;
+
+    try {
+      // Determine message type from file
+      let messageType = 'document';
+      if (file.type.startsWith('image/')) {
+        messageType = 'image';
+      } else if (file.type.startsWith('video/')) {
+        messageType = 'video';
+      }
+
+      // Show loading state
+      toast.info('Uploading file...');
+
+      // Upload file to S3
+      const uploadResult = await uploadChatMedia(chatroomId, file, messageType);
+
+      // Add temporary message for instant feedback
+      const uniqueId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const tempMessage = {
+        id: uniqueId,
+        tempId: uniqueId,
+        message: messageText || '', // Optional caption
+        sender: "you",
+        senderInitials: (currentUser?.firstName?.[0] || '') + (currentUser?.lastName?.[0] || ''),
+        time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+        type: messageType,
+        isRead: false,
+        isDelivered: false,
+        fileUrl: uploadResult.fileUrl,
+        fileName: uploadResult.fileName,
+        fileSize: uploadResult.fileSize,
+        mimeType: uploadResult.mimeType,
+      };
+
+      setChatMessages(prev => [...prev, tempMessage]);
+      setMessageText("");
+      scrollToBottom();
+
+      // Send via socket with media data
+      sendMessage(chatroomId, messageText || '', messageType, uniqueId, {
+        fileUrl: uploadResult.fileUrl,
+        fileName: uploadResult.fileName,
+        fileSize: uploadResult.fileSize,
+        mimeType: uploadResult.mimeType,
+      });
+
+      toast.success('File uploaded successfully');
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error(error.message || 'Failed to upload file');
+    }
+  };
+
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedConversation || !isConnected) return;
 
@@ -486,7 +576,7 @@ function Messages() {
 
     // Send via socket with uniqueId for matching
     try {
-      socketSendMessage(chatroomId, messageText, uniqueId);
+      sendMessage(chatroomId, messageText, 'text', uniqueId);
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
@@ -525,9 +615,11 @@ function Messages() {
         return {
           ...chatroom,
           lastMessage: {
-            text: message.textDecrypted || message.textEncrypted || message.text,
+            text: message.textDecrypted || message.textEncrypted || message.text || '',
             createdAt: message.createdAt,
             userId: message.userId,
+            type: message.type || 'text',
+            fileUrl: message.fileUrl || null,
           },
           lastMessageAt: message.createdAt || new Date(),
           unreadCount: isFromOtherUser
@@ -867,7 +959,43 @@ function Messages() {
                               )}
                             </div>
                             <p className="text-sm font-normal font-nunito text-[#45556C] mb-1 truncate">
-                              {chatroom.lastMessage?.text || 'No messages yet'}
+                              {(() => {
+                                const lastMsg = chatroom.lastMessage;
+                                
+                                // If no lastMessage but lastMessageAt exists, there's a message but we don't have the data
+                                if (!lastMsg && chatroom.lastMessageAt) {
+                                  return 'Message';
+                                }
+                                
+                                if (!lastMsg) return 'No messages yet';
+                                if (typeof lastMsg === 'string') return lastMsg;
+                                if (typeof lastMsg === 'object') {
+                                  // Check if it's a media message FIRST (has fileUrl or type indicates media)
+                                  const isMediaMessage = lastMsg.fileUrl || 
+                                                        (lastMsg.type && lastMsg.type !== 'text' && lastMsg.type !== 'system');
+                                  
+                                  if (isMediaMessage) {
+                                    // If there's text (caption), show it, otherwise show media type indicator
+                                    const text = lastMsg.text || '';
+                                    if (text.trim()) {
+                                      return text;
+                                    }
+                                    // Show appropriate media indicator
+                                    if (lastMsg.type === 'image') {
+                                      return '📷 Image';
+                                    } else if (lastMsg.type === 'video') {
+                                      return '🎥 Video';
+                                    } else if (lastMsg.type === 'document') {
+                                      return '📄 Document';
+                                    }
+                                    return '📎 Attachment';
+                                  }
+                                  // Regular text message - show text if available
+                                  const text = lastMsg.text || '';
+                                  return text.trim() || 'No messages yet';
+                                }
+                                return 'No messages yet';
+                              })()}
                             </p>
                             <div>
                               <span className="text-sm text-[#62748E] font-normal font-nunito">
@@ -937,6 +1065,7 @@ function Messages() {
                       loadingMoreMessages={loadingMoreMessages}
                       hasMoreMessages={hasMoreMessages}
                       messagesContainerRef={messagesContainerRef}
+                      onFileSelect={handleFileSelect}
                     />
                   </>
                 )}

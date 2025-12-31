@@ -9,7 +9,7 @@ import ChatView from "@/components/adminDashboard/Messages/ChatView";
 import BlueSearchIcon from "@/svg/blueSearchIcon";
 import MediumCheckedIcon from "@/svg/mediumCheckedIcon";
 import ChatBlueStartIcon from "@/svg/chatBlueStartIcon";
-import { getChatrooms, getChatroomMessages } from "@/api/chat";
+import { getChatrooms, getChatroomMessages, uploadChatMedia } from "@/api/chat";
 import { getCurrentUser } from "@/api/users";
 import { useSocket, SOCKET_EVENTS } from "@/hooks/useSocket";
 import { toast } from "react-toastify";
@@ -36,7 +36,7 @@ function ChatMessage() {
 
   const {
     isConnected,
-    sendMessage: socketSendMessage,
+    sendMessage,
     joinChatroom,
     leaveChatroom,
     markMessagesAsRead,
@@ -398,6 +398,12 @@ function ChatMessage() {
       type: msg.type || 'text',
       isRead: msg.isRead,
       isDelivered: msg.isDelivered,
+      // Media fields
+      fileUrl: msg.fileUrl || null,
+      fileName: msg.fileName || null,
+      fileSize: msg.fileSize || null,
+      mimeType: msg.mimeType || null,
+      thumbnailUrl: msg.thumbnailUrl || null,
       tempId: msg.uniqueId,
     };
   };
@@ -434,6 +440,64 @@ function ChatMessage() {
     setSelectedConversation(conversation);
   };
 
+  const handleFileSelect = async (file) => {
+    if (!selectedConversation || !isConnected) return;
+
+    const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
+    if (!chatroomId || chatroomId === 'undefined' || chatroomId === 'null') return;
+
+    try {
+      // Determine message type from file
+      let messageType = 'document';
+      if (file.type.startsWith('image/')) {
+        messageType = 'image';
+      } else if (file.type.startsWith('video/')) {
+        messageType = 'video';
+      }
+
+      // Show loading state
+      toast.info('Uploading file...');
+
+      // Upload file to S3
+      const uploadResult = await uploadChatMedia(chatroomId, file, messageType);
+
+      // Add temporary message for instant feedback
+      const uniqueId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const tempMessage = {
+        id: uniqueId,
+        tempId: uniqueId,
+        message: messageText || '', // Optional caption
+        sender: "you",
+        senderInitials: (currentUser?.firstName?.[0] || '') + (currentUser?.lastName?.[0] || ''),
+        time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+        type: messageType,
+        isRead: false,
+        isDelivered: false,
+        fileUrl: uploadResult.fileUrl,
+        fileName: uploadResult.fileName,
+        fileSize: uploadResult.fileSize,
+        mimeType: uploadResult.mimeType,
+      };
+
+      setChatMessages(prev => [...prev, tempMessage]);
+      setMessageText("");
+      scrollToBottom();
+
+      // Send via socket with media data
+      sendMessage(chatroomId, messageText || '', messageType, uniqueId, {
+        fileUrl: uploadResult.fileUrl,
+        fileName: uploadResult.fileName,
+        fileSize: uploadResult.fileSize,
+        mimeType: uploadResult.mimeType,
+      });
+
+      toast.success('File uploaded successfully');
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error(error.message || 'Failed to upload file');
+    }
+  };
+
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedConversation || !isConnected) return;
 
@@ -460,7 +524,7 @@ function ChatMessage() {
 
     // Send via socket with uniqueId for matching
     try {
-      socketSendMessage(chatroomId, messageText, uniqueId);
+      sendMessage(chatroomId, messageText, 'text', uniqueId);
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
@@ -750,6 +814,7 @@ function ChatMessage() {
                         loadingMoreMessages={loadingMoreMessages}
                         hasMoreMessages={hasMoreMessages}
                         messagesContainerRef={messagesContainerRef}
+                        onFileSelect={handleFileSelect}
                       />
                     </>
                   )}

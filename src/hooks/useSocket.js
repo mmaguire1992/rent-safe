@@ -91,7 +91,7 @@ export const useSocket = () => {
   }, []);
 
   // Send message
-  const sendMessage = useCallback((chatroomId, messageText, uniqueId) => {
+  const sendMessage = useCallback((chatroomId, messageText, messageType = 'text', uniqueId, mediaData = null) => {
     if (!socketRef.current || !isConnected) {
       throw new Error('Socket not connected');
     }
@@ -103,12 +103,23 @@ export const useSocket = () => {
 
     const messageUniqueId = uniqueId || `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    socketRef.current.emit(SOCKET_EVENTS.SEND_MESSAGE, {
+    const messageData = {
       chatroomId: chatroomIdStr,
-      text: messageText, // Send plain text, server will encrypt
-      type: 'text',
+      text: messageText || '', // Send plain text, server will encrypt (optional for media messages)
+      type: messageType,
       uniqueId: messageUniqueId,
-    });
+    };
+
+    // Add media fields if provided
+    if (mediaData) {
+      messageData.fileUrl = mediaData.fileUrl;
+      messageData.fileName = mediaData.fileName;
+      messageData.fileSize = mediaData.fileSize;
+      messageData.mimeType = mediaData.mimeType;
+      messageData.thumbnailUrl = mediaData.thumbnailUrl;
+    }
+
+    socketRef.current.emit(SOCKET_EVENTS.SEND_MESSAGE, messageData);
 
     return messageUniqueId;
   }, [isConnected]);

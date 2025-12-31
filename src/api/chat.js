@@ -88,3 +88,55 @@ export async function getChatroomMessages(chatroomId, page = 1, limit = 50) {
   }
 }
 
+/**
+ * Upload media file for chat messages
+ * @param {string} chatroomId - The ID of the chatroom
+ * @param {File} file - The file to upload
+ * @param {string} messageType - Type of message (image, video, document)
+ * @returns {Promise<Object>} - Upload result with file URL and metadata
+ */
+export async function uploadChatMedia(chatroomId, file, messageType = 'image') {
+  try {
+    if (!chatroomId) {
+      throw new Error('Chatroom ID is required');
+    }
+
+    if (!file) {
+      throw new Error('File is required');
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('chatroomId', String(chatroomId));
+    formData.append('messageType', messageType);
+
+    const token = localStorage.getItem('userToken');
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}${chatRoutes.uploadMedia}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to upload media');
+    }
+    
+    if (data && data.success && data.data) {
+      return data.data;
+    }
+    
+    throw new Error('Invalid response from server');
+  } catch (error) {
+    console.error('Error uploading chat media:', error);
+    throw error;
+  }
+}
+
