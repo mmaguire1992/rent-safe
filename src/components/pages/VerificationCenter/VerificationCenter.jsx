@@ -17,7 +17,7 @@ import {
   storeDocumentMetadata,
 } from "@/redux/slices/verificationSlice";
 import { documentTypeOptions } from "@/constant";
-import { downloadDocument } from "@/api/verification";
+import { downloadDocument, deleteDocument } from "@/api/verification";
 
 // Map backend docType to frontend document type options
 // Convert underscores to hyphens: "tax_document" → "tax-document"
@@ -172,6 +172,10 @@ function VerificationCenter() {
   // State for reupload tracking
   const [reuploadingDocumentId, setReuploadingDocumentId] = useState(null);
   const [reuploadingDocType, setReuploadingDocType] = useState(null);
+  
+  // State for delete confirmation modal
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState(null);
 
   const handleReupload = () => {
     // Store the rejected document's ID and docType for reupload
@@ -186,10 +190,31 @@ function VerificationCenter() {
     }
   };
 
-  const handleDeleteDocument = async (id, type) => {
-    // Note: Delete functionality would need a backend endpoint
-    // For now, just show a message
-    toast.info('Delete functionality will be implemented with backend endpoint');
+  const handleDeleteDocument = (id, type) => {
+    // Open confirmation modal
+    setDocumentToDelete({ id, type });
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteDocument = async () => {
+    if (!documentToDelete) return;
+
+    try {
+      await deleteDocument(documentToDelete.id);
+      toast.success('Document deleted successfully');
+      setDeleteModalOpen(false);
+      setDocumentToDelete(null);
+      // Refresh documents list
+      await dispatch(fetchMyDocuments());
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete document';
+      toast.error(errorMessage);
+    }
+  };
+
+  const cancelDeleteDocument = () => {
+    setDeleteModalOpen(false);
+    setDocumentToDelete(null);
   };
 
   const handleDownloadDocument = async (doc) => {
@@ -525,6 +550,58 @@ function VerificationCenter() {
           </>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-[20px] p-6 max-w-[480px] w-full mx-4 relative">
+            {/* Close Button */}
+            <button
+              onClick={cancelDeleteDocument}
+              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Warning Icon */}
+            <div className="flex justify-start mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Heading */}
+            <h2 className="text-2xl font-bold font-nunito text-secondary text-left mb-2">
+              Delete Document
+            </h2>
+
+            {/* Description */}
+            <p className="text-base font-normal font-nunito text-darkGray text-left mb-6">
+              Are you sure you want to delete this document? This action cannot be undone.
+            </p>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={cancelDeleteDocument}
+                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-[10px] font-bold hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteDocument}
+                className="flex-1 px-6 py-3 bg-blueGradient text-white rounded-[10px] font-bold shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

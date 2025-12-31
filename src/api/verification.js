@@ -69,3 +69,18 @@ export const downloadDocument = async (documentId) => {
   }
 };
 
+/**
+ * Delete document by ID
+ * @param {string} documentId - Document ID
+ * @returns {Promise<Object>} Delete response
+ */
+export const deleteDocument = async (documentId) => {
+  try {
+    const response = await apiClient.delete(verification.deleteDocument(documentId));
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    throw error;
+  }
+};
+

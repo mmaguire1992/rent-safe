@@ -40,5 +40,6 @@ export const verification = {
   storeDocument: '/verification/store-document',
   getMyDocuments: '/verification/my-documents',
   downloadDocument: (id) => `/verification/download/${id}`,
+  deleteDocument: (id) => `/verification/document/${id}`,
 };
 
