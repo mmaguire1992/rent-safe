@@ -115,16 +115,16 @@ function Messages() {
       const currentUserId = String(currentUser?._id || currentUser?.id || '');
       const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
       const otherUser = currentUserId && chatroomUserId && currentUserId === chatroomUserId
-        ? chatroom.memberId 
+        ? chatroom.memberId
         : chatroom.userId;
-      
+
       const conversation = {
         id: chatroom._id || chatroom.id,
         chatroomId: chatroom._id || chatroom.id,
-        name: otherUser 
+        name: otherUser
           ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email
           : 'Unknown User',
-        initials: otherUser 
+        initials: otherUser
           ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase()
           : 'U',
         hasPhoto: false,
@@ -135,7 +135,7 @@ function Messages() {
         time: chatroom.lastMessageAt ? new Date(chatroom.lastMessageAt).toLocaleDateString() : '',
         otherUser,
       };
-      
+
       setSelectedConversation(conversation);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -152,12 +152,12 @@ function Messages() {
         // Extract chatroomId - handle both string and populated object
         const chatroomId = message.chatroomId?._id || message.chatroomId?.id || message.chatroomId || '';
         const chatroomIdStr = String(chatroomId);
-        
+
         // Check if message is from current user - if so, skip it here (MESSAGE_SENT will handle it)
         const currentUserId = String(currentUser?._id || currentUser?.id || '');
         const messageUserId = String(message.userId?._id || message.userId?.id || message.userId || '');
         const isFromCurrentUser = currentUserId && messageUserId && currentUserId === messageUserId;
-        
+
         // Add message if it's for the current chatroom and NOT from current user
         // (Current user's messages are handled by MESSAGE_SENT event)
         if (selectedConversation && chatroomIdStr && chatroomIdStr !== 'undefined' && chatroomIdStr !== 'null' && !isFromCurrentUser) {
@@ -177,7 +177,7 @@ function Messages() {
               return [...prev, formattedMessage];
             });
             scrollToBottom();
-            
+
             // Mark as read since it's from other user
             markMessagesAsRead(chatroomIdStr);
           }
@@ -205,14 +205,14 @@ function Messages() {
             // Keep message if it doesn't match tempId and doesn't already exist with same id
             return mTempId !== msgUniqueId && mId !== msgId;
           });
-          
+
           // Check if message already exists (avoid duplicate)
           const exists = filtered.find(m => {
             const mId = String(m.id || '');
             const msgId = String(formattedMessage.id || '');
             return mId && msgId && mId === msgId;
           });
-          
+
           if (exists) return filtered;
           return [...filtered, formattedMessage];
         });
@@ -301,19 +301,6 @@ function Messages() {
     }
   };
 
-  // Handle scroll to load more messages (infinite scroll)
-  const handleScroll = useCallback((e) => {
-    const container = e.target || e.currentTarget;
-    if (!container) return;
-    
-    // If scrolled near the top (within 200px), load more messages
-    const scrollTop = container.scrollTop || 0;
-    if (scrollTop <= 200 && hasMoreMessages && !loadingMoreMessages) {
-      console.log('Loading more messages - scrollTop:', scrollTop, 'hasMore:', hasMoreMessages, 'loading:', loadingMoreMessages);
-      loadMoreMessages();
-    }
-  }, [hasMoreMessages, loadingMoreMessages, loadMoreMessages]);
-
   const loadMoreMessages = async () => {
     if (!selectedConversation || loadingMoreMessages || !hasMoreMessages) {
       console.log('loadMoreMessages blocked:', { selectedConversation: !!selectedConversation, loadingMoreMessages, hasMoreMessages });
@@ -327,22 +314,22 @@ function Messages() {
       setLoadingMoreMessages(true);
       const nextPage = currentPage + 1;
       console.log('Loading page:', nextPage, 'for chatroom:', chatroomId);
-      
+
       const result = await getChatroomMessages(chatroomId, nextPage, 20);
       console.log('Received messages:', result?.messages?.length, 'pagination:', result?.pagination);
-      
+
       if (result && result.messages && result.messages.length > 0) {
         // Backend returns newest first, so page 2 has older messages
         // We need to reverse them to show oldest first when prepending
         const formattedMessages = result.messages.reverse().map(msg => formatMessage(msg));
-        
+
         // Save current scroll position
         const container = messagesContainerRef.current;
         const previousScrollHeight = container?.scrollHeight || 0;
         const previousScrollTop = container?.scrollTop || 0;
-        
+
         console.log('Prepending', formattedMessages.length, 'messages. Previous scroll height:', previousScrollHeight);
-        
+
         // Prepend older messages to the beginning
         setChatMessages(prev => {
           const newMessages = [...formattedMessages, ...prev];
@@ -351,7 +338,7 @@ function Messages() {
         });
         setCurrentPage(nextPage);
         setHasMoreMessages(result.pagination?.hasMore || false);
-        
+
         // Restore scroll position after new messages are added
         setTimeout(() => {
           if (container) {
@@ -374,9 +361,24 @@ function Messages() {
     }
   };
 
+
+  // Handle scroll to load more messages (infinite scroll)
+  const handleScroll = useCallback((e) => {
+    const container = e.target || e.currentTarget;
+    if (!container) return;
+
+    // If scrolled near the top (within 200px), load more messages
+    const scrollTop = container.scrollTop || 0;
+    if (scrollTop <= 200 && hasMoreMessages && !loadingMoreMessages) {
+      console.log('Loading more messages - scrollTop:', scrollTop, 'hasMore:', hasMoreMessages, 'loading:', loadingMoreMessages);
+      loadMoreMessages();
+    }
+  }, [hasMoreMessages, loadingMoreMessages, loadMoreMessages]);
+
+
   const fetchMessages = async (conversation, page = 1, limit = 20) => {
     if (!conversation) return;
-    
+
     const chatroomId = String(conversation._id || conversation.id || conversation.chatroomId || '');
     if (!chatroomId || chatroomId === 'undefined' || chatroomId === 'null') return;
 
@@ -390,7 +392,7 @@ function Messages() {
         setChatMessages(formattedMessages);
         setCurrentPage(page);
         setHasMoreMessages(result.pagination?.hasMore || false);
-        
+
         // Scroll to bottom after messages are set (newest messages)
         setTimeout(() => {
           scrollToBottom();
@@ -409,18 +411,18 @@ function Messages() {
     const currentUserId = String(currentUser?._id || currentUser?.id || '');
     const messageUserId = String(msg.userId?._id || msg.userId?.id || msg.userId || '');
     const isCurrentUser = currentUserId && messageUserId && currentUserId === messageUserId;
-    
+
     return {
       id: msg._id || msg.id,
       message: msg.textDecrypted || msg.textEncrypted || msg.text || '',
       sender: isCurrentUser ? "you" : "other",
-      senderInitials: isCurrentUser 
+      senderInitials: isCurrentUser
         ? (currentUser?.firstName?.[0] || '') + (currentUser?.lastName?.[0] || '')
         : (msg.userId?.firstName?.[0] || '') + (msg.userId?.lastName?.[0] || '') || (msg.userId?.email?.[0]?.toUpperCase() || 'U'),
-      time: msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
+      time: msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-US', {
+        hour: 'numeric',
         minute: '2-digit',
-        hour12: true 
+        hour12: true
       }) : '',
       type: msg.type || 'text',
       isRead: msg.isRead,
@@ -434,16 +436,16 @@ function Messages() {
     const currentUserId = String(currentUser?._id || currentUser?.id || '');
     const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
     const otherUser = currentUserId && chatroomUserId && currentUserId === chatroomUserId
-      ? chatroom.memberId 
+      ? chatroom.memberId
       : chatroom.userId;
-    
+
     const conversation = {
       id: chatroom._id || chatroom.id,
       chatroomId: chatroom._id || chatroom.id,
-      name: otherUser 
+      name: otherUser
         ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email
         : 'Unknown User',
-      initials: otherUser 
+      initials: otherUser
         ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase()
         : 'U',
       hasPhoto: false,
@@ -454,7 +456,7 @@ function Messages() {
       time: chatroom.lastMessageAt ? new Date(chatroom.lastMessageAt).toLocaleDateString() : '',
       otherUser,
     };
-    
+
     setSelectedConversation(conversation);
   };
 
@@ -495,7 +497,7 @@ function Messages() {
 
   const handleTyping = () => {
     if (!selectedConversation || !isConnected) return;
-    
+
     const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
     if (!chatroomId || chatroomId === 'undefined' || chatroomId === 'null') return;
 
@@ -515,7 +517,7 @@ function Messages() {
   const updateChatroomLastMessage = (chatroomId, message) => {
     const chatroomIdStr = String(chatroomId || '');
     if (!chatroomIdStr || chatroomIdStr === 'undefined' || chatroomIdStr === 'null') return;
-    
+
     setChatrooms(prev => prev.map(chatroom => {
       const currentId = String(chatroom._id || chatroom.id || '');
       if (currentId === chatroomIdStr) {
@@ -528,8 +530,8 @@ function Messages() {
             userId: message.userId,
           },
           lastMessageAt: message.createdAt || new Date(),
-          unreadCount: isFromOtherUser 
-            ? (chatroom.unreadCount || 0) + 1 
+          unreadCount: isFromOtherUser
+            ? (chatroom.unreadCount || 0) + 1
             : (chatroom.unreadCount || 0),
         };
       }
@@ -540,7 +542,7 @@ function Messages() {
   const updateChatroomUnreadCount = (chatroomId, count) => {
     const chatroomIdStr = String(chatroomId || '');
     if (!chatroomIdStr || chatroomIdStr === 'undefined' || chatroomIdStr === 'null') return;
-    
+
     setChatrooms(prev => prev.map(chatroom => {
       const currentId = String(chatroom._id || chatroom.id || '');
       if (currentId === chatroomIdStr) {
@@ -557,7 +559,7 @@ function Messages() {
     setChatrooms(prev => {
       const exists = prev.find(c => (c._id || c.id) === (updatedChatroom._id || updatedChatroom.id));
       if (exists) {
-        return prev.map(c => 
+        return prev.map(c =>
           (c._id || c.id) === (updatedChatroom._id || updatedChatroom.id) ? updatedChatroom : c
         );
       } else {
@@ -594,7 +596,7 @@ function Messages() {
             verified: userData.isEmailVerified || userData.userInfo?.verificationStatus === 'approved',
             description: userData.userInfo?.bio || '',
             designation: userData.userInfo?.employment?.jobTitle || 'N/A',
-            location: userData.userInfo?.address 
+            location: userData.userInfo?.address
               ? `${userData.userInfo.address.city || ''}, ${userData.userInfo.address.country || ''}`.trim()
               : 'N/A',
             monthlyIncome: userData.userInfo?.employment?.monthlyIncome || 'N/A',
@@ -664,23 +666,23 @@ function Messages() {
       }
     }
 
-      // Filter by search query
-      if (searchQuery.trim()) {
-        // Normalize IDs for comparison to correctly identify the other user
-        const currentUserId = String(currentUser?._id || currentUser?.id || '');
-        const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
-        const otherUser = currentUserId && chatroomUserId && currentUserId === chatroomUserId
-          ? chatroom.memberId 
-          : chatroom.userId;
-        
-        const searchLower = searchQuery.toLowerCase();
-        const name = otherUser 
-          ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email
-          : '';
-        
-        return name.toLowerCase().includes(searchLower) || 
-               (otherUser?.email || '').toLowerCase().includes(searchLower);
-      }
+    // Filter by search query
+    if (searchQuery.trim()) {
+      // Normalize IDs for comparison to correctly identify the other user
+      const currentUserId = String(currentUser?._id || currentUser?.id || '');
+      const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
+      const otherUser = currentUserId && chatroomUserId && currentUserId === chatroomUserId
+        ? chatroom.memberId
+        : chatroom.userId;
+
+      const searchLower = searchQuery.toLowerCase();
+      const name = otherUser
+        ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email
+        : '';
+
+      return name.toLowerCase().includes(searchLower) ||
+        (otherUser?.email || '').toLowerCase().includes(searchLower);
+    }
 
     return true;
   });
@@ -730,19 +732,17 @@ function Messages() {
               localStorage.setItem('messagesActiveTab', newTab);
               setSelectedConversation(null);
             }}
-            className={`relative pb-2 px-2 font-semibold text-base xl:text-lg font-nunito flex items-center gap-2 transition-colors border-b-2 ${
-              activeTab === "all"
+            className={`relative pb-2 px-2 font-semibold text-base xl:text-lg font-nunito flex items-center gap-2 transition-colors border-b-2 ${activeTab === "all"
                 ? "text-[#6B4EFF] border-[#6B4EFF]"
                 : "text-darkGray border-transparent"
-            }`}
+              }`}
           >
             All Messages
             <span
-              className={`${
-                activeTab === "all"
+              className={`${activeTab === "all"
                   ? "text-white bg-[#6B4EFF]"
                   : "text-[#4A2FCC] bg-[#E8E2FF]"
-              } relative text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center`}
+                } relative text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center`}
             >
               {allMessagesCount}
             </span>
@@ -754,19 +754,17 @@ function Messages() {
               localStorage.setItem('messagesActiveTab', newTab);
               setSelectedConversation(null);
             }}
-            className={`relative pb-2 font-semibold px-2 text-base xl:text-lg font-nunito flex items-center gap-2 transition-colors border-b-2 ${
-              activeTab === "requests"
+            className={`relative pb-2 font-semibold px-2 text-base xl:text-lg font-nunito flex items-center gap-2 transition-colors border-b-2 ${activeTab === "requests"
                 ? "text-[#6B4EFF] border-[#6B4EFF]"
                 : "text-darkGray border-transparent"
-            }`}
+              }`}
           >
             Message Requests
             <span
-              className={`${
-                activeTab === "requests"
+              className={`${activeTab === "requests"
                   ? "text-white bg-[#6B4EFF]"
                   : "text-[#4A2FCC] bg-[#E8E2FF]"
-              } relative text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center`}
+                } relative text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center`}
             >
               {messageRequestsCount}
             </span>
@@ -774,16 +772,14 @@ function Messages() {
         </div>
 
         <div
-          className={`flex gap-0 bg-white rounded-[20px] ${
-            !showProfileDetail && "border border-lightGray"
-          }`}
+          className={`flex gap-0 bg-white rounded-[20px] ${!showProfileDetail && "border border-lightGray"
+            }`}
         >
           {/* Left Panel - Message List */}
           {!showProfileDetail && (
             <div
-              className={`${
-                selectedConversation ? "hidden md:flex" : "flex"
-              } w-full md:w-96 lg:w-[400px] rounded-tl-[20px] rounded-bl-[20px] md:rounded-tr-none md:rounded-br-none rounded-[20px] md:rounded-[0] bg-white border-r border-lightGray md:border-r flex flex-col`}
+              className={`${selectedConversation ? "hidden md:flex" : "flex"
+                } w-full md:w-96 lg:w-[400px] rounded-tl-[20px] rounded-bl-[20px] md:rounded-tr-none md:rounded-br-none rounded-[20px] md:rounded-[0] bg-white border-r border-lightGray md:border-r flex flex-col`}
             >
               {/* Header */}
               <div className="p-4 border-b border-lightGray">
@@ -813,10 +809,10 @@ function Messages() {
                   <div className="flex flex-col items-center justify-center py-12 text-center px-4">
                     <ChatBlueStartIcon />
                     <p className="text-darkGray text-base font-normal font-nunito mt-4">
-                      {searchQuery 
-                        ? 'No messages found' 
-                        : activeTab === "requests" 
-                          ? 'No message requests' 
+                      {searchQuery
+                        ? 'No messages found'
+                        : activeTab === "requests"
+                          ? 'No message requests'
                           : 'No messages yet'}
                     </p>
                   </div>
@@ -826,17 +822,17 @@ function Messages() {
                     const currentUserId = String(currentUser?._id || currentUser?.id || '');
                     const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
                     const otherUser = currentUserId && chatroomUserId && currentUserId === chatroomUserId
-                      ? chatroom.memberId 
+                      ? chatroom.memberId
                       : chatroom.userId;
-                    
-                    const name = otherUser 
+
+                    const name = otherUser
                       ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email
                       : 'Unknown User';
-                    
-                    const initials = otherUser 
+
+                    const initials = otherUser
                       ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase()
                       : 'U';
-                    
+
                     const chatroomId = chatroom._id || chatroom.id;
                     const isSelected = selectedConversation?.id === chatroomId;
                     const unreadCount = chatroom.unreadCount || 0;
@@ -845,9 +841,8 @@ function Messages() {
                       <div
                         key={chatroomId}
                         onClick={() => handleSelectConversation(chatroom)}
-                        className={`p-4 bg-[#F8F8F8] border-b border-lightGray cursor-pointer hover:bg-gray-50 transition-colors ${
-                          isSelected ? "bg-purple-50" : ""
-                        }`}
+                        className={`p-4 bg-[#F8F8F8] border-b border-lightGray cursor-pointer hover:bg-gray-50 transition-colors ${isSelected ? "bg-purple-50" : ""
+                          }`}
                       >
                         <div className="flex items-start gap-3">
                           <div className="relative flex-shrink-0">
@@ -876,13 +871,13 @@ function Messages() {
                             </p>
                             <div>
                               <span className="text-sm text-[#62748E] font-normal font-nunito">
-                                {chatroom.lastMessageAt 
-                                  ? new Date(chatroom.lastMessageAt).toLocaleDateString('en-US', { 
-                                      month: 'short', 
-                                      day: 'numeric',
-                                      hour: 'numeric',
-                                      minute: '2-digit'
-                                    })
+                                {chatroom.lastMessageAt
+                                  ? new Date(chatroom.lastMessageAt).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit'
+                                  })
                                   : ''}
                               </span>
                             </div>
@@ -898,13 +893,11 @@ function Messages() {
 
           {/* Right Panel - Chat View or Profile Detail */}
           <div
-            className={`${
-              selectedConversation || showProfileDetail
+            className={`${selectedConversation || showProfileDetail
                 ? "flex"
                 : "hidden md:flex"
-            } flex-col bg-white rounded-tr-[20px] rounded-br-[20px] md:rounded-tl-none md:rounded-bl-none rounded-[20px] md:rounded-[0] overflow-y-auto ${
-              showProfileDetail ? "w-full" : "flex-1"
-            }`}
+              } flex-col bg-white rounded-tr-[20px] rounded-br-[20px] md:rounded-tl-none md:rounded-bl-none rounded-[20px] md:rounded-[0] overflow-y-auto ${showProfileDetail ? "w-full" : "flex-1"
+              }`}
           >
             {showProfileDetail && tenantProfileData ? (
               <TenantProfileDetail
@@ -960,8 +953,8 @@ function Messages() {
                       No conversation selected
                     </h3>
                     <p className="text-darkGray text-base font-normal font-nunito">
-                      {activeTab === "requests" 
-                        ? "Select a message request to respond" 
+                      {activeTab === "requests"
+                        ? "Select a message request to respond"
                         : "Engage with potential renters"}
                     </p>
                   </div>

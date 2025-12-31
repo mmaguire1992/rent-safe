@@ -1135,7 +1135,7 @@ export const sidebarMenuItems = [
     icon: MessagesIcon,
     label: "Messages",
     path: "/dashboard/messages",
-    badge: 3,
+    badge: null, // Will be set dynamically
   },
   {
     icon: PaymentsIcon,

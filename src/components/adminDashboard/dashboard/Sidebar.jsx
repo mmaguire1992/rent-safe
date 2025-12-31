@@ -1,17 +1,38 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from '@/lib/react-router-compat';
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import LogoIcon from "@/svg/logoIcon";
 import { sidebarMenuItems } from "@/constant";
+import { getChatrooms } from "@/api/chat";
 
 function Sidebar({ onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   const menuItems = sidebarMenuItems;
+
+  // Fetch unread message count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const chatrooms = await getChatrooms();
+        const total = (chatrooms || []).reduce((sum, room) => sum + (room.unreadCount || 0), 0);
+        setUnreadMessageCount(total);
+      } catch (error) {
+        console.error('Error fetching unread message count:', error);
+        setUnreadMessageCount(0);
+      }
+    };
+
+    fetchUnreadCount();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Function to check if a menu item should be active based on current pathname
   const isMenuActive = (menuPath, currentPathname) => {
@@ -137,28 +158,34 @@ function Sidebar({ onClose }) {
                   </span>
                 )}
               </div>
-              {!isCollapsed && item.badge && (
-                <span
-                  className={`text-xs font-bold rounded-full w-5 h-5 md:w-6 md:h-6 flex items-center justify-center ${
-                    isActive
-                      ? "bg-[#6B4EFF] text-white"
-                      : "bg-white bg-opacity-20 text-white"
-                  }`}
-                >
-                  {item.badge}
-                </span>
-              )}
-              {isCollapsed && item.badge && (
-                <span
-                  className={`absolute top-1 right-1 text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center ${
-                    isActive
-                      ? "bg-[#6B4EFF] text-white"
-                      : "bg-white bg-opacity-20 text-white"
-                  }`}
-                >
-                  {item.badge}
-                </span>
-              )}
+              {!isCollapsed && (() => {
+                const badgeCount = item.path === '/dashboard/messages' ? unreadMessageCount : item.badge;
+                return badgeCount > 0 ? (
+                  <span
+                    className={`text-xs font-bold rounded-full w-5 h-5 md:w-6 md:h-6 flex items-center justify-center ${
+                      isActive
+                        ? "bg-[#6B4EFF] text-white"
+                        : "bg-white bg-opacity-20 text-white"
+                    }`}
+                  >
+                    {badgeCount}
+                  </span>
+                ) : null;
+              })()}
+              {isCollapsed && (() => {
+                const badgeCount = item.path === '/dashboard/messages' ? unreadMessageCount : item.badge;
+                return badgeCount > 0 ? (
+                  <span
+                    className={`absolute top-1 right-1 text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center ${
+                      isActive
+                        ? "bg-[#6B4EFF] text-white"
+                        : "bg-white bg-opacity-20 text-white"
+                    }`}
+                  >
+                    {badgeCount}
+                  </span>
+                ) : null;
+              })()}
             </button>
           );
         })}
