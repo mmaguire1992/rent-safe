@@ -32,24 +32,18 @@ const mapDocTypeToOption = (docType) => {
   return mapping[docType] || docType;
 };
 
-// Map frontend document type to backend docType
+// Convert frontend document type to backend docType format
+// Simply convert hyphens to underscores: "passport" → "passport", "tax-document" → "tax_document"
 const mapOptionToDocType = (option) => {
-  const mapping = {
-    'passport': 'identity_proof',
-    'national-id': 'id_proof',
-    'tax-document': 'pay_slip',
-    'bank-statement': 'bank_statement',
-    'proof-of-address': 'property_papers',
-    'driving-license': 'licenses',
-    'utility-bill': 'utility_bill',
-    'other': 'other',
-  };
-  return mapping[option] || option;
+  // Convert hyphens to underscores for backend format
+  // This ensures exact dropdown value is stored: "passport" → "passport", "tax-document" → "tax_document", etc.
+  return option.replace(/-/g, '_');
 };
 
 // Format document type for display (convert snake_case to readable format)
 const formatDocumentType = (docType) => {
   const typeMap = {
+    // Old types
     'identity_proof': 'Identity Proof',
     'id_proof': 'ID Proof',
     'pay_slip': 'Pay Slip',
@@ -57,8 +51,15 @@ const formatDocumentType = (docType) => {
     'property_papers': 'Property Papers',
     'licenses': 'License',
     'utility_bill': 'Utility Bill',
+    // New types (from dropdown)
+    'passport': 'Passport',
+    'driving_license': 'Driving License',
+    'national_id': 'National ID',
+    'proof_of_address': 'Proof of Address',
+    'tax_document': 'Tax Document',
     'other': 'Other',
   };
+  // Fallback: convert snake_case to Title Case if not in map
   return typeMap[docType] || docType?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Document';
 };
 
@@ -239,6 +240,14 @@ function VerificationCenter() {
       // Map frontend document type to backend docType
       const docType = mapOptionToDocType(documentType);
       
+      // Check if this document type is already uploaded
+      const existingDocs = documentsByType[docType] || [];
+      if (existingDocs.length > 0) {
+        const docTypeLabel = formatDocumentType(docType);
+        toast.error(`${docTypeLabel} is already uploaded. Please delete the existing document first or select a different document type.`);
+        return;
+      }
+      
       // Ensure we have valid File objects
       // FileUpload adds properties (uploading, progress) directly to File objects
       // We need to ensure we're using actual File instances for FormData
@@ -368,7 +377,7 @@ function VerificationCenter() {
       // Step 2: Store document metadata in database
       const documentsToStore = uploadResult.uploadResults.map((result) => ({
         fileUrl: result.url,
-        docType: result.docType || docType,
+        docType: docType, // Always use the user-selected docType (exact dropdown value)
         fileType: result.fileType,
         mime: result.mimeType,
         metaData: {
