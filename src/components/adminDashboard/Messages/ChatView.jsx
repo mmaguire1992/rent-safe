@@ -135,8 +135,8 @@ function ChatView({
         {chatMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full min-h-[400px]">
             <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#6B4EFF] border-t-transparent mb-4"></div>
-              <p className="text-[#62748E] text-sm font-normal font-nunito">Loading messages...</p>
+              <p className="text-[#62748E] text-base font-normal font-nunito">No messages yet</p>
+              <p className="text-[#62748E] text-sm font-normal font-nunito mt-2">Start the conversation by sending a message</p>
             </div>
           </div>
         ) : (

@@ -362,12 +362,18 @@ function ChatMessage() {
         setTimeout(() => {
           scrollToBottom();
         }, 200);
+      } else {
+        // No messages - set empty array
+        setChatMessages([]);
+        setCurrentPage(page);
+        setHasMoreMessages(false);
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
       toast.error('Failed to load messages');
+      setChatMessages([]); // Clear on error
     } finally {
-      setMessagesLoading(false);
+      setMessagesLoading(false); // Always set loading to false
     }
   };
 
@@ -398,10 +404,12 @@ function ChatMessage() {
 
   const handleSelectConversation = (chatroom) => {
     // Format chatroom to match expected conversation format
-    // Normalize IDs for comparison
+    // Normalize IDs for comparison (use same format as list rendering)
     const currentUserId = String(currentUser?._id || currentUser?.id || '');
     const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
-    const otherUser = currentUserId && chatroomUserId && currentUserId === chatroomUserId
+    
+    // Determine other user: if currentUser is userId, otherUser is memberId, else otherUser is userId
+    const otherUser = currentUserId === chatroomUserId
       ? chatroom.memberId 
       : chatroom.userId;
     
@@ -416,7 +424,7 @@ function ChatMessage() {
         : 'U',
       hasPhoto: false,
       photoUrl: null,
-      unread: 0, // TODO: Calculate unread count
+      unread: chatroom.unreadCount || 0,
       property: '', // TODO: Get property info if available
       message: '', // Last message will be shown
       time: chatroom.lastMessageAt ? new Date(chatroom.lastMessageAt).toLocaleDateString() : '',
@@ -512,10 +520,45 @@ function ChatMessage() {
   };
 
   // Filter chatrooms based on search
+  // const filteredChatrooms = chatrooms.filter(chatroom => {
+  //   if (!searchQuery.trim()) return true;
+    
+  //   const otherUser = currentUser?._id === (chatroom.userId?._id || chatroom.userId?.id) 
+  //     ? chatroom.memberId 
+  //     : chatroom.userId;
+    
+  //   const searchLower = searchQuery.toLowerCase();
+  //   const name = otherUser 
+  //     ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email
+  //     : '';
+    
+  //   return name.toLowerCase().includes(searchLower) || 
+  //          (otherUser?.email || '').toLowerCase().includes(searchLower);
+  // });
+
+  // Filter chatrooms based on search and exclude self-chats
   const filteredChatrooms = chatrooms.filter(chatroom => {
+    // Get current user ID (normalize)
+    const currentUserId = String(currentUser?._id || currentUser?.id || '');
+    
+    // Get chatroom user IDs (normalize)
+    const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
+    const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
+    
+    // Exclude self-chats (where userId === memberId)
+    if (chatroomUserId === chatroomMemberId) {
+      return false;
+    }
+    
+    // Exclude if current user is chatting with themselves
+    if (currentUserId && currentUserId === chatroomUserId && currentUserId === chatroomMemberId) {
+      return false;
+    }
+    
+    // Apply search filter if search query exists
     if (!searchQuery.trim()) return true;
     
-    const otherUser = currentUser?._id === (chatroom.userId?._id || chatroom.userId?.id) 
+    const otherUser = currentUserId === chatroomUserId
       ? chatroom.memberId 
       : chatroom.userId;
     
@@ -606,7 +649,11 @@ function ChatMessage() {
                   </div>
                 ) : (
                   filteredChatrooms.map((chatroom) => {
-                    const otherUser = currentUser?._id === (chatroom.userId?._id || chatroom.userId?.id) 
+                    // Use same ID normalization as handleSelectConversation
+                    const currentUserId = String(currentUser?._id || currentUser?.id || '');
+                    const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
+                    
+                    const otherUser = currentUserId === chatroomUserId
                       ? chatroom.memberId 
                       : chatroom.userId;
                     
