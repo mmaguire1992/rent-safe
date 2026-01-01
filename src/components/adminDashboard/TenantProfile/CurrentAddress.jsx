@@ -71,7 +71,7 @@ function CurrentAddress({ address }) {
             </p>
           </div>
         </div>
-        <div className="flex items-center justify-start gap-4">
+        {/* <div className="flex items-center justify-start gap-4">
           <span className="bg-[#F9F9FC] border border-lightGray w-9 h-9 rounded-[10px] p-2">
             <ResidencyIcon />
           </span>
@@ -83,7 +83,7 @@ function CurrentAddress({ address }) {
               {address.livingPeriod}
             </p>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

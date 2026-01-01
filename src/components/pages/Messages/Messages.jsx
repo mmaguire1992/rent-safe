@@ -681,25 +681,76 @@ function Messages() {
         const userId = selectedConversation.otherUser._id || selectedConversation.otherUser.id;
         if (userId) {
           const userData = await getUserById(userId);
+          
           // Format user data to match TenantProfileDetail expected structure
           const formattedTenantData = {
-            name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email,
-            profileImage: userData.userInfo?.profilePicture || userData.profileImage || '/default-avatar.png',
-            verified: userData.isEmailVerified || userData.userInfo?.verificationStatus === 'approved',
+            name: userData.userInfo?.name?.first && userData.userInfo?.name?.last
+              ? `${userData.userInfo.name.first} ${userData.userInfo.name.last}`.trim()
+              : userData.firstName && userData.lastName
+              ? `${userData.firstName} ${userData.lastName}`.trim()
+              : userData.email || 'N/A',
+            profileImage: userData.userInfo?.profileImage || '/default-avatar.png',
+            verified: userData.isEmailVerified || userData.userInfo?.verificationStatus === 'verified',
             description: userData.userInfo?.bio || '',
             designation: userData.userInfo?.employment?.jobTitle || 'N/A',
             location: userData.userInfo?.address
-              ? `${userData.userInfo.address.city || ''}, ${userData.userInfo.address.country || ''}`.trim()
+              ? [userData.userInfo.address.city, userData.userInfo.address.country]
+                  .filter(Boolean)
+                  .join(', ') || 'N/A'
               : 'N/A',
-            monthlyIncome: userData.userInfo?.employment?.monthlyIncome || 'N/A',
+            monthlyIncome: userData.userInfo?.employment?.monthlyIncome 
+              ? `£${userData.userInfo.employment.monthlyIncome.toLocaleString()}` 
+              : userData.userInfo?.proofOfIncome?.grossMonthly 
+              ? `£${userData.userInfo.proofOfIncome.grossMonthly.toLocaleString()}`
+              : 'N/A',
             creditScore: userData.userInfo?.creditScore || 0,
             creditMax: 850,
             creditRating: userData.userInfo?.creditRating || 'N/A',
             creditDescription: userData.userInfo?.creditDescription || '',
-            identity: userData.userInfo?.identity || {},
-            currentAddress: userData.userInfo?.address || {},
-            employment: userData.userInfo?.employment || {},
-            proofOfIncome: userData.userInfo?.proofOfIncome || {},
+            identity: {
+              fullName: userData.userInfo?.name?.first && userData.userInfo?.name?.last
+                ? `${userData.userInfo.name.first} ${userData.userInfo.name.last}`.trim()
+                : userData.firstName && userData.lastName
+                ? `${userData.firstName} ${userData.lastName}`.trim()
+                : 'N/A',
+              dateOfBirth: userData.userInfo?.dateOfBirth 
+                ? new Date(userData.userInfo.dateOfBirth).toLocaleDateString()
+                : 'N/A',
+              nationalInsurance: userData.userInfo?.nationalInsurance || 'N/A',
+              phone: userData.phone || 'N/A',
+              email: userData.email || 'N/A',
+            },
+            currentAddress: {
+              address: userData.userInfo?.address?.street || 'N/A',
+              city: userData.userInfo?.address?.city || 'N/A',
+              country: userData.userInfo?.address?.country || 'N/A',
+              postcode: userData.userInfo?.address?.postcode || 'N/A',
+              livingPeriod: userData.userInfo?.address?.livingPeriod || 'N/A',
+            },
+            employment: {
+              jobTitle: userData.userInfo?.employment?.jobTitle || 'N/A',
+              employmentType: userData.userInfo?.employment?.employmentType || 'N/A',
+              company: userData.userInfo?.employment?.company || 'N/A',
+              annualSalary: userData.userInfo?.employment?.annualSalary 
+                ? `£${userData.userInfo.employment.annualSalary.toLocaleString()}`
+                : 'N/A',
+              startDate: userData.userInfo?.employment?.startDate
+                ? new Date(userData.userInfo.employment.startDate).toLocaleDateString()
+                : 'N/A',
+              workLocation: userData.userInfo?.employment?.workLocation || 'N/A',
+            },
+            proofOfIncome: {
+              type: userData.userInfo?.proofOfIncome?.type || 'N/A',
+              date: userData.userInfo?.proofOfIncome?.date
+                ? new Date(userData.userInfo.proofOfIncome.date).toLocaleDateString()
+                : 'N/A',
+              grossMonthly: userData.userInfo?.proofOfIncome?.grossMonthly 
+                ? `£${userData.userInfo.proofOfIncome.grossMonthly.toLocaleString()}`
+                : 'N/A',
+              netMonthly: userData.userInfo?.proofOfIncome?.netMonthly 
+                ? `£${userData.userInfo.proofOfIncome.netMonthly.toLocaleString()}`
+                : 'N/A',
+            },
           };
           setTenantProfileData(formattedTenantData);
           setShowProfileDetail(true);
@@ -720,10 +771,34 @@ function Messages() {
           creditMax: 850,
           creditRating: 'N/A',
           creditDescription: '',
-          identity: {},
-          currentAddress: {},
-          employment: {},
-          proofOfIncome: {},
+          identity: {
+            fullName: `${selectedConversation.otherUser.firstName || ''} ${selectedConversation.otherUser.lastName || ''}`.trim() || selectedConversation.otherUser.email,
+            dateOfBirth: 'N/A',
+            nationalInsurance: 'N/A',
+            phone: selectedConversation.otherUser.phone || 'N/A',
+            email: selectedConversation.otherUser.email || 'N/A',
+          },
+          currentAddress: {
+            address: 'N/A',
+            city: 'N/A',
+            country: 'N/A',
+            postcode: 'N/A',
+            livingPeriod: 'N/A',
+          },
+          employment: {
+            jobTitle: 'N/A',
+            employmentType: 'N/A',
+            company: 'N/A',
+            annualSalary: 'N/A',
+            startDate: 'N/A',
+            workLocation: 'N/A',
+          },
+          proofOfIncome: {
+            type: 'N/A',
+            date: 'N/A',
+            grossMonthly: 'N/A',
+            netMonthly: 'N/A',
+          },
         });
         setShowProfileDetail(true);
       } finally {
