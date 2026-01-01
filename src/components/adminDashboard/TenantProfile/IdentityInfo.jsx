@@ -31,7 +31,7 @@ function IdentityInfo({ identity }) {
             </p>
           </div>
         </div>
-        <div className="flex items-center justify-start gap-4">
+        {/* <div className="flex items-center justify-start gap-4">
           <span className="bg-[#F9F9FC] border border-lightGray w-9 h-9 rounded-[10px] p-2">
             <GrayCalendarIcon />
           </span>
@@ -43,8 +43,8 @@ function IdentityInfo({ identity }) {
               {identity.dateOfBirth}
             </p>
           </div>
-        </div>
-        <div className="flex items-center justify-start gap-4">
+        </div> */}
+        {/* <div className="flex items-center justify-start gap-4">
           <span className="bg-[#F9F9FC] border border-lightGray w-9 h-9 rounded-[10px] p-2">
             <GrayInsuranceIcon />
           </span>
@@ -56,7 +56,7 @@ function IdentityInfo({ identity }) {
               {identity.nationalInsurance}
             </p>
           </div>
-        </div>
+        </div> */}
         <div className="flex items-center justify-start gap-4">
           <span className="bg-[#F9F9FC] border border-lightGray w-9 h-9 rounded-[10px] p-2">
             <GrayCallIcon />

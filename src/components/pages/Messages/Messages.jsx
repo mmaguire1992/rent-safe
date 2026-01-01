@@ -42,6 +42,7 @@ function Messages() {
   const messagesTopRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const messagesContainerRef = useRef(null);
+  const selectedConversationRef = useRef(null);
 
   const {
     isConnected,
@@ -66,6 +67,11 @@ function Messages() {
     };
     fetchUser();
   }, []);
+
+  // Sync selectedConversation ref with state
+  useEffect(() => {
+    selectedConversationRef.current = selectedConversation;
+  }, [selectedConversation]);
 
   // Fetch chatrooms
   useEffect(() => {
@@ -184,34 +190,39 @@ function Messages() {
         const messageUserId = String(message.userId?._id || message.userId?.id || message.userId || '');
         const isFromCurrentUser = currentUserId && messageUserId && currentUserId === messageUserId;
 
+        // Check if this message is for the currently selected conversation
+        const selectedId = String(selectedConversation?.id || selectedConversation?.chatroomId || '');
+        const isForSelectedConversation = selectedId && chatroomIdStr && selectedId === chatroomIdStr;
+
         // Add message if it's for the current chatroom and NOT from current user
         // (Current user's messages are handled by MESSAGE_SENT event)
-        if (selectedConversation && chatroomIdStr && chatroomIdStr !== 'undefined' && chatroomIdStr !== 'null' && !isFromCurrentUser) {
-          const selectedId = String(selectedConversation.id || selectedConversation.chatroomId || '');
-          if (selectedId === chatroomIdStr) {
-            const formattedMessage = formatMessage(message);
-            setChatMessages(prev => {
-              // Avoid duplicates by checking both id and tempId
-              const exists = prev.find(m => {
-                const mId = String(m.id || '');
-                const mTempId = String(m.tempId || '');
-                const msgId = String(formattedMessage.id || '');
-                const msgTempId = String(formattedMessage.tempId || '');
-                return (mId && msgId && mId === msgId) || (mTempId && msgTempId && mTempId === msgTempId);
-              });
-              if (exists) return prev;
-              return [...prev, formattedMessage];
+        if (isForSelectedConversation && !isFromCurrentUser) {
+          const formattedMessage = formatMessage(message);
+          setChatMessages(prev => {
+            // Avoid duplicates by checking both id and tempId
+            const exists = prev.find(m => {
+              const mId = String(m.id || '');
+              const mTempId = String(m.tempId || '');
+              const msgId = String(formattedMessage.id || '');
+              const msgTempId = String(formattedMessage.tempId || '');
+              return (mId && msgId && mId === msgId) || (mTempId && msgTempId && mTempId === msgTempId);
             });
-            scrollToBottom();
+            if (exists) return prev;
+            return [...prev, formattedMessage];
+          });
+          scrollToBottom();
 
-            // Mark as read since it's from other user
-            markMessagesAsRead(chatroomIdStr);
-          }
+          // Mark as read since it's from other user AND conversation is selected
+          markMessagesAsRead(chatroomIdStr);
+          // Explicitly set unread count to 0 for selected conversation
+          updateChatroomUnreadCount(chatroomIdStr, 0);
         }
 
-        // Update chatroom list with last message and increment unread count (for all messages, including own)
-        if (chatroomIdStr && chatroomIdStr !== 'undefined' && chatroomIdStr !== 'null') {
-          updateChatroomLastMessage(chatroomIdStr, message);
+        // Update chatroom list with last message and increment unread count
+        // Only update if message is NOT from current user (current user's messages are handled by MESSAGE_SENT)
+        // IMPORTANT: Update AFTER checking if selected, so unread count logic works correctly
+        if (chatroomIdStr && chatroomIdStr !== 'undefined' && chatroomIdStr !== 'null' && !isFromCurrentUser) {
+          updateChatroomLastMessage(chatroomIdStr, message, isForSelectedConversation);
         }
       }
     });
@@ -243,6 +254,15 @@ function Messages() {
           return [...filtered, formattedMessage];
         });
         scrollToBottom();
+        
+        // Update chatroom list with last message (for sender's own messages)
+        const chatroomIdStr = String(message.chatroomId || message.chatroom?._id || message.chatroom?.id || '');
+        if (chatroomIdStr && chatroomIdStr !== 'undefined' && chatroomIdStr !== 'null') {
+          // Check if this message is for the currently selected conversation
+          const selectedId = String(selectedConversation?.id || selectedConversation?.chatroomId || '');
+          const isForSelectedConversation = selectedId && chatroomIdStr && selectedId === chatroomIdStr;
+          updateChatroomLastMessage(chatroomIdStr, message, isForSelectedConversation);
+        }
       }
     });
 
@@ -604,31 +624,46 @@ function Messages() {
     }, 3000);
   };
 
-  const updateChatroomLastMessage = (chatroomId, message) => {
+  const updateChatroomLastMessage = (chatroomId, message, isSelected = false) => {
     const chatroomIdStr = String(chatroomId || '');
     if (!chatroomIdStr || chatroomIdStr === 'undefined' || chatroomIdStr === 'null') return;
 
-    setChatrooms(prev => prev.map(chatroom => {
-      const currentId = String(chatroom._id || chatroom.id || '');
-      if (currentId === chatroomIdStr) {
-        const isFromOtherUser = message.userId?._id !== currentUser?._id && message.userId?.id !== currentUser?.id;
-        return {
-          ...chatroom,
-          lastMessage: {
-            text: message.textDecrypted || message.textEncrypted || message.text || '',
-            createdAt: message.createdAt,
-            userId: message.userId,
-            type: message.type || 'text',
-            fileUrl: message.fileUrl || null,
-          },
-          lastMessageAt: message.createdAt || new Date(),
-          unreadCount: isFromOtherUser
-            ? (chatroom.unreadCount || 0) + 1
-            : (chatroom.unreadCount || 0),
-        };
-      }
-      return chatroom;
-    }));
+    setChatrooms(prev => {
+      return prev.map(chatroom => {
+        const currentId = String(chatroom._id || chatroom.id || '');
+        if (currentId === chatroomIdStr) {
+          // Check if message is from other user - normalize IDs for comparison
+          const messageUserId = String(message.userId?._id || message.userId?.id || message.userId || '');
+          const currentUserId = String(currentUser?._id || currentUser?.id || '');
+          const isFromOtherUser = messageUserId && currentUserId && messageUserId !== currentUserId;
+          
+          // Only increment unread if:
+          // 1. Message is from other user (not current user)
+          // 2. Conversation is NOT currently selected
+          const shouldIncrementUnread = isFromOtherUser && !isSelected;
+          
+          // Calculate new unread count
+          const currentUnreadCount = chatroom.unreadCount || 0;
+          const newUnreadCount = shouldIncrementUnread 
+            ? currentUnreadCount + 1 
+            : currentUnreadCount;
+          
+          return {
+            ...chatroom,
+            lastMessage: {
+              text: message.textDecrypted || message.textEncrypted || message.text || '',
+              createdAt: message.createdAt || new Date(),
+              userId: message.userId,
+              type: message.type || 'text',
+              fileUrl: message.fileUrl || null,
+            },
+            lastMessageAt: message.createdAt || new Date(),
+            unreadCount: newUnreadCount,
+          };
+        }
+        return chatroom;
+      });
+    });
   };
 
   const updateChatroomUnreadCount = (chatroomId, count) => {
@@ -681,25 +716,76 @@ function Messages() {
         const userId = selectedConversation.otherUser._id || selectedConversation.otherUser.id;
         if (userId) {
           const userData = await getUserById(userId);
+          
           // Format user data to match TenantProfileDetail expected structure
           const formattedTenantData = {
-            name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email,
-            profileImage: userData.userInfo?.profilePicture || userData.profileImage || '/default-avatar.png',
-            verified: userData.isEmailVerified || userData.userInfo?.verificationStatus === 'approved',
+            name: userData.userInfo?.name?.first && userData.userInfo?.name?.last
+              ? `${userData.userInfo.name.first} ${userData.userInfo.name.last}`.trim()
+              : userData.firstName && userData.lastName
+              ? `${userData.firstName} ${userData.lastName}`.trim()
+              : userData.email || 'N/A',
+            profileImage: userData.userInfo?.profileImage || '/default-avatar.png',
+            verified: userData.isEmailVerified || userData.userInfo?.verificationStatus === 'verified',
             description: userData.userInfo?.bio || '',
             designation: userData.userInfo?.employment?.jobTitle || 'N/A',
             location: userData.userInfo?.address
-              ? `${userData.userInfo.address.city || ''}, ${userData.userInfo.address.country || ''}`.trim()
+              ? [userData.userInfo.address.city, userData.userInfo.address.country]
+                  .filter(Boolean)
+                  .join(', ') || 'N/A'
               : 'N/A',
-            monthlyIncome: userData.userInfo?.employment?.monthlyIncome || 'N/A',
+            monthlyIncome: userData.userInfo?.employment?.monthlyIncome 
+              ? `£${userData.userInfo.employment.monthlyIncome.toLocaleString()}` 
+              : userData.userInfo?.proofOfIncome?.grossMonthly 
+              ? `£${userData.userInfo.proofOfIncome.grossMonthly.toLocaleString()}`
+              : 'N/A',
             creditScore: userData.userInfo?.creditScore || 0,
             creditMax: 850,
             creditRating: userData.userInfo?.creditRating || 'N/A',
             creditDescription: userData.userInfo?.creditDescription || '',
-            identity: userData.userInfo?.identity || {},
-            currentAddress: userData.userInfo?.address || {},
-            employment: userData.userInfo?.employment || {},
-            proofOfIncome: userData.userInfo?.proofOfIncome || {},
+            identity: {
+              fullName: userData.userInfo?.name?.first && userData.userInfo?.name?.last
+                ? `${userData.userInfo.name.first} ${userData.userInfo.name.last}`.trim()
+                : userData.firstName && userData.lastName
+                ? `${userData.firstName} ${userData.lastName}`.trim()
+                : 'N/A',
+              dateOfBirth: userData.userInfo?.dateOfBirth 
+                ? new Date(userData.userInfo.dateOfBirth).toLocaleDateString()
+                : 'N/A',
+              nationalInsurance: userData.userInfo?.nationalInsurance || 'N/A',
+              phone: userData.phone || 'N/A',
+              email: userData.email || 'N/A',
+            },
+            currentAddress: {
+              address: userData.userInfo?.address?.street || 'N/A',
+              city: userData.userInfo?.address?.city || 'N/A',
+              country: userData.userInfo?.address?.country || 'N/A',
+              postcode: userData.userInfo?.address?.postcode || 'N/A',
+              livingPeriod: userData.userInfo?.address?.livingPeriod || 'N/A',
+            },
+            employment: {
+              jobTitle: userData.userInfo?.employment?.jobTitle || 'N/A',
+              employmentType: userData.userInfo?.employment?.employmentType || 'N/A',
+              company: userData.userInfo?.employment?.company || 'N/A',
+              annualSalary: userData.userInfo?.employment?.annualSalary 
+                ? `£${userData.userInfo.employment.annualSalary.toLocaleString()}`
+                : 'N/A',
+              startDate: userData.userInfo?.employment?.startDate
+                ? new Date(userData.userInfo.employment.startDate).toLocaleDateString()
+                : 'N/A',
+              workLocation: userData.userInfo?.employment?.workLocation || 'N/A',
+            },
+            proofOfIncome: {
+              type: userData.userInfo?.proofOfIncome?.type || 'N/A',
+              date: userData.userInfo?.proofOfIncome?.date
+                ? new Date(userData.userInfo.proofOfIncome.date).toLocaleDateString()
+                : 'N/A',
+              grossMonthly: userData.userInfo?.proofOfIncome?.grossMonthly 
+                ? `£${userData.userInfo.proofOfIncome.grossMonthly.toLocaleString()}`
+                : 'N/A',
+              netMonthly: userData.userInfo?.proofOfIncome?.netMonthly 
+                ? `£${userData.userInfo.proofOfIncome.netMonthly.toLocaleString()}`
+                : 'N/A',
+            },
           };
           setTenantProfileData(formattedTenantData);
           setShowProfileDetail(true);
@@ -720,10 +806,34 @@ function Messages() {
           creditMax: 850,
           creditRating: 'N/A',
           creditDescription: '',
-          identity: {},
-          currentAddress: {},
-          employment: {},
-          proofOfIncome: {},
+          identity: {
+            fullName: `${selectedConversation.otherUser.firstName || ''} ${selectedConversation.otherUser.lastName || ''}`.trim() || selectedConversation.otherUser.email,
+            dateOfBirth: 'N/A',
+            nationalInsurance: 'N/A',
+            phone: selectedConversation.otherUser.phone || 'N/A',
+            email: selectedConversation.otherUser.email || 'N/A',
+          },
+          currentAddress: {
+            address: 'N/A',
+            city: 'N/A',
+            country: 'N/A',
+            postcode: 'N/A',
+            livingPeriod: 'N/A',
+          },
+          employment: {
+            jobTitle: 'N/A',
+            employmentType: 'N/A',
+            company: 'N/A',
+            annualSalary: 'N/A',
+            startDate: 'N/A',
+            workLocation: 'N/A',
+          },
+          proofOfIncome: {
+            type: 'N/A',
+            date: 'N/A',
+            grossMonthly: 'N/A',
+            netMonthly: 'N/A',
+          },
         });
         setShowProfileDetail(true);
       } finally {
@@ -991,7 +1101,7 @@ function Messages() {
                                     return '📎 Attachment';
                                   }
                                   // Regular text message - show text if available
-                                  const text = lastMsg.text || '';
+                                  const text = lastMsg.text || lastMsg.textDecrypted || lastMsg.textEncrypted || '';
                                   return text.trim() || 'No messages yet';
                                 }
                                 return 'No messages yet';
@@ -1000,11 +1110,12 @@ function Messages() {
                             <div>
                               <span className="text-sm text-[#62748E] font-normal font-nunito">
                                 {chatroom.lastMessageAt
-                                  ? new Date(chatroom.lastMessageAt).toLocaleDateString('en-US', {
+                                  ? new Date(chatroom.lastMessageAt).toLocaleString('en-US', {
                                     month: 'short',
                                     day: 'numeric',
                                     hour: 'numeric',
-                                    minute: '2-digit'
+                                    minute: '2-digit',
+                                    hour12: true
                                   })
                                   : ''}
                               </span>
