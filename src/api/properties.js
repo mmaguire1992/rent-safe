@@ -233,11 +233,13 @@ export async function getMyProperties(params = {}) {
  */
 export async function getMyActiveProperties(params = {}) {
   try {
-    const { page = 1, limit = 10 } = params;
+    const { page = 1, limit = 10, sortBy, sortOrder } = params;
     const queryParams = new URLSearchParams();
     
     if (page) queryParams.append('page', page);
     if (limit) queryParams.append('limit', limit);
+    if (sortBy) queryParams.append('sortBy', sortBy);
+    if (sortOrder) queryParams.append('sortOrder', sortOrder);
     
     const responseData = await useGetApi(
       `${propertyRoutes.getMyActiveProperties}?${queryParams.toString()}`,

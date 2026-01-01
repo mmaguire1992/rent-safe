@@ -8,9 +8,10 @@ import { chat as chatRoutes } from './routes';
 /**
  * Create or get chatroom with another user
  * @param {string} memberId - The ID of the user to chat with
+ * @param {string} propertyId - The ID of the property (optional) - tracks which property this chat is about
  * @returns {Promise<Object>} - Chatroom data
  */
-export async function createOrGetChatroom(memberId) {
+export async function createOrGetChatroom(memberId, propertyId = null) {
   try {
     if (!memberId) {
       throw new Error('Member ID is required');
@@ -22,7 +23,16 @@ export async function createOrGetChatroom(memberId) {
       throw new Error('Invalid member ID');
     }
 
-    const response = await usePostApi(chatRoutes.createOrGetChatroom, true, { memberId: memberIdStr });
+    // Prepare request body
+    const requestBody = { memberId: memberIdStr };
+    if (propertyId) {
+      const propertyIdStr = String(propertyId || '').trim();
+      if (propertyIdStr && propertyIdStr !== 'undefined' && propertyIdStr !== 'null') {
+        requestBody.propertyId = propertyIdStr;
+      }
+    }
+
+    const response = await usePostApi(chatRoutes.createOrGetChatroom, true, requestBody);
     
     if (response && response.success && response.data) {
       // Ensure chatroom ID is properly extracted
@@ -136,6 +146,27 @@ export async function uploadChatMedia(chatroomId, file, messageType = 'image') {
     throw new Error('Invalid response from server');
   } catch (error) {
     console.error('Error uploading chat media:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get recent requests - properties with renters who have chatted with the owner
+ * @param {number} limit - Maximum number of requests to return (default: 10)
+ * @returns {Promise<Array>} - Array of recent requests with property and renter info
+ */
+export async function getRecentRequests(limit = 10) {
+  try {
+    const url = `${chatRoutes.getRecentRequests}?limit=${limit}`;
+    const response = await useGetApi(url, true);
+    
+    if (response && response.success && response.data && response.data.recentRequests) {
+      return response.data.recentRequests;
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('Error getting recent requests:', error);
     throw error;
   }
 }

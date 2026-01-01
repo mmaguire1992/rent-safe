@@ -49,5 +49,11 @@ export const chat = {
   getChatrooms: '/chat/chatrooms',
   getChatroomMessages: (chatroomId) => `/chat/chatrooms/${chatroomId}/messages`,
   uploadMedia: '/chat/upload-media',
+  getRecentRequests: '/chat/recent-requests',
+};
+
+// Dashboard Routes
+export const dashboard = {
+  getOwnerStats: '/dashboard/owner-stats',
 };
 

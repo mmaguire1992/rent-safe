@@ -47,8 +47,46 @@ export const useSocket = () => {
     }
 
     // Get socket URL from environment or default
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-    const socketUrl = apiUrl.replace('/api', '') || 'http://localhost:5000';
+    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    
+    // Parse and clean the URL
+    let socketUrl = 'http://localhost:5000'; // Default fallback
+    
+    try {
+      // Remove trailing /api if present
+      if (apiUrl.endsWith('/api')) {
+        apiUrl = apiUrl.slice(0, -4);
+      }
+      // Remove trailing slash
+      if (apiUrl.endsWith('/')) {
+        apiUrl = apiUrl.slice(0, -1);
+      }
+      
+      // Validate URL format - must have protocol and domain
+      if (apiUrl && apiUrl.trim()) {
+        // If URL doesn't start with http:// or https://, add https:// (for production)
+        if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
+          // Check if we're in production (has a domain)
+          if (apiUrl.includes('.') && !apiUrl.includes('localhost')) {
+            apiUrl = `https://${apiUrl}`;
+          } else {
+            apiUrl = `http://${apiUrl}`;
+          }
+        }
+        
+        const url = new URL(apiUrl);
+        // Ensure we have a valid hostname (not just 'https' or 'http')
+        if (url.hostname && url.hostname.length > 0 && url.hostname !== 'https' && url.hostname !== 'http') {
+          socketUrl = `${url.protocol}//${url.hostname}${url.port ? `:${url.port}` : ''}`;
+        } else {
+          console.warn('Invalid hostname in API URL, using default. Original:', apiUrl);
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing socket URL, using default. Original:', apiUrl, error);
+    }
+
+    console.log('🔌 Connecting to socket:', socketUrl);
 
     // Initialize socket connection
     const socket = io(socketUrl, {

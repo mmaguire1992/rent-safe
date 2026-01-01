@@ -5,7 +5,7 @@ import SummaryCards from "@/components/adminDashboard/Dashboard-detail/SummaryCa
 import RecentRequests from "@/components/adminDashboard/Dashboard-detail/RecentRequests";
 import ActiveProperties from "@/components/adminDashboard/Dashboard-detail/ActiveProperties";
 import ProfileCompletion from "@/components/adminDashboard/Dashboard-detail/ProfileCompletion";
-import { summaryCards, recentRequests } from "@/constant";
+import { summaryCards } from "@/constant";
 
 function Dashboard() {
   return (
@@ -26,7 +26,7 @@ function Dashboard() {
         />
 
         <SummaryCards summaryCards={summaryCards} />
-        <RecentRequests recentRequests={recentRequests} />
+        <RecentRequests />
         <ActiveProperties />
       </div>
     </DashboardLayout>

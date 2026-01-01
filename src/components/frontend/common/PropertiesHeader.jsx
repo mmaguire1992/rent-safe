@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from '@/lib/react-router-compat';
 import { HiBars3 } from "react-icons/hi2";
 import HeaderIcons from "./HeaderIcons";
 import ProfileMenu from "./ProfileMenu";
 import MobileSidebar from "./MobileSidebar";
+import { getCurrentUser } from "@/api/users";
+import { useAuth } from "@/context/AuthContext";
 
 
 function PropertiesHeader({
@@ -15,6 +17,37 @@ function PropertiesHeader({
   onHomeClick,
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [remainingContacts, setRemainingContacts] = useState(null);
+  const [contactLimit, setContactLimit] = useState(5);
+  const [loading, setLoading] = useState(true);
+  const { isAuthenticated, userType } = useAuth();
+
+  useEffect(() => {
+    const fetchUserContacts = async () => {
+      // Only fetch for authenticated renters
+      if (!isAuthenticated || userType !== 'renter') {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const userData = await getCurrentUser();
+        if (userData) {
+          setRemainingContacts(userData.remainingContacts ?? null);
+          setContactLimit(userData.chatContactLimit ?? 5);
+        }
+      } catch (err) {
+        console.error('Error fetching user contacts:', err);
+        // Set defaults on error
+        setRemainingContacts(null);
+        setContactLimit(5);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserContacts();
+  }, [isAuthenticated, userType]);
 
   return (
     <>
@@ -28,17 +61,25 @@ function PropertiesHeader({
             />
           </Link>
 
-          <div className="hidden lg:flex items-center gap-2 rounded-xl px-1 py-1 h-[48px] border border-lightGray">
-            <span className="text-sm pl-4  whitespace-nowrap sm:text-base font-bold text-midGray">
-              Free Contacts:
-            </span>
-            <span className="text-sm sm:text-base pr-2 font-bold text-errorColor">
-              4<span className="text-midGray">/5</span>
-            </span>
-            <button className="w-full shadow-[0px_2px_10px_0px_rgba(0,0,0,0.2),inset_0px_2px_4px_0px_rgba(255,255,255,0.2)] px-4 py-2 bg-orangeGradient rounded-lg text-base font-bold text-white">
-              €6.99 per listing
-            </button>
-          </div>
+          {isAuthenticated && userType === 'renter' && (
+            <div className="hidden lg:flex items-center gap-2 rounded-xl px-1 py-1 h-[48px] border border-lightGray">
+              <span className="text-sm pl-4  whitespace-nowrap sm:text-base font-bold text-midGray">
+                Free Contacts:
+              </span>
+              {!loading && remainingContacts !== null ? (
+                <span className="text-sm sm:text-base pr-2 font-bold text-errorColor">
+                  {remainingContacts}<span className="text-midGray">/{contactLimit}</span>
+                </span>
+              ) : (
+                <span className="text-sm sm:text-base pr-2 font-bold text-midGray">
+                  <span className="text-midGray">-/{contactLimit}</span>
+                </span>
+              )}
+              <button className="w-full shadow-[0px_2px_10px_0px_rgba(0,0,0,0.2),inset_0px_2px_4px_0px_rgba(255,255,255,0.2)] px-4 py-2 bg-orangeGradient rounded-lg text-base font-bold text-white">
+                use one connect per listing
+              </button>
+            </div>
+          )}
 
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden lg:flex items-center gap-2 sm:gap-4">

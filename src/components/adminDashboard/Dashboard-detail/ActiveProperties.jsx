@@ -25,18 +25,38 @@ function ActiveProperties() {
   
   const [currentPage, setCurrentPage] = useState(1);
   const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [sortBy, setSortBy] = useState(null); // 'title', 'location', 'type', 'rent', 'leads', 'views', 'status'
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const dropdownRefs = useRef({});
+  const sortDropdownRef = useRef(null);
   const itemsPerPage = 4;
 
-  // Fetch active properties when component mounts or page changes
+  // Fetch active properties when component mounts, page changes, or sort changes
   useEffect(() => {
-    dispatch(fetchMyActiveProperties({
+    const params = {
       page: currentPage,
       limit: itemsPerPage,
-    }));
-  }, [dispatch, currentPage, itemsPerPage]);
+    };
+    
+    // Add sortBy and sortOrder if sorting is applied
+    if (sortBy) {
+      params.sortBy = sortBy;
+      params.sortOrder = sortOrder;
+    }
+    
+    dispatch(fetchMyActiveProperties(params));
+  }, [dispatch, currentPage, itemsPerPage, sortBy, sortOrder]);
 
-  // Transform properties to match component expectations
+  // Sort options
+  const sortOptions = [
+    { value: 'title', label: 'Title' },
+    { value: 'rent', label: 'Rent' },
+    { value: 'leads', label: 'Leads' },
+    { value: 'views', label: 'Views' },
+  ];
+
+  // Transform properties (sorting is done on backend)
   const transformedProperties = useMemo(() => {
     if (!allProperties || allProperties.length === 0) return [];
     
@@ -109,12 +129,17 @@ function ActiveProperties() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentProperties = transformedProperties;
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (openDropdownId && dropdownRefs.current[openDropdownId]) {
         if (!dropdownRefs.current[openDropdownId].contains(event.target)) {
           setOpenDropdownId(null);
+        }
+      }
+      if (showSortDropdown && sortDropdownRef.current) {
+        if (!sortDropdownRef.current.contains(event.target)) {
+          setShowSortDropdown(false);
         }
       }
     };
@@ -123,7 +148,7 @@ function ActiveProperties() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [openDropdownId]);
+  }, [openDropdownId, showSortDropdown]);
 
   const handleToggleDropdown = (propertyId) => {
     setOpenDropdownId(openDropdownId === propertyId ? null : propertyId);
@@ -142,6 +167,59 @@ function ActiveProperties() {
     }
   };
 
+  const handleSort = (sortField) => {
+    if (sortBy === sortField) {
+      // Toggle sort order if same field
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new sort field with ascending order
+      setSortBy(sortField);
+      setSortOrder('asc');
+    }
+    setShowSortDropdown(false);
+    // Reset to first page when sorting changes
+    setCurrentPage(1);
+  };
+
+  const handleExportCSV = () => {
+    if (!transformedProperties || transformedProperties.length === 0) {
+      alert('No data to export');
+      return;
+    }
+
+    // Prepare CSV headers
+    const headers = ['Property', 'Location', 'Type', 'Rent', 'Leads', 'Views', 'Status', 'Property ID'];
+    
+    // Prepare CSV rows
+    const rows = transformedProperties.map(property => [
+      property.title || '',
+      property.location || '',
+      property.type || '',
+      property.rent || '',
+      property.leads || 0,
+      property.views || 0,
+      property.status || '',
+      property.propertyId || '',
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `active-properties-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="bg-white mt-4 sm:mt-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
@@ -149,12 +227,41 @@ function ActiveProperties() {
           Active Properties
         </h2>
         <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-          <button className="flex items-center gap-1.5 sm:gap-2 h-[36px] sm:h-[38px] border border-lightGray rounded-[10px] px-3 sm:px-4 md:px-6 py-1.5 md:py-2">
-            <span className="text-darkGray text-xs sm:text-sm md:text-base font-bold font-nunito whitespace-nowrap">
-              Sort by
-            </span>
-            <SortingIcon />
-          </button>
+          <div className="relative" ref={sortDropdownRef}>
+            <button 
+              onClick={() => setShowSortDropdown(!showSortDropdown)}
+              className="flex items-center gap-1.5 sm:gap-2 h-[36px] sm:h-[38px] border border-lightGray rounded-[10px] px-3 sm:px-4 md:px-6 py-1.5 md:py-2 hover:bg-gray-50 transition-colors"
+            >
+              <span className="text-darkGray text-xs sm:text-sm md:text-base font-bold font-nunito whitespace-nowrap">
+                {sortBy ? `Sort by: ${sortOptions.find(opt => opt.value === sortBy)?.label || sortBy}` : 'Sort by'}
+              </span>
+              <SortingIcon />
+            </button>
+            {showSortDropdown && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-lightGray rounded-lg shadow-lg z-50">
+                {sortOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleSort(option.value)}
+                    className={`w-full flex items-center justify-between px-4 py-2 text-left hover:bg-gray-50 transition-colors ${
+                      sortBy === option.value ? 'bg-blue-50' : ''
+                    } ${option.value === sortOptions[0].value ? 'first:rounded-t-lg' : ''} ${
+                      option.value === sortOptions[sortOptions.length - 1].value ? 'last:rounded-b-lg' : ''
+                    }`}
+                  >
+                    <span className="text-sm text-secondary font-medium font-nunito">
+                      {option.label}
+                    </span>
+                    {sortBy === option.value && (
+                      <span className="text-xs text-[#4A2FCC] font-bold">
+                        {sortOrder === 'asc' ? '↑' : '↓'}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             onClick={() => navigate("/dashboard/properties/add")}
             className="bg-blueGradient text-white px-3 sm:px-3.5 md:px-4 h-[36px] sm:h-[38px] py-1.5 md:py-2 rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors flex items-center gap-1 sm:gap-1.5 md:gap-2 text-xs sm:text-sm md:text-base"
@@ -164,7 +271,10 @@ function ActiveProperties() {
               <GoPlus className="text-lg sm:text-xl md:text-2xl" />
             </span>
           </button>
-          <button className="bg-white border border-[#4A2FCC] h-[36px] sm:h-[38px] text-[#4A2FCC] px-3 sm:px-4 md:px-6 py-1.5 md:py-2 rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors flex items-center gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
+          <button 
+            onClick={handleExportCSV}
+            className="bg-white border border-[#4A2FCC] h-[36px] sm:h-[38px] text-[#4A2FCC] px-3 sm:px-4 md:px-6 py-1.5 md:py-2 rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors flex items-center gap-2 md:gap-3 text-xs sm:text-sm md:text-base"
+          >
             <span className="hidden sm:inline whitespace-nowrap">Export</span>
             <FiDownload className="text-sm md:text-base" />
           </button>

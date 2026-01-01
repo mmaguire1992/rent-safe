@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react';
 import { useNavigate } from '@/lib/react-router-compat';
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
@@ -9,9 +10,31 @@ import GreenGrowthIcon from "@/svg/greenGrowthIcon";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
 import BlueChatIcon from "@/svg/blueChatIcon";
 import GrayMapIcon from "@/svg/grayMapIcon";
+import { getRecentRequests } from '@/api/chat';
 
-function RecentRequests({ recentRequests }) {
+function RecentRequests() {
   const navigate = useNavigate();
+  const [recentRequests, setRecentRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchRecentRequests = async () => {
+      try {
+        setLoading(true);
+        const data = await getRecentRequests(10);
+        setRecentRequests(data || []);
+      } catch (err) {
+        console.error('Error fetching recent requests:', err);
+        setError(err.message);
+        setRecentRequests([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecentRequests();
+  }, []);
   const recentSliderSettings = {
     dots: false,
     infinite: true,
@@ -87,7 +110,7 @@ function RecentRequests({ recentRequests }) {
             Recent Requests
           </h2>
           <span className="bg-[#E8E2FF] text-[#4A2FCC] text-xs sm:text-sm font-bold rounded-full w-5 h-5 md:w-6 md:h-6 flex items-center justify-center flex-shrink-0">
-            4
+            {recentRequests.length}
           </span>
         </div>
         <button
@@ -99,22 +122,48 @@ function RecentRequests({ recentRequests }) {
       </div>
 
       <div className="recent-requests-slider relative">
-        {recentRequests.length > 0 ? (
+        {loading ? (
+          <div className="text-center py-4 text-darkGray">
+            Loading recent requests...
+          </div>
+        ) : error ? (
+          <div className="text-center py-4 text-red-500">
+            Error loading recent requests: {error}
+          </div>
+        ) : recentRequests.length > 0 ? (
           <Slider {...recentSliderSettings}>
             {recentRequests.map((request) => (
               <div key={request.id}>
                 <div
-                  onClick={() => navigate(`/dashboard/tenant/${request.id}`)}
-                  className="border min-w-[250px] border-lightGray rounded-[20px] transition-colors h-full bg-white mx-1 sm:mx-2 md:mx-0 cursor-pointer"
+                  onClick={() => {
+                    // Navigate to chat with the renter using chatroomId
+                    if (request.chatroomId) {
+                      navigate(`/dashboard/messages?chatroomId=${request.chatroomId}`);
+                    } else if (request.renterId) {
+                      navigate(`/dashboard/tenant/${request.renterId}`);
+                    }
+                  }}
+                  className="border min-w-[250px] border-lightGray rounded-[20px] transition-colors h-full bg-white mx-1 sm:mx-2 md:mx-0 cursor-pointer hover:border-[#6B4EFF]"
                 >
                   <div className="flex items-start gap-3  p-3 md:p-4 ">
                     <div className="relative flex-shrink-0">
-                      <div className="w-12 h-12 md:w-[56px] md:h-[56px] bg-gray-300 rounded-[10px] flex items-center justify-center">
-                        <img
-                          src={request.icon}
-                          alt={request.name}
-                          className="w-full h-full object-cover rounded-[10px]"
-                        />
+                      <div className="w-12 h-12 md:w-[56px] md:h-[56px] bg-gray-300 rounded-[10px] flex items-center justify-center overflow-hidden">
+                        {request.icon ? (
+                          <img
+                            src={request.icon}
+                            alt={request.name}
+                            className="w-full h-full object-cover rounded-[10px]"
+                            onError={(e) => {
+                              // Fallback to default avatar if image fails to load
+                              e.target.style.display = 'none';
+                              e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-[#6B4EFF] text-white font-bold text-lg">' + (request.name?.charAt(0) || 'U') + '</div>';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-[#6B4EFF] text-white font-bold text-lg">
+                            {request.name?.charAt(0) || 'U'}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -149,7 +198,7 @@ function RecentRequests({ recentRequests }) {
                       <div className="flex items-center gap-1">
                         <GrayMapIcon />
                         <p className="text-darkGray text-sm font-nunito md:text-base mb-1 line-clamp-1">
-                          {request.address}
+                          {request.address || 'Address not available'}
                         </p>
                       </div>
                     </div>

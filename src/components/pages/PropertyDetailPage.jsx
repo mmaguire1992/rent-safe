@@ -94,8 +94,11 @@ function PropertyDetailPage() {
     try {
       setIsContacting(true);
       
-      // Create or get chatroom with owner
-      const chatroom = await createOrGetChatroom(ownerId);
+      // Get property ID from property object or URL params
+      const propertyId = property?._id || property?.id || id;
+      
+      // Create or get chatroom with owner and propertyId
+      const chatroom = await createOrGetChatroom(ownerId, propertyId);
       
       if (chatroom && (chatroom._id || chatroom.id)) {
         // Ensure chatroomId is a string

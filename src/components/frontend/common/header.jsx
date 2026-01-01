@@ -12,6 +12,7 @@ import GreenCheckedIcon from "@/svg/greenCheckedIcon";
 import ProfileMenu from "./ProfileMenu";
 import MobileSidebar from "./MobileSidebar";
 import { useAuth } from "@/context/AuthContext";
+import { getCurrentUser } from "@/api/users";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,6 +22,9 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, userName, userType, user, logout } = useAuth();
+  const [remainingContacts, setRemainingContacts] = useState(null);
+  const [contactLimit, setContactLimit] = useState(5);
+  const [loading, setLoading] = useState(true);
 
   const handleScrollToSection = (e, sectionId) => {
     e.preventDefault();
@@ -58,6 +62,33 @@ const Navbar = () => {
     navigate("/properties");
     setIsOpen(false);
   };
+
+  // Fetch user contacts
+  useEffect(() => {
+    const fetchUserContacts = async () => {
+      if (!isAuthenticated || userType !== 'renter') {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const userData = await getCurrentUser();
+        if (userData) {
+          setRemainingContacts(userData.remainingContacts ?? null);
+          setContactLimit(userData.chatContactLimit ?? 5);
+        }
+      } catch (err) {
+        console.error('Error fetching user contacts:', err);
+        // Set defaults on error
+        setRemainingContacts(null);
+        setContactLimit(5);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserContacts();
+  }, [isAuthenticated, userType]);
 
   // Close renter menu when clicking outside
   useEffect(() => {
@@ -237,10 +268,14 @@ const Navbar = () => {
               {/* Pricing Buttons */}
               <div className="flex items-center gap-2">
                 <button className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium text-text-primary hover:bg-gray-200 transition">
-                  Free Contacts: <span className="text-red-500">0/5</span>
+                  Free Contacts: {!loading && remainingContacts !== null ? (
+                    <span className="text-red-500">{remainingContacts}/{contactLimit}</span>
+                  ) : (
+                    <span className="text-gray-400">-/{contactLimit}</span>
+                  )}
                 </button>
                 <button className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition shadow-sm">
-                  €6.99 per listing
+                  use one connect per listing
                 </button>
               </div>
 
