@@ -160,14 +160,13 @@ function Support() {
         priority: "medium",
       });
       setUploadedFiles([]);
+      setIsLoading(true);
       setShowForm(false);
 
       // Reload tickets
       await loadTickets();
-
       // Show success modal on listing page (not on form page)
       setIsSuccessModalOpen(true);
-      toast.success('Support ticket created successfully!');
     } catch (error) {
       console.error('Error submitting support request:', error);
       toast.error(error.response?.data?.message || error.message || 'Failed to submit support request. Please try again.');
