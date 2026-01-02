@@ -14,7 +14,6 @@ import BlockIcon from "@/svg/blockIcon";
 import GrayRemoveIcon from "@/svg/grayRemoveIcon";
 import BlueEditIcon from "@/svg/blueEditIcon";
 import SendWhiteIcon from "@/svg/sendWhiteIcon";
-import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 function ChatView({
   selectedConversation,
@@ -39,10 +38,6 @@ function ChatView({
   isCurrentUserBlocked = false,
 }) {
   const [showMenu, setShowMenu] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showBlockModal, setShowBlockModal] = useState(false);
-  const [showUnblockModal, setShowUnblockModal] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const menuRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -78,64 +73,23 @@ function ChatView({
 
   const handleSelectOption = (action) => {
     setShowMenu(false);
-    if (action === "delete") {
-      setShowDeleteModal(true);
-    } else if (action === "block") {
-      setShowBlockModal(true);
-    } else if (action === "unblock") {
-      setShowUnblockModal(true);
+    if (!selectedConversation) return;
+    
+    const chatroomId = selectedConversation.id || selectedConversation.chatroomId;
+    
+    if (action === "delete" && onDeleteChatroom) {
+      onDeleteChatroom(chatroomId);
+    } else if (action === "block" && onBlockChatroom) {
+      onBlockChatroom(chatroomId);
+    } else if (action === "unblock" && onUnblockChatroom) {
+      onUnblockChatroom(chatroomId);
     }
   };
 
-  const handleConfirmDelete = async () => {
-    if (!onDeleteChatroom || !selectedConversation) return;
-    try {
-      setIsProcessing(true);
-      await onDeleteChatroom(selectedConversation.id || selectedConversation.chatroomId);
-      setShowDeleteModal(false);
-    } catch (error) {
-      console.error('Error deleting chatroom:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleConfirmBlock = async () => {
-    if (!onBlockChatroom || !selectedConversation) return;
-    try {
-      setIsProcessing(true);
-      await onBlockChatroom(selectedConversation.id || selectedConversation.chatroomId);
-      setShowBlockModal(false);
-    } catch (error) {
-      console.error('Error blocking chatroom:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleConfirmUnblock = async () => {
+  const handleUnblockFromInput = () => {
     if (!onUnblockChatroom || !selectedConversation) return;
-    try {
-      setIsProcessing(true);
-      await onUnblockChatroom(selectedConversation.id || selectedConversation.chatroomId);
-      setShowUnblockModal(false);
-    } catch (error) {
-      console.error('Error unblocking chatroom:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleUnblockFromInput = async () => {
-    if (!onUnblockChatroom || !selectedConversation) return;
-    try {
-      setIsProcessing(true);
-      await onUnblockChatroom(selectedConversation.id || selectedConversation.chatroomId);
-    } catch (error) {
-      console.error('Error unblocking chatroom:', error);
-    } finally {
-      setIsProcessing(false);
-    }
+    const chatroomId = selectedConversation.id || selectedConversation.chatroomId;
+    onUnblockChatroom(chatroomId);
   };
 
   return (
@@ -449,41 +403,6 @@ function ChatView({
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        onConfirm={handleConfirmDelete}
-        title="Delete Conversation"
-        message="Are you sure you want to delete this conversation? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        isProcessing={isProcessing}
-      />
-
-      {/* Block Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showBlockModal}
-        onClose={() => setShowBlockModal(false)}
-        onConfirm={handleConfirmBlock}
-        title="Block User"
-        message={`Are you sure you want to block ${selectedConversation?.name || 'this user'}? You will not be able to send messages to them, but the chat history will be preserved.`}
-        confirmText="Block"
-        cancelText="Cancel"
-        isProcessing={isProcessing}
-      />
-
-      {/* Unblock Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showUnblockModal}
-        onClose={() => setShowUnblockModal(false)}
-        onConfirm={handleConfirmUnblock}
-        title="Unblock User"
-        message={`Are you sure you want to unblock ${selectedConversation?.name || 'this user'}? You will be able to send messages again.`}
-        confirmText="Unblock"
-        cancelText="Cancel"
-        isProcessing={isProcessing}
-      />
     </>
   );
 }

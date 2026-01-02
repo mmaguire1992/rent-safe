@@ -181,7 +181,7 @@ export async function getRecentRequests(limit = 10) {
         throw new Error('Chatroom ID is required');
       }
 
-      const response = await useDeleteApi(chatRoutes.deleteChatroom(chatroomId), true);
+      const response = await usePatchApi(chatRoutes.updateChatroom(chatroomId), true, { action: 'delete' });
 
       if (response && response.success && response.data) {
         return response.data;
@@ -210,7 +210,8 @@ export async function getRecentRequests(limit = 10) {
         throw new Error('Action must be a boolean (true to block, false to unblock)');
       }
 
-      const response = await usePatchApi(chatRoutes.blockUnblockChatroom(chatroomId), true, { action });
+      const actionStr = action ? 'block' : 'unblock';
+      const response = await usePatchApi(chatRoutes.updateChatroom(chatroomId), true, { action: actionStr });
 
       if (response && response.success && response.data) {
         return response.data;
@@ -219,6 +220,35 @@ export async function getRecentRequests(limit = 10) {
       return response;
     } catch (error) {
       console.error('Error blocking/unblocking chatroom:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update chatroom (delete, block, unblock)
+   * @param {string} chatroomId - The ID of the chatroom
+   * @param {string} action - Action to perform: 'delete', 'block', or 'unblock'
+   * @returns {Promise<Object>} - Updated chatroom data
+   */
+  export async function updateChatroom(chatroomId, action) {
+    try {
+      if (!chatroomId) {
+        throw new Error('Chatroom ID is required');
+      }
+
+      if (!action || !['delete', 'block', 'unblock'].includes(action)) {
+        throw new Error('Valid action is required: delete, block, or unblock');
+      }
+
+      const response = await usePatchApi(chatRoutes.updateChatroom(chatroomId), true, { action });
+      
+      if (response && response.success && response.data) {
+        return response.data;
+      }
+      
+      throw new Error(response.message || 'Failed to update chatroom');
+    } catch (error) {
+      console.error('Error updating chatroom:', error);
       throw error;
     }
   }

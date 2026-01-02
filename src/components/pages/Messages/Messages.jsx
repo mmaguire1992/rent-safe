@@ -9,7 +9,7 @@ import SendOfferModal from "@/components/adminDashboard/TenantProfile/SendOfferM
 import BlueSearchIcon from "@/svg/blueSearchIcon";
 import MediumCheckedIcon from "@/svg/mediumCheckedIcon";
 import ChatBlueStartIcon from "@/svg/chatBlueStartIcon";
-import { getChatrooms, getChatroomMessages, uploadChatMedia, deleteChatroom, blockUnblockChatroom } from "@/api/chat";
+import { getChatrooms, getChatroomMessages, uploadChatMedia, updateChatroom } from "@/api/chat";
 import { getCurrentUser, getUserById } from "@/api/users";
 import { useSocket, SOCKET_EVENTS } from "@/hooks/useSocket";
 import { toast } from "react-toastify";
@@ -38,6 +38,10 @@ function Messages() {
   });
   const [tenantProfileData, setTenantProfileData] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmChatroomId, setConfirmChatroomId] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesTopRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -885,48 +889,37 @@ function Messages() {
     setTenantProfileData(null);
   };
 
-  const handleDeleteChatroom = async (chatroomId) => {
+  const handleDeleteChatroom = (chatroomId) => {
+    setConfirmAction('delete');
+    setConfirmChatroomId(chatroomId);
+    setShowConfirmModal(true);
+  };
+
+  const handleBlockChatroom = (chatroomId) => {
+    setConfirmAction('block');
+    setConfirmChatroomId(chatroomId);
+    setShowConfirmModal(true);
+  };
+
+  const handleUnblockChatroom = async (chatroomId) => {
     try {
-      await deleteChatroom(chatroomId);
-      toast.success('Conversation deleted successfully');
-      
-      // Remove chatroom from list
-      setChatrooms(prev => prev.filter(c => (c._id || c.id) !== chatroomId));
-      
-      // If deleted chatroom is currently selected, clear selection
-      if (selectedConversation && (selectedConversation.id === chatroomId || selectedConversation.chatroomId === chatroomId)) {
-        setSelectedConversation(null);
-        setChatMessages([]);
-        setShowProfileDetail(false);
-        setTenantProfileData(null);
-      }
+      setIsProcessing(true);
+      await updateChatroom(chatroomId, 'unblock');
       
       // Refresh chatrooms list
       const data = await getChatrooms();
       const normalizedChatrooms = (data || []).map(chatroom => {
         if (!chatroom.lastMessage) {
-          return {
-            ...chatroom,
-            lastMessage: null,
-          };
+          return { ...chatroom, lastMessage: null };
         }
-        
         if (typeof chatroom.lastMessage === 'string') {
           return {
             ...chatroom,
-            lastMessage: {
-              text: chatroom.lastMessage,
-              createdAt: chatroom.lastMessageAt,
-            },
+            lastMessage: { text: chatroom.lastMessage, createdAt: chatroom.lastMessageAt },
           };
         }
-        
         if (typeof chatroom.lastMessage === 'object') {
-          const text = chatroom.lastMessage.text || 
-                      chatroom.lastMessage.textDecrypted || 
-                      chatroom.lastMessage.textEncrypted || 
-                      '';
-          
+          const text = chatroom.lastMessage.text || chatroom.lastMessage.textDecrypted || chatroom.lastMessage.textEncrypted || '';
           return {
             ...chatroom,
             lastMessage: {
@@ -938,94 +931,96 @@ function Messages() {
             },
           };
         }
-        
-        return {
-          ...chatroom,
-          lastMessage: null,
-        };
+        return { ...chatroom, lastMessage: null };
       });
       setChatrooms(normalizedChatrooms);
-    } catch (error) {
-      console.error('Error deleting chatroom:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete conversation');
-    }
-  };
-
-  const handleBlockChatroom = async (chatroomId) => {
-    try {
-      const updatedChatroom = await blockUnblockChatroom(chatroomId, true);
-      toast.success('User blocked successfully');
       
-      // Update chatroom in list with timestamp fields
-      setChatrooms(prev => {
-        const updated = prev.map(c => {
-          if ((c._id || c.id) === chatroomId) {
-            const updatedChat = {
-              ...c,
-              ...updatedChatroom,
-              // Ensure all block-related fields are updated
-              isBlocked: true,
-              blockedBy: updatedChatroom.blockedBy,
-              status: 'blocked',
-              blockedAtByUserId: updatedChatroom.blockedAtByUserId,
-              blockedAtByMemberId: updatedChatroom.blockedAtByMemberId,
-              unblockedAtByUserId: updatedChatroom.unblockedAtByUserId,
-              unblockedAtByMemberId: updatedChatroom.unblockedAtByMemberId,
-            };
-            
-            // Refresh selected conversation to recalculate block status using timestamp fields
-            if (selectedConversation && (selectedConversation.id === chatroomId || selectedConversation.chatroomId === chatroomId)) {
-              setTimeout(() => handleSelectConversation(updatedChat), 0);
-            }
-            
-            return updatedChat;
-          }
-          return c;
-        });
-        return updated;
-      });
-    } catch (error) {
-      console.error('Error blocking chatroom:', error);
-      toast.error(error.response?.data?.message || 'Failed to block user');
-    }
-  };
-
-  const handleUnblockChatroom = async (chatroomId) => {
-    try {
-      const updatedChatroom = await blockUnblockChatroom(chatroomId, false);
-      toast.success('User unblocked successfully');
-      
-      // Update chatroom in list with timestamp fields
-      setChatrooms(prev => {
-        const updated = prev.map(c => {
-          if ((c._id || c.id) === chatroomId) {
-            const updatedChat = {
-              ...c,
-              ...updatedChatroom,
-              // Ensure all block-related fields are updated
-              isBlocked: updatedChatroom.isBlocked || false,
-              blockedBy: updatedChatroom.blockedBy,
-              status: updatedChatroom.status || 'active',
-              blockedAtByUserId: updatedChatroom.blockedAtByUserId,
-              blockedAtByMemberId: updatedChatroom.blockedAtByMemberId,
-              unblockedAtByUserId: updatedChatroom.unblockedAtByUserId,
-              unblockedAtByMemberId: updatedChatroom.unblockedAtByMemberId,
-            };
-            
-            // Refresh selected conversation to recalculate block status using timestamp fields
-            if (selectedConversation && (selectedConversation.id === chatroomId || selectedConversation.chatroomId === chatroomId)) {
-              setTimeout(() => handleSelectConversation(updatedChat), 0);
-            }
-            
-            return updatedChat;
-          }
-          return c;
-        });
-        return updated;
-      });
+      // Update selected conversation if it's the unblocked one
+      if (selectedConversation && (selectedConversation.id === chatroomId || selectedConversation.chatroomId === chatroomId)) {
+        const updatedChatroom = normalizedChatrooms.find(c => (c._id || c.id) === chatroomId);
+        if (updatedChatroom) {
+          handleSelectConversation(updatedChatroom);
+        }
+      }
     } catch (error) {
       console.error('Error unblocking chatroom:', error);
-      toast.error(error.response?.data?.message || 'Failed to unblock user');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmChatroomId || !confirmAction) return;
+
+    try {
+      setIsProcessing(true);
+      await updateChatroom(confirmChatroomId, confirmAction);
+      
+      if (confirmAction === 'delete') {
+        // Remove chatroom from list
+        setChatrooms(prev => prev.filter(c => (c._id || c.id) !== confirmChatroomId));
+        
+        // If deleted chatroom is currently selected, clear selection
+        if (selectedConversation && (selectedConversation.id === confirmChatroomId || selectedConversation.chatroomId === confirmChatroomId)) {
+          setSelectedConversation(null);
+          setChatMessages([]);
+          setShowProfileDetail(false);
+          setTenantProfileData(null);
+        }
+      } else if (confirmAction === 'block') {
+        // Refresh chatrooms list
+        const data = await getChatrooms();
+        const normalizedChatrooms = (data || []).map(chatroom => {
+          if (!chatroom.lastMessage) {
+            return { ...chatroom, lastMessage: null };
+          }
+          if (typeof chatroom.lastMessage === 'string') {
+            return {
+              ...chatroom,
+              lastMessage: { text: chatroom.lastMessage, createdAt: chatroom.lastMessageAt },
+            };
+          }
+          if (typeof chatroom.lastMessage === 'object') {
+            const text = chatroom.lastMessage.text || chatroom.lastMessage.textDecrypted || chatroom.lastMessage.textEncrypted || '';
+            return {
+              ...chatroom,
+              lastMessage: {
+                text: text,
+                createdAt: chatroom.lastMessage.createdAt || chatroom.lastMessageAt,
+                userId: chatroom.lastMessage.userId,
+                type: chatroom.lastMessage.type || 'text',
+                fileUrl: chatroom.lastMessage.fileUrl || null,
+              },
+            };
+          }
+          return { ...chatroom, lastMessage: null };
+        });
+        setChatrooms(normalizedChatrooms);
+        
+        // Update selected conversation if it's the blocked one
+        if (selectedConversation && (selectedConversation.id === confirmChatroomId || selectedConversation.chatroomId === confirmChatroomId)) {
+          const updatedChatroom = normalizedChatrooms.find(c => (c._id || c.id) === confirmChatroomId);
+          if (updatedChatroom) {
+            handleSelectConversation(updatedChatroom);
+          }
+        }
+      }
+      
+      setShowConfirmModal(false);
+      setConfirmAction(null);
+      setConfirmChatroomId(null);
+    } catch (error) {
+      console.error(`Error ${confirmAction}ing chatroom:`, error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    if (!isProcessing) {
+      setShowConfirmModal(false);
+      setConfirmAction(null);
+      setConfirmChatroomId(null);
     }
   };
 
@@ -1395,6 +1390,52 @@ function Messages() {
         setFormData={setOfferFormData}
         onSend={handleOfferSubmit}
       />
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-[20px] p-6 max-w-[500px] w-full mx-4 relative">
+            <button
+              onClick={handleCloseModal}
+              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              disabled={isProcessing}
+            >
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <h2 className="text-xl font-bold font-nunito text-secondary text-left mb-4">
+              {confirmAction === 'delete' ? 'Delete Chatroom' : confirmAction === 'block' ? 'Block User' : ''}
+            </h2>
+
+            <p className="text-base font-normal font-nunito text-darkGray text-left mb-6">
+              {confirmAction === 'delete' 
+                ? 'Are you sure you want to delete this chatroom? This action cannot be undone.'
+                : confirmAction === 'block'
+                ? 'Are you sure you want to block this user? You will not be able to send messages to them.'
+                : ''}
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleCloseModal}
+                disabled={isProcessing}
+                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-[10px] font-bold hover:bg-gray-300 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmAction}
+                disabled={isProcessing}
+                className="flex-1 px-6 py-3 bg-blueGradient text-white rounded-[10px] font-bold shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors disabled:opacity-50"
+              >
+                {isProcessing ? 'Processing...' : (confirmAction === 'delete' ? 'Delete' : confirmAction === 'block' ? 'Block' : 'Confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
