@@ -2,7 +2,7 @@
  * Chat API Functions
  * All chat-related API calls
  */
-import { useGetApi, usePostApi } from './apiClient';
+import { useGetApi, usePostApi, useDeleteApi, usePatchApi } from './apiClient';
 import { chat as chatRoutes } from './routes';
 
 /**
@@ -33,7 +33,7 @@ export async function createOrGetChatroom(memberId, propertyId = null) {
     }
 
     const response = await usePostApi(chatRoutes.createOrGetChatroom, true, requestBody);
-    
+
     if (response && response.success && response.data) {
       // Ensure chatroom ID is properly extracted
       const chatroom = response.data;
@@ -44,7 +44,7 @@ export async function createOrGetChatroom(memberId, propertyId = null) {
       }
       return chatroom;
     }
-    
+
     return response;
   } catch (error) {
     console.error('Error creating/getting chatroom:', error);
@@ -59,11 +59,11 @@ export async function createOrGetChatroom(memberId, propertyId = null) {
 export async function getChatrooms() {
   try {
     const response = await useGetApi(chatRoutes.getChatrooms, true);
-    
+
     if (response && response.success && response.data && response.data.chatrooms) {
       return response.data.chatrooms;
     }
-    
+
     return [];
   } catch (error) {
     console.error('Error getting chatrooms:', error);
@@ -86,11 +86,11 @@ export async function getChatroomMessages(chatroomId, page = 1, limit = 50) {
 
     const url = `${chatRoutes.getChatroomMessages(chatroomId)}?page=${page}&limit=${limit}`;
     const response = await useGetApi(url, true);
-    
+
     if (response && response.success && response.data) {
       return response.data;
     }
-    
+
     return { messages: [], pagination: { page, limit, total: 0, pages: 0 } };
   } catch (error) {
     console.error('Error getting chatroom messages:', error);
@@ -134,15 +134,15 @@ export async function uploadChatMedia(chatroomId, file, messageType = 'image') {
     });
 
     const data = await response.json();
-    
+
     if (!response.ok) {
       throw new Error(data.message || 'Failed to upload media');
     }
-    
+
     if (data && data.success && data.data) {
       return data.data;
     }
-    
+
     throw new Error('Invalid response from server');
   } catch (error) {
     console.error('Error uploading chat media:', error);
@@ -159,15 +159,67 @@ export async function getRecentRequests(limit = 10) {
   try {
     const url = `${chatRoutes.getRecentRequests}?limit=${limit}`;
     const response = await useGetApi(url, true);
-    
+
     if (response && response.success && response.data && response.data.recentRequests) {
       return response.data.recentRequests;
     }
-    
+
     return [];
   } catch (error) {
     console.error('Error getting recent requests:', error);
-    throw error;
   }
 }
+
+  /**
+ * Delete a chatroom (per-user soft delete)
+ * @param {string} chatroomId - The ID of the chatroom to delete
+ * @returns {Promise<Object>} - Deleted chatroom data
+ */
+  export async function deleteChatroom(chatroomId) {
+    try {
+      if (!chatroomId) {
+        throw new Error('Chatroom ID is required');
+      }
+
+      const response = await useDeleteApi(chatRoutes.deleteChatroom(chatroomId), true);
+
+      if (response && response.success && response.data) {
+        return response.data;
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Error deleting chatroom:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Block or unblock a user in chatroom
+   * @param {string} chatroomId - The ID of the chatroom
+   * @param {boolean} action - true to block, false to unblock
+   * @returns {Promise<Object>} - Updated chatroom data
+   */
+  export async function blockUnblockChatroom(chatroomId, action) {
+    try {
+      if (!chatroomId) {
+        throw new Error('Chatroom ID is required');
+      }
+
+      if (typeof action !== 'boolean') {
+        throw new Error('Action must be a boolean (true to block, false to unblock)');
+      }
+
+      const response = await usePatchApi(chatRoutes.blockUnblockChatroom(chatroomId), true, { action });
+
+      if (response && response.success && response.data) {
+        return response.data;
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Error blocking/unblocking chatroom:', error);
+      throw error;
+    }
+  }
 

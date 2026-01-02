@@ -55,5 +55,7 @@ export const chat = {
 // Dashboard Routes
 export const dashboard = {
   getOwnerStats: '/dashboard/owner-stats',
+  deleteChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}`,
+  blockUnblockChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}/block`,
 };
 

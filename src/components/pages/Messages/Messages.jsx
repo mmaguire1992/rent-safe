@@ -9,7 +9,7 @@ import SendOfferModal from "@/components/adminDashboard/TenantProfile/SendOfferM
 import BlueSearchIcon from "@/svg/blueSearchIcon";
 import MediumCheckedIcon from "@/svg/mediumCheckedIcon";
 import ChatBlueStartIcon from "@/svg/chatBlueStartIcon";
-import { getChatrooms, getChatroomMessages, uploadChatMedia } from "@/api/chat";
+import { getChatrooms, getChatroomMessages, uploadChatMedia, deleteChatroom, blockUnblockChatroom } from "@/api/chat";
 import { getCurrentUser, getUserById } from "@/api/users";
 import { useSocket, SOCKET_EVENTS } from "@/hooks/useSocket";
 import { toast } from "react-toastify";
@@ -491,6 +491,30 @@ function Messages() {
       ? chatroom.memberId
       : chatroom.userId;
 
+    // Determine block status using timestamp fields (handles mutual blocking)
+    const isCurrentUserUserId = currentUserId === String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
+    
+    // Check if current user blocked the other user (using timestamp fields)
+    const blockedAtByCurrentUser = isCurrentUserUserId 
+      ? chatroom.blockedAtByUserId 
+      : chatroom.blockedAtByMemberId;
+    const unblockedAtByCurrentUser = isCurrentUserUserId 
+      ? chatroom.unblockedAtByUserId 
+      : chatroom.unblockedAtByMemberId;
+    const isBlockedByCurrentUser = blockedAtByCurrentUser && !unblockedAtByCurrentUser;
+    
+    // Check if current user is blocked by the other user (using timestamp fields)
+    const blockedAtByOtherUser = isCurrentUserUserId 
+      ? chatroom.blockedAtByMemberId 
+      : chatroom.blockedAtByUserId;
+    const unblockedAtByOtherUser = isCurrentUserUserId 
+      ? chatroom.unblockedAtByMemberId 
+      : chatroom.unblockedAtByUserId;
+    const isCurrentUserBlocked = blockedAtByOtherUser && !unblockedAtByOtherUser;
+    
+    // Legacy field for backward compatibility (but we use timestamp-based logic above)
+    const isBlocked = isBlockedByCurrentUser || isCurrentUserBlocked;
+
     const conversation = {
       id: chatroom._id || chatroom.id,
       chatroomId: chatroom._id || chatroom.id,
@@ -507,6 +531,9 @@ function Messages() {
       message: chatroom.lastMessage?.text || '',
       time: chatroom.lastMessageAt ? new Date(chatroom.lastMessageAt).toLocaleDateString() : '',
       otherUser,
+      isBlocked,
+      isBlockedByCurrentUser,
+      isCurrentUserBlocked,
     };
 
     setSelectedConversation(conversation);
@@ -572,6 +599,11 @@ function Messages() {
 
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedConversation || !isConnected) return;
+    
+    // Don't allow sending if blocked
+    if (selectedConversation.isBlockedByCurrentUser || selectedConversation.isCurrentUserBlocked) {
+      return;
+    }
 
     const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
     if (!chatroomId || chatroomId === 'undefined' || chatroomId === 'null') return;
@@ -851,6 +883,150 @@ function Messages() {
     setSelectedConversation(null);
     setShowProfileDetail(false);
     setTenantProfileData(null);
+  };
+
+  const handleDeleteChatroom = async (chatroomId) => {
+    try {
+      await deleteChatroom(chatroomId);
+      toast.success('Conversation deleted successfully');
+      
+      // Remove chatroom from list
+      setChatrooms(prev => prev.filter(c => (c._id || c.id) !== chatroomId));
+      
+      // If deleted chatroom is currently selected, clear selection
+      if (selectedConversation && (selectedConversation.id === chatroomId || selectedConversation.chatroomId === chatroomId)) {
+        setSelectedConversation(null);
+        setChatMessages([]);
+        setShowProfileDetail(false);
+        setTenantProfileData(null);
+      }
+      
+      // Refresh chatrooms list
+      const data = await getChatrooms();
+      const normalizedChatrooms = (data || []).map(chatroom => {
+        if (!chatroom.lastMessage) {
+          return {
+            ...chatroom,
+            lastMessage: null,
+          };
+        }
+        
+        if (typeof chatroom.lastMessage === 'string') {
+          return {
+            ...chatroom,
+            lastMessage: {
+              text: chatroom.lastMessage,
+              createdAt: chatroom.lastMessageAt,
+            },
+          };
+        }
+        
+        if (typeof chatroom.lastMessage === 'object') {
+          const text = chatroom.lastMessage.text || 
+                      chatroom.lastMessage.textDecrypted || 
+                      chatroom.lastMessage.textEncrypted || 
+                      '';
+          
+          return {
+            ...chatroom,
+            lastMessage: {
+              text: text,
+              createdAt: chatroom.lastMessage.createdAt || chatroom.lastMessageAt,
+              userId: chatroom.lastMessage.userId,
+              type: chatroom.lastMessage.type || 'text',
+              fileUrl: chatroom.lastMessage.fileUrl || null,
+            },
+          };
+        }
+        
+        return {
+          ...chatroom,
+          lastMessage: null,
+        };
+      });
+      setChatrooms(normalizedChatrooms);
+    } catch (error) {
+      console.error('Error deleting chatroom:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete conversation');
+    }
+  };
+
+  const handleBlockChatroom = async (chatroomId) => {
+    try {
+      const updatedChatroom = await blockUnblockChatroom(chatroomId, true);
+      toast.success('User blocked successfully');
+      
+      // Update chatroom in list with timestamp fields
+      setChatrooms(prev => {
+        const updated = prev.map(c => {
+          if ((c._id || c.id) === chatroomId) {
+            const updatedChat = {
+              ...c,
+              ...updatedChatroom,
+              // Ensure all block-related fields are updated
+              isBlocked: true,
+              blockedBy: updatedChatroom.blockedBy,
+              status: 'blocked',
+              blockedAtByUserId: updatedChatroom.blockedAtByUserId,
+              blockedAtByMemberId: updatedChatroom.blockedAtByMemberId,
+              unblockedAtByUserId: updatedChatroom.unblockedAtByUserId,
+              unblockedAtByMemberId: updatedChatroom.unblockedAtByMemberId,
+            };
+            
+            // Refresh selected conversation to recalculate block status using timestamp fields
+            if (selectedConversation && (selectedConversation.id === chatroomId || selectedConversation.chatroomId === chatroomId)) {
+              setTimeout(() => handleSelectConversation(updatedChat), 0);
+            }
+            
+            return updatedChat;
+          }
+          return c;
+        });
+        return updated;
+      });
+    } catch (error) {
+      console.error('Error blocking chatroom:', error);
+      toast.error(error.response?.data?.message || 'Failed to block user');
+    }
+  };
+
+  const handleUnblockChatroom = async (chatroomId) => {
+    try {
+      const updatedChatroom = await blockUnblockChatroom(chatroomId, false);
+      toast.success('User unblocked successfully');
+      
+      // Update chatroom in list with timestamp fields
+      setChatrooms(prev => {
+        const updated = prev.map(c => {
+          if ((c._id || c.id) === chatroomId) {
+            const updatedChat = {
+              ...c,
+              ...updatedChatroom,
+              // Ensure all block-related fields are updated
+              isBlocked: updatedChatroom.isBlocked || false,
+              blockedBy: updatedChatroom.blockedBy,
+              status: updatedChatroom.status || 'active',
+              blockedAtByUserId: updatedChatroom.blockedAtByUserId,
+              blockedAtByMemberId: updatedChatroom.blockedAtByMemberId,
+              unblockedAtByUserId: updatedChatroom.unblockedAtByUserId,
+              unblockedAtByMemberId: updatedChatroom.unblockedAtByMemberId,
+            };
+            
+            // Refresh selected conversation to recalculate block status using timestamp fields
+            if (selectedConversation && (selectedConversation.id === chatroomId || selectedConversation.chatroomId === chatroomId)) {
+              setTimeout(() => handleSelectConversation(updatedChat), 0);
+            }
+            
+            return updatedChat;
+          }
+          return c;
+        });
+        return updated;
+      });
+    } catch (error) {
+      console.error('Error unblocking chatroom:', error);
+      toast.error(error.response?.data?.message || 'Failed to unblock user');
+    }
   };
 
   const [offerFormData, setOfferFormData] = useState({
@@ -1177,6 +1353,12 @@ function Messages() {
                       hasMoreMessages={hasMoreMessages}
                       messagesContainerRef={messagesContainerRef}
                       onFileSelect={handleFileSelect}
+                      onDeleteChatroom={handleDeleteChatroom}
+                      onBlockChatroom={handleBlockChatroom}
+                      onUnblockChatroom={handleUnblockChatroom}
+                      isBlocked={selectedConversation?.isBlocked || false}
+                      isBlockedByCurrentUser={selectedConversation?.isBlockedByCurrentUser || false}
+                      isCurrentUserBlocked={selectedConversation?.isCurrentUserBlocked || false}
                     />
                   </>
                 )}
