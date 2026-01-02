@@ -47,43 +47,29 @@ export const useSocket = () => {
     }
 
     // Get socket URL from environment or default
-    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
     
-    // Parse and clean the URL
+    // Parse and convert to WebSocket URL
     let socketUrl = 'http://localhost:5000'; // Default fallback
     
     try {
       // Remove trailing /api if present
-      if (apiUrl.endsWith('/api')) {
-        apiUrl = apiUrl.slice(0, -4);
-      }
-      // Remove trailing slash
-      if (apiUrl.endsWith('/')) {
-        apiUrl = apiUrl.slice(0, -1);
-      }
+      let baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
       
-      // Validate URL format - must have protocol and domain
-      if (apiUrl && apiUrl.trim()) {
-        // If URL doesn't start with http:// or https://, add https:// (for production)
-        if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
-          // Check if we're in production (has a domain)
-          if (apiUrl.includes('.') && !apiUrl.includes('localhost')) {
-            apiUrl = `https://${apiUrl}`;
-          } else {
-            apiUrl = `http://${apiUrl}`;
-          }
-        }
-        
-        const url = new URL(apiUrl);
-        // Ensure we have a valid hostname (not just 'https' or 'http')
-        if (url.hostname && url.hostname.length > 0 && url.hostname !== 'https' && url.hostname !== 'http') {
-          socketUrl = `${url.protocol}//${url.hostname}${url.port ? `:${url.port}` : ''}`;
-        } else {
-          console.warn('Invalid hostname in API URL, using default. Original:', apiUrl);
-        }
+      // Remove trailing slash
+      baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+      
+      // Convert HTTP to WebSocket protocol
+      if (baseUrl.startsWith('https://')) {
+        socketUrl = baseUrl.replace('https://', 'wss://');
+      } else if (baseUrl.startsWith('http://')) {
+        socketUrl = baseUrl.replace('http://', 'ws://');
+      } else {
+        // If no protocol, assume https for production
+        socketUrl = `wss://${baseUrl}`;
       }
     } catch (error) {
-      console.error('Error parsing socket URL, using default. Original:', apiUrl, error);
+      console.error('Error parsing socket URL, using default. Original:', apiUrl, 'Error:', error);
     }
 
     console.log('🔌 Connecting to socket:', socketUrl);
