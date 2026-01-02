@@ -50,12 +50,12 @@ export const chat = {
   getChatroomMessages: (chatroomId) => `/chat/chatrooms/${chatroomId}/messages`,
   uploadMedia: '/chat/upload-media',
   getRecentRequests: '/chat/recent-requests',
+  deleteChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}`,
+  blockUnblockChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}/block`,
 };
 
 // Dashboard Routes
 export const dashboard = {
   getOwnerStats: '/dashboard/owner-stats',
-  deleteChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}`,
-  blockUnblockChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}/block`,
 };
 
