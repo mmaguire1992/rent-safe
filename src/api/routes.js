@@ -49,5 +49,7 @@ export const chat = {
   getChatrooms: '/chat/chatrooms',
   getChatroomMessages: (chatroomId) => `/chat/chatrooms/${chatroomId}/messages`,
   uploadMedia: '/chat/upload-media',
+  deleteChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}`,
+  blockUnblockChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}/block`,
 };
 

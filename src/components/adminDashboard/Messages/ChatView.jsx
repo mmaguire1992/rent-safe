@@ -14,6 +14,7 @@ import BlockIcon from "@/svg/blockIcon";
 import GrayRemoveIcon from "@/svg/grayRemoveIcon";
 import BlueEditIcon from "@/svg/blueEditIcon";
 import SendWhiteIcon from "@/svg/sendWhiteIcon";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 function ChatView({
   selectedConversation,
@@ -30,8 +31,18 @@ function ChatView({
   hasMoreMessages,
   messagesContainerRef,
   onFileSelect,
+  onDeleteChatroom,
+  onBlockChatroom,
+  onUnblockChatroom,
+  isBlocked = false,
+  isBlockedByCurrentUser = false,
+  isCurrentUserBlocked = false,
 }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showUnblockModal, setShowUnblockModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const menuRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -66,8 +77,65 @@ function ChatView({
   };
 
   const handleSelectOption = (action) => {
-    console.log(`Clicked ${action} for`, selectedConversation?.name);
     setShowMenu(false);
+    if (action === "delete") {
+      setShowDeleteModal(true);
+    } else if (action === "block") {
+      setShowBlockModal(true);
+    } else if (action === "unblock") {
+      setShowUnblockModal(true);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!onDeleteChatroom || !selectedConversation) return;
+    try {
+      setIsProcessing(true);
+      await onDeleteChatroom(selectedConversation.id || selectedConversation.chatroomId);
+      setShowDeleteModal(false);
+    } catch (error) {
+      console.error('Error deleting chatroom:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirmBlock = async () => {
+    if (!onBlockChatroom || !selectedConversation) return;
+    try {
+      setIsProcessing(true);
+      await onBlockChatroom(selectedConversation.id || selectedConversation.chatroomId);
+      setShowBlockModal(false);
+    } catch (error) {
+      console.error('Error blocking chatroom:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirmUnblock = async () => {
+    if (!onUnblockChatroom || !selectedConversation) return;
+    try {
+      setIsProcessing(true);
+      await onUnblockChatroom(selectedConversation.id || selectedConversation.chatroomId);
+      setShowUnblockModal(false);
+    } catch (error) {
+      console.error('Error unblocking chatroom:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleUnblockFromInput = async () => {
+    if (!onUnblockChatroom || !selectedConversation) return;
+    try {
+      setIsProcessing(true);
+      await onUnblockChatroom(selectedConversation.id || selectedConversation.chatroomId);
+    } catch (error) {
+      console.error('Error unblocking chatroom:', error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -123,13 +191,23 @@ function ChatView({
           </button>
           {showMenu && (
             <div className="absolute right-0 top-[62px] bg-white shadow-lg border border-lightGray rounded-lg w-32 z-10">
-              <button
-                onClick={() => handleSelectOption("block")}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:bg-gray-50"
-              >
-                <BlockIcon />
-                <span>Block</span>
-              </button>
+              {isBlockedByCurrentUser ? (
+                <button
+                  onClick={() => handleSelectOption("unblock")}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:bg-gray-50"
+                >
+                  <BlockIcon />
+                  <span>Unblock</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleSelectOption("block")}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:bg-gray-50"
+                >
+                  <BlockIcon />
+                  <span>Block</span>
+                </button>
+              )}
               <button
                 onClick={() => handleSelectOption("delete")}
                 className="w-full flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:bg-gray-50 border-t border-lightGray"
@@ -297,34 +375,115 @@ function ChatView({
 
       {/* Message Input */}
       <div className="p-3 sm:p-4 md:p-6 border-t border-lightGray">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <button 
-            onClick={handleAttachClick}
-            className="p-0 transition-colors flex-shrink-0 hover:opacity-70"
-            type="button"
-          >
-            <FiPaperclip className="text-secondary text-lg sm:text-xl" />
-          </button>
-          <input
-            type="text"
-            value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === "Enter") {
-                onSendMessage();
-              }
-            }}
-            placeholder="Type a message..."
-            className="flex-1 px-3 sm:px-4 py-2 sm:py-3 h-[48px] sm:h-[56px] border border-lightGray rounded-xl focus:outline-none focus:ring-0 text-sm sm:text-base"
-          />
-          <button
-            onClick={onSendMessage}
-            className="bg-[#6B4EFF] flex items-center justify-center w-[48px] h-[48px] sm:w-[56px] sm:h-[56px] text-white p-2 sm:p-3 rounded-[10px] hover:bg-opacity-90 transition-colors flex-shrink-0"
-          >
-            <SendWhiteIcon />
-          </button>
-        </div>
+        {isCurrentUserBlocked ? (
+          <div className="text-center py-4">
+            <p className="text-gray-600 text-sm mb-2">
+              {selectedConversation?.name || 'This user'} has blocked you
+            </p>
+          </div>
+        ) : isBlockedByCurrentUser ? (
+          <div className="space-y-3">
+            <div className="text-center py-2">
+              <p className="text-gray-600 text-sm mb-3">
+                You cannot chat as you blocked this user. Please unblock to chat.
+              </p>
+              <button
+                onClick={handleUnblockFromInput}
+                disabled={isProcessing}
+                className="text-[#6B4EFF] hover:text-[#4A2FCC] font-semibold text-sm underline disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isProcessing ? 'Unblocking...' : 'Unblock'}
+              </button>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3 opacity-50 pointer-events-none">
+              <button 
+                className="p-0 transition-colors flex-shrink-0"
+                type="button"
+                disabled
+              >
+                <FiPaperclip className="text-secondary text-lg sm:text-xl" />
+              </button>
+              <input
+                type="text"
+                value=""
+                placeholder="Type a message..."
+                disabled
+                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 h-[48px] sm:h-[56px] border border-lightGray rounded-xl focus:outline-none focus:ring-0 text-sm sm:text-base bg-gray-100"
+              />
+              <button
+                disabled
+                className="bg-gray-400 flex items-center justify-center w-[48px] h-[48px] sm:w-[56px] sm:h-[56px] text-white p-2 sm:p-3 rounded-[10px] flex-shrink-0 cursor-not-allowed"
+              >
+                <SendWhiteIcon />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button 
+              onClick={handleAttachClick}
+              className="p-0 transition-colors flex-shrink-0 hover:opacity-70"
+              type="button"
+            >
+              <FiPaperclip className="text-secondary text-lg sm:text-xl" />
+            </button>
+            <input
+              type="text"
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  onSendMessage();
+                }
+              }}
+              placeholder="Type a message..."
+              className="flex-1 px-3 sm:px-4 py-2 sm:py-3 h-[48px] sm:h-[56px] border border-lightGray rounded-xl focus:outline-none focus:ring-0 text-sm sm:text-base"
+            />
+            <button
+              onClick={onSendMessage}
+              className="bg-[#6B4EFF] flex items-center justify-center w-[48px] h-[48px] sm:w-[56px] sm:h-[56px] text-white p-2 sm:p-3 rounded-[10px] hover:bg-opacity-90 transition-colors flex-shrink-0"
+            >
+              <SendWhiteIcon />
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Conversation"
+        message="Are you sure you want to delete this conversation? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isProcessing={isProcessing}
+      />
+
+      {/* Block Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showBlockModal}
+        onClose={() => setShowBlockModal(false)}
+        onConfirm={handleConfirmBlock}
+        title="Block User"
+        message={`Are you sure you want to block ${selectedConversation?.name || 'this user'}? You will not be able to send messages to them, but the chat history will be preserved.`}
+        confirmText="Block"
+        cancelText="Cancel"
+        isProcessing={isProcessing}
+      />
+
+      {/* Unblock Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showUnblockModal}
+        onClose={() => setShowUnblockModal(false)}
+        onConfirm={handleConfirmUnblock}
+        title="Unblock User"
+        message={`Are you sure you want to unblock ${selectedConversation?.name || 'this user'}? You will be able to send messages again.`}
+        confirmText="Unblock"
+        cancelText="Cancel"
+        isProcessing={isProcessing}
+      />
     </>
   );
 }

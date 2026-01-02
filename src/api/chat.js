@@ -2,7 +2,7 @@
  * Chat API Functions
  * All chat-related API calls
  */
-import { useGetApi, usePostApi } from './apiClient';
+import { useGetApi, usePostApi, useDeleteApi, usePatchApi } from './apiClient';
 import { chat as chatRoutes } from './routes';
 
 /**
@@ -140,3 +140,55 @@ export async function uploadChatMedia(chatroomId, file, messageType = 'image') {
   }
 }
 
+/**
+ * Delete a chatroom (per-user soft delete)
+ * @param {string} chatroomId - The ID of the chatroom to delete
+ * @returns {Promise<Object>} - Deleted chatroom data
+ */
+export async function deleteChatroom(chatroomId) {
+  try {
+    if (!chatroomId) {
+      throw new Error('Chatroom ID is required');
+    }
+
+    const response = await useDeleteApi(chatRoutes.deleteChatroom(chatroomId), true);
+    
+    if (response && response.success && response.data) {
+      return response.data;
+    }
+    
+    return response;
+  } catch (error) {
+    console.error('Error deleting chatroom:', error);
+    throw error;
+  }
+}
+
+/**
+ * Block or unblock a user in chatroom
+ * @param {string} chatroomId - The ID of the chatroom
+ * @param {boolean} action - true to block, false to unblock
+ * @returns {Promise<Object>} - Updated chatroom data
+ */
+export async function blockUnblockChatroom(chatroomId, action) {
+  try {
+    if (!chatroomId) {
+      throw new Error('Chatroom ID is required');
+    }
+
+    if (typeof action !== 'boolean') {
+      throw new Error('Action must be a boolean (true to block, false to unblock)');
+    }
+
+    const response = await usePatchApi(chatRoutes.blockUnblockChatroom(chatroomId), true, { action });
+    
+    if (response && response.success && response.data) {
+      return response.data;
+    }
+    
+    return response;
+  } catch (error) {
+    console.error('Error blocking/unblocking chatroom:', error);
+    throw error;
+  }
+}
