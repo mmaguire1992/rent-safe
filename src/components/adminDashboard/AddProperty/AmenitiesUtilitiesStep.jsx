@@ -159,6 +159,11 @@ function AmenitiesUtilitiesStep({
                 ...formData,
                 utilities: [...formData.utilities, ""],
               });
+              setTouched({ ...touched, utilities: true });
+              // Clear error when user adds a utility field
+              if (errors && errors.utilities && setErrors) {
+                setErrors({ ...errors, utilities: "" });
+              }
             }}
             className="flex items-center gap-1 text-[#6B4EFF] hover:text-opacity-80 transition-colors"
           >
@@ -186,6 +191,10 @@ function AmenitiesUtilitiesStep({
                           (_, i) => i !== index
                         ),
                       });
+                      // Clear error when user removes a utility
+                      if (errors && errors.utilities && setErrors) {
+                        setErrors({ ...errors, utilities: "" });
+                      }
                     }}
                     className="p-1 text-red-600  rounded-lg transition-colors"
                   >
@@ -196,6 +205,9 @@ function AmenitiesUtilitiesStep({
             </div>
           ))}
         </div>
+        {touched.utilities && errors?.utilities && (
+          <p className="mt-2 text-sm text-red-600">{errors.utilities}</p>
+        )}
       </div>
     </div>
   );

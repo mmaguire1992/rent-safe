@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { addPropertyTypeOptions, amenitiesList } from "@/constant";
 import {
   bhkOptions,
@@ -56,17 +56,39 @@ function PropertyFilters({ onFilterChange, initialFilters = null }) {
     priceMax: 10000,
   });
 
+  // Track the last user-selected propertyType to prevent syncing back from parent updates
+  const lastUserSelectedPropertyTypeRef = useRef(null);
+  const prevInitialFiltersRef = useRef(initialFilters);
+
   // Sync filters when initialFilters prop changes (e.g., from URL params)
-  // Only update if initialFilters is provided and propertyType is different
+  // Only sync if it's a genuine external change (URL change), not a user-initiated change
   useEffect(() => {
-    if (initialFilters && initialFilters.propertyType !== filters.propertyType) {
-      setFilters(initialFilters);
+    if (initialFilters) {
+      const currentPropertyType = filters.propertyType;
+      const newPropertyType = initialFilters.propertyType;
+      
+      // Only sync if:
+      // 1. The propertyType actually changed
+      // 2. It's not the same as what the user last selected (meaning it's an external change)
+      // 3. The initialFilters object reference changed (meaning it's a new prop value)
+      if (newPropertyType !== currentPropertyType &&
+          newPropertyType !== lastUserSelectedPropertyTypeRef.current &&
+          prevInitialFiltersRef.current !== initialFilters) {
+        setFilters(initialFilters);
+      }
     }
-  }, [initialFilters?.propertyType]);
+    prevInitialFiltersRef.current = initialFilters;
+  }, [initialFilters, filters.propertyType]);
 
   const updateFilter = (key, value) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
+    
+    // Track user-selected propertyType to prevent syncing back
+    if (key === 'propertyType') {
+      lastUserSelectedPropertyTypeRef.current = value;
+    }
+    
     onFilterChange(newFilters);
   };
 

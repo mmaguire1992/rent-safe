@@ -67,11 +67,23 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
   };
 
   const handleChange = (fieldName, value) => {
+    // For number fields, prevent negative values
+    if ((fieldName === "bedrooms" || fieldName === "bathrooms") && value !== "") {
+      const numValue = parseInt(value);
+      if (!isNaN(numValue) && numValue < 0) {
+        value = "0";
+      }
+    }
     setFormData({ ...formData, [fieldName]: value });
     // Clear error when user starts typing
     if (errors && errors[fieldName] && setErrors) {
       setErrors({ ...errors, [fieldName]: "" });
     }
+  };
+
+  // Prevent scroll from changing number input values
+  const handleWheel = (e) => {
+    e.target.blur();
   };
 
   const handleIncrement = (field) => {
@@ -86,13 +98,12 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
 
   const handleDecrement = (field) => {
     const currentValue = parseInt(formData[field]) || 0;
-    if (currentValue > 0) {
-      setFormData({ ...formData, [field]: (currentValue - 1).toString() });
-      setTouched({ ...touched, [field]: true });
-      // Clear error when user decrements
-      if (errors && errors[field] && setErrors) {
-        setErrors({ ...errors, [field]: "" });
-      }
+    const newValue = Math.max(0, currentValue - 1); // Ensure value never goes below 0
+    setFormData({ ...formData, [field]: newValue.toString() });
+    setTouched({ ...touched, [field]: true });
+    // Clear error when user decrements
+    if (errors && errors[field] && setErrors) {
+      setErrors({ ...errors, [field]: "" });
     }
   };
   return (
@@ -190,6 +201,7 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
                 value={formData.bedrooms}
                 onChange={(e) => handleChange("bedrooms", e.target.value)}
                 onBlur={() => handleBlur("bedrooms")}
+                onWheel={handleWheel}
                 placeholder="Enter number of bedrooms"
                 min="0"
                 className={`w-full px-4 py-3 pr-12 h-[52px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
@@ -231,6 +243,7 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
                 value={formData.bathrooms}
                 onChange={(e) => handleChange("bathrooms", e.target.value)}
                 onBlur={() => handleBlur("bathrooms")}
+                onWheel={handleWheel}
                 placeholder="Enter number of bathrooms"
                 min="0"
                 className={`w-full px-4 py-3 pr-12 h-[52px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${

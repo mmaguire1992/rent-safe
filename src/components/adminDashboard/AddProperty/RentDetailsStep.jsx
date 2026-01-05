@@ -69,12 +69,14 @@ function RentDetailsStep({
     }
   };
 
-  // Calculate minimum date (tomorrow)
+  // Calculate minimum date (today - past dates should be disabled)
+  // Use local date to avoid timezone issues
   const minDate = useMemo(() => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    return tomorrow.toISOString().split('T')[0];
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }, []);
   return (
     <div className="space-y-6">

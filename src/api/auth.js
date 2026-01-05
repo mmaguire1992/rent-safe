@@ -282,3 +282,105 @@ export const resendOTP = async (email) => {
   }
 };
 
+/**
+ * Forgot Password - Request password reset OTP
+ * 
+ * @param {string} email - User email address
+ * @returns {Promise<Object>} - Forgot password response
+ * 
+ * @throws {Error} - If request fails
+ */
+export const forgotPassword = async (email) => {
+  if (!email) {
+    throw new Error('Email is required');
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    throw new Error('Please enter a valid email address');
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+      }),
+    });
+
+    const data = await handleApiResponse(response);
+
+    return {
+      success: true,
+      message: data.message || 'Password reset OTP has been sent to your email',
+    };
+  } catch (error) {
+    if (error.message) {
+      throw error;
+    }
+    
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Network error. Please check your connection and try again.');
+    }
+    
+    console.error('Forgot password API error:', error);
+    throw new Error(error.message || 'Failed to send password reset OTP. Please try again.');
+  }
+};
+
+/**
+ * Reset Password - Reset password using OTP
+ * 
+ * @param {string} email - User email address
+ * @param {string} otp - 6-digit OTP code
+ * @param {string} password - New password
+ * @returns {Promise<Object>} - Reset password response
+ * 
+ * @throws {Error} - If reset fails
+ */
+export const resetPassword = async (email, otp, password) => {
+  if (!email || !otp || !password) {
+    throw new Error('Email, OTP, and password are required');
+  }
+
+  if (!/^\d{6}$/.test(otp)) {
+    throw new Error('OTP must be a 6-digit number');
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+        otp: otp,
+        password: password,
+      }),
+    });
+
+    const data = await handleApiResponse(response);
+
+    return {
+      success: true,
+      message: data.message || 'Password reset successfully',
+    };
+  } catch (error) {
+    if (error.message) {
+      throw error;
+    }
+    
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Network error. Please check your connection and try again.');
+    }
+    
+    console.error('Reset password API error:', error);
+    throw new Error(error.message || 'Failed to reset password. Please try again.');
+  }
+};
+

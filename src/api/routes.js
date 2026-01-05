@@ -68,3 +68,12 @@ export const supportTickets = {
   uploadMultipleMedia: (id) => `/support-tickets/${id}/media/multiple`,
 };
 
+// Wishlist Routes
+export const wishlists = {
+  addToWishlist: '/wishlists',
+  removeFromWishlist: (propertyId) => `/wishlists/${propertyId}`,
+  getUserWishlist: '/wishlists',
+  checkWishlist: (propertyId) => `/wishlists/check/${propertyId}`,
+  getWishlistPropertyIds: '/wishlists/ids',
+};
+

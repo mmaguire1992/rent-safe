@@ -23,7 +23,7 @@ function FilterGroup({
         {options.map((option) => {
           const isSelected = isMultiSelect
             ? selectedValues.includes(option.value)
-            : selectedValue === option.value;
+            : String(selectedValue) === String(option.value);
 
           return (
             <FilterButton
