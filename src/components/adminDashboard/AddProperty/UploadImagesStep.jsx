@@ -44,18 +44,14 @@ function UploadImagesStep({ formData, setFormData, errors, setErrors }) {
   const handleFiles = (files) => {
     const imageFiles = Array.from(files).filter((file) => {
       const fileType = file.type.toLowerCase();
-      return (
-        fileType.startsWith("image/") ||
-        [".pdf", ".doc", ".docx", ".png"].some((ext) =>
-          file.name.toLowerCase().endsWith(ext)
-        )
-      );
+      // Only accept image files
+      return fileType.startsWith("image/");
     });
 
     if (imageFiles.length > 0) {
       const newImages = imageFiles.map((file) => ({
         file,
-        url: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+        url: URL.createObjectURL(file),
         uploading: true,
         progress: 0,
       }));
@@ -143,7 +139,7 @@ function UploadImagesStep({ formData, setFormData, errors, setErrors }) {
             id="image-input"
             className="hidden"
             multiple
-            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+            accept="image/*"
             onChange={(e) => {
               if (e.target.files && e.target.files.length > 0) {
                 handleFiles(e.target.files);
@@ -158,10 +154,10 @@ function UploadImagesStep({ formData, setFormData, errors, setErrors }) {
               <FiUpload className="w-4 h-4 text-[#5A5E67]" />
             </div>
             <p className="text-base font-medium text-darkGray mb-2">
-              Drop your files here or browse
+              Drop your images here or browse
             </p>
             <p className="text-sm text-midGray font-medium">
-              pdf, docs, and png. Max 2 docs.
+              JPG, PNG, GIF, and other image formats
             </p>
           </label>
         </div>

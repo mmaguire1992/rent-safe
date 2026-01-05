@@ -8,13 +8,18 @@ import Button from "./Button";
 import PropertyCard from "./PropertyCard";
 import ShielIcon from "@/svg/websiteSvg/shielIcon";
 import { getRecentActiveProperties } from "@/api/properties";
+import { addToWishlist, removeFromWishlist, getWishlistPropertyIds } from "@/api/wishlists";
+import { useAuth } from "@/context/AuthContext";
+import { isAuthenticated } from "@/utils/auth";
 import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
 
 function NewestListing() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [favoritedIds, setFavoritedIds] = useState(new Set());
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -33,6 +38,74 @@ function NewestListing() {
 
     fetchProperties();
   }, []);
+
+  // Load wishlist on mount
+  useEffect(() => {
+    const loadWishlist = async () => {
+      if (!isAuthenticated()) {
+        return;
+      }
+
+      try {
+        const propertyIds = await getWishlistPropertyIds();
+        setFavoritedIds(new Set(propertyIds));
+      } catch (error) {
+        console.error('Error loading wishlist:', error);
+      }
+    };
+
+    loadWishlist();
+  }, []);
+
+  // Toggle favorite
+  const toggleFavorite = async (propertyId) => {
+    if (!isAuthenticated()) {
+      // If not authenticated, just update local state
+      setFavoritedIds((prev) => {
+        const newSet = new Set(prev);
+        if (newSet.has(propertyId)) {
+          newSet.delete(propertyId);
+        } else {
+          newSet.add(propertyId);
+        }
+        return newSet;
+      });
+      return;
+    }
+
+    // Update local state immediately for better UX
+    const wasFavorited = favoritedIds.has(propertyId);
+    setFavoritedIds((prev) => {
+      const newSet = new Set(prev);
+      if (wasFavorited) {
+        newSet.delete(propertyId);
+      } else {
+        newSet.add(propertyId);
+      }
+      return newSet;
+    });
+
+    // Call API
+    try {
+      if (wasFavorited) {
+        await removeFromWishlist(propertyId);
+      } else {
+        await addToWishlist(propertyId);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      // Revert on error
+      setFavoritedIds((prev) => {
+        const newSet = new Set(prev);
+        if (wasFavorited) {
+          newSet.add(propertyId);
+        } else {
+          newSet.delete(propertyId);
+        }
+        return newSet;
+      });
+    }
+  };
 
   // Transform API data to match PropertyCard component structure
   const transformedProperties = properties.map((property) => {
@@ -143,7 +216,12 @@ function NewestListing() {
         ) : transformedProperties.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-10 md:mb-12">
             {transformedProperties.map((property) => (
-              <PropertyCard key={property.id} property={property} />
+              <PropertyCard 
+                key={property.id} 
+                property={property}
+                isFavorited={favoritedIds.has(property.id)}
+                onToggleFavorite={() => toggleFavorite(property.id)}
+              />
             ))}
           </div>
         ) : (

@@ -59,3 +59,12 @@ export const dashboard = {
   getOwnerStats: '/dashboard/owner-stats',
 };
 
+// Wishlist Routes
+export const wishlists = {
+  addToWishlist: '/wishlists',
+  removeFromWishlist: (propertyId) => `/wishlists/${propertyId}`,
+  getUserWishlist: '/wishlists',
+  checkWishlist: (propertyId) => `/wishlists/check/${propertyId}`,
+  getWishlistPropertyIds: '/wishlists/ids',
+};
+

@@ -6,6 +6,7 @@ import AuthLayout from "@/components/AuthLayout";
 import CustomCheckbox from "@/components/adminDashboard/common/CustomCheckbox";
 import { BsEye, BsEyeSlash } from "react-icons/bs";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "react-toastify";
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -39,7 +40,7 @@ function Login() {
     const newErrors = {};
 
     if (!formData.email.trim()) {
-      newErrors.email = "This field is required.";
+      newErrors.email = "Email address is required.";
     } else {
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -49,7 +50,7 @@ function Login() {
     }
 
     if (!formData.password.trim()) {
-      newErrors.password = "This field is required.";
+      newErrors.password = "Password is required.";
     }
 
     setErrors(newErrors);
@@ -73,7 +74,37 @@ function Login() {
       });
       // Redirect is handled by AuthContext
     } catch (error) {
-      setLoginError(error.message || "Login failed. Please check your credentials.");
+      const errorMessage = error.message || "Login failed. Please check your credentials.";
+      setLoginError(errorMessage);
+      
+      // Show toast notification
+      toast.error(errorMessage);
+      
+      // Check if error is related to user not found or invalid email
+      const isUserNotFound = errorMessage.toLowerCase().includes('user not found') || 
+                            errorMessage.toLowerCase().includes('email not found') ||
+                            errorMessage.toLowerCase().includes('no user found');
+      
+      // Check if error is related to invalid password
+      const isInvalidPassword = errorMessage.toLowerCase().includes('invalid password') ||
+                               errorMessage.toLowerCase().includes('incorrect password') ||
+                               errorMessage.toLowerCase().includes('wrong password');
+      
+      // Highlight email field if user not found
+      if (isUserNotFound) {
+        setErrors((prev) => ({
+          ...prev,
+          email: "No account found with this email address.",
+        }));
+      }
+      
+      // Highlight password field if password is invalid
+      if (isInvalidPassword) {
+        setErrors((prev) => ({
+          ...prev,
+          password: "Incorrect password.",
+        }));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -176,11 +207,6 @@ function Login() {
               </Link>
             </div>
           </div>
-
-          {/* Login Error */}
-          {loginError && (
-            <div className="text-red-500 text-sm text-center">{loginError}</div>
-          )}
 
           {/* Login Button */}
           <button

@@ -4,13 +4,29 @@ import { useState, useEffect, useRef } from "react";
 import { FiChevronLeft, FiChevronRight, FiCalendar } from "react-icons/fi";
 import GrayCalendarIcon from "@/svg/grayCalendarIcon";
 
-function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy" }) {
+function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate }) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const calendarRef = useRef(null);
 
   // Parse value to Date object
   const selectedDate = value ? new Date(value) : null;
+  
+  // Get minimum date object (default to today if not provided)
+  // Always calculate fresh to ensure we're using current date
+  const getMinDateObj = () => {
+    if (minDate) {
+      // Parse the minDate string (format: YYYY-MM-DD)
+      const [year, month, day] = minDate.split('-').map(Number);
+      const min = new Date(year, month - 1, day);
+      min.setHours(0, 0, 0, 0);
+      return min;
+    }
+    // Default to today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  };
 
   // Close calendar when clicking outside
   useEffect(() => {
@@ -59,9 +75,13 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy" }) {
 
   // Navigate months
   const goToPreviousMonth = () => {
-    setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
-    );
+    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    // Don't allow navigating to months before minDate
+    const minDateObj = getMinDateObj();
+    const minMonth = new Date(minDateObj.getFullYear(), minDateObj.getMonth(), 1);
+    if (newDate >= minMonth) {
+      setCurrentDate(newDate);
+    }
   };
 
   const goToNextMonth = () => {
@@ -72,11 +92,22 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy" }) {
 
   // Handle date selection
   const handleDateClick = (day) => {
+    if (!day || isDisabled(day)) {
+      return; // Don't allow selecting disabled dates
+    }
     const newDate = new Date(
       currentDate.getFullYear(),
       currentDate.getMonth(),
       day
     );
+    newDate.setHours(0, 0, 0, 0);
+    
+    // Double-check that the date is not before minDate
+    const minDateToCompare = getMinDateObj();
+    if (newDate.getTime() < minDateToCompare.getTime()) {
+      return; // Prevent selecting past dates
+    }
+    
     onChange(formatDateForInput(newDate));
     setIsOpen(false);
   };
@@ -99,6 +130,23 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy" }) {
       currentDate.getMonth() === selectedDate.getMonth() &&
       currentDate.getFullYear() === selectedDate.getFullYear()
     );
+  };
+
+  // Check if date is disabled (before minDate)
+  const isDisabled = (day) => {
+    if (!day) return true;
+    const dateToCheck = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      day
+    );
+    dateToCheck.setHours(0, 0, 0, 0);
+    
+    // Get fresh minDate to ensure it's current
+    const minDateToCompare = getMinDateObj();
+    
+    // Compare dates - disable if dateToCheck is before minDate
+    return dateToCheck.getTime() < minDateToCompare.getTime();
   };
 
   // Generate calendar days
@@ -160,7 +208,11 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy" }) {
             <button
               type="button"
               onClick={goToPreviousMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              disabled={(() => {
+                const minDateObj = getMinDateObj();
+                return new Date(currentDate.getFullYear(), currentDate.getMonth(), 1) <= new Date(minDateObj.getFullYear(), minDateObj.getMonth(), 1);
+              })()}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FiChevronLeft className="w-5 h-5 text-secondary" />
             </button>
@@ -190,31 +242,36 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy" }) {
 
           {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-1">
-            {days.map((day, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => day && handleDateClick(day)}
-                disabled={!day}
-                className={`
-                  w-10 h-10 rounded-lg text-sm font-medium transition-colors
-                  ${
-                    !day
-                      ? "cursor-default"
-                      : "cursor-pointer hover:bg-purple-50"
-                  }
-                  ${
-                    isSelected(day)
-                      ? "bg-[#6B4EFF] text-white"
-                      : isToday(day)
-                      ? "bg-purple-100 text-[#6B4EFF] font-bold"
-                      : "text-secondary hover:bg-gray-50"
-                  }
-                `}
-              >
-                {day}
-              </button>
-            ))}
+            {days.map((day, index) => {
+              const disabled = !day || isDisabled(day);
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => day && !disabled && handleDateClick(day)}
+                  disabled={disabled}
+                  className={`
+                    w-10 h-10 rounded-lg text-sm font-medium transition-colors
+                    ${
+                      disabled
+                        ? "cursor-not-allowed opacity-40 text-gray-400"
+                        : "cursor-pointer hover:bg-purple-50"
+                    }
+                    ${
+                      isSelected(day)
+                        ? "bg-[#6B4EFF] text-white"
+                        : isToday(day) && !disabled
+                        ? "bg-purple-100 text-[#6B4EFF] font-bold"
+                        : !disabled
+                        ? "text-secondary hover:bg-gray-50"
+                        : ""
+                    }
+                  `}
+                >
+                  {day}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

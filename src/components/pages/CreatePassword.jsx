@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from "react";
-import { useNavigate, Link } from '@/lib/react-router-compat';
-
+import { useNavigate, useLocation, Link } from '@/lib/react-router-compat';
+import { toast } from 'react-toastify';
 import AuthLayout from "@/components/AuthLayout";
 import { BsEye, BsEyeSlash } from "react-icons/bs";
+import { resetPassword } from "@/api/auth";
 
 function CreatePassword() {
   const [formData, setFormData] = useState({
@@ -14,7 +15,12 @@ function CreatePassword() {
   const [errors, setErrors] = useState({});
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get email and OTP from location state if coming from forgot password
+  const { email, otp, fromForgotPassword } = location.state || {};
 
   const validatePassword = (password) => {
     const errors = [];
@@ -50,7 +56,7 @@ function CreatePassword() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
 
@@ -73,9 +79,28 @@ function CreatePassword() {
 
     setErrors(newErrors);
 
-    // If no errors, navigate to success page
+    // If no errors, proceed with password creation/reset
     if (Object.keys(newErrors).length === 0) {
-      navigate("/password-success");
+      // If coming from forgot password, call reset password API
+      if (fromForgotPassword && email && otp) {
+        setLoading(true);
+        try {
+          await resetPassword(email, otp, formData.newPassword);
+          toast.success("Password reset successfully!");
+          navigate("/password-success");
+        } catch (error) {
+          console.error('Reset password error:', error);
+          const errorMessage = error.message || 'Failed to reset password. Please try again.';
+          toast.error(errorMessage);
+          // Set error on confirm password field
+          setErrors({ confirmPassword: errorMessage });
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        // Regular password creation flow
+        navigate("/password-success");
+      }
     }
   };
 
@@ -182,9 +207,10 @@ function CreatePassword() {
           {/* Create Button */}
           <button
             type="submit"
-            className="w-full bg-blueGradient h-[56px] text-white text-base font-bold py-3 rounded-xl transition-all shadow-[0px_2px_10px_0px_#00000033]"
+            disabled={loading}
+            className="w-full bg-blueGradient h-[56px] text-white text-base font-bold py-3 rounded-xl transition-all shadow-[0px_2px_10px_0px_#00000033] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Create
+            {loading ? 'Resetting...' : 'Create'}
           </button>
         </form>
       </div>

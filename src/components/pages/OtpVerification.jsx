@@ -12,7 +12,7 @@ import { storeAuthData } from "@/utils/auth";
 function OtpVerification() {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState("");
-  const [timer, setTimer] = useState(60); // 60 seconds timer
+  const [timer, setTimer] = useState(30); // 30 seconds timer
   const [canResend, setCanResend] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -168,7 +168,7 @@ function OtpVerification() {
       toast.success("OTP has been resent to your email");
       
       // Reset timer and OTP fields
-      setTimer(60);
+      setTimer(30);
       setCanResend(false);
       setOtp(["", "", "", "", "", ""]);
     } catch (error) {

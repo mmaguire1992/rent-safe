@@ -8,17 +8,23 @@ import PropertySearch from "@/components/frontend/properties/PropertySearch";
 import PropertyFilters from "@/components/frontend/properties/PropertyFilters";
 import PropertyList from "@/components/frontend/properties/PropertyList";
 import { getAllProperties, getPropertiesByCity } from "@/api/properties";
+import { addToWishlist, removeFromWishlist, getWishlistPropertyIds, getUserWishlist } from "@/api/wishlists";
+import { useAuth } from "@/context/AuthContext";
+import { isAuthenticated } from "@/utils/auth";
 import { FiSliders } from "react-icons/fi";
 import Footer from "@/components/frontend/common/footer";
 import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
 
 function PropertiesList() {
-  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [isDebouncedSearchFromUser, setIsDebouncedSearchFromUser] = useState(false);
   const searchTimeoutRef = useRef(null);
   const [favoritedIds, setFavoritedIds] = useState(new Set());
   const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const [loadingWishlist, setLoadingWishlist] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -72,9 +78,28 @@ function PropertiesList() {
   
   // Track if we've initialized from URL to prevent infinite loops
   const initializedFromUrlRef = useRef(false);
+  // Track if URL update was user-initiated (from filter change)
+  const isUserInitiatedUrlUpdateRef = useRef(false);
+  // Track if search query change was user-initiated (from typing)
+  const isUserInitiatedSearchRef = useRef(false);
+  // Track the source of debouncedSearchQuery changes
+  const debouncedSearchSourceRef = useRef('url'); // 'url' or 'user'
+  // Track when URL was last updated to prevent immediate re-reading
+  const lastUrlUpdateTimeRef = useRef(0);
 
   // Read search query and type from URL on component mount or when URL changes
   useEffect(() => {
+    // Skip if this URL change was user-initiated (from filter change or search change)
+    if (isUserInitiatedUrlUpdateRef.current || isUserInitiatedSearchRef.current) {
+      return;
+    }
+    
+    // Skip if URL was just updated (within last 500ms) to prevent reading back our own changes
+    const timeSinceLastUpdate = Date.now() - lastUrlUpdateTimeRef.current;
+    if (timeSinceLastUpdate < 500) {
+      return;
+    }
+    
     const queryParam = searchParams.get("q");
     const typeParam = searchParams.get("type");
     
@@ -95,11 +120,15 @@ function PropertiesList() {
     }
     
     if (shouldUpdateQuery) {
+      // Mark source as URL when reading from URL
+      debouncedSearchSourceRef.current = 'url';
+      setIsDebouncedSearchFromUser(false); // Reset state when reading from URL
+      isUserInitiatedSearchRef.current = false; // Ensure this is false when reading from URL
       if (currentQuery) {
         setSearchQuery(currentQuery);
         setDebouncedSearchQuery(currentQuery); // Set debounced immediately for URL params
       } else {
-        // Clear if param removed
+        // Clear if param removed - this handles when user clears search and URL is updated
         setSearchQuery("");
         setDebouncedSearchQuery("");
       }
@@ -135,6 +164,14 @@ function PropertiesList() {
         setFilters(defaultFilters);
         setDebouncedFilters(defaultFilters);
         setSelectedPropertyType("apartment");
+      } else if (currentType === null && filters.propertyType !== "all") {
+        // URL param was removed (user selected "All"), update filter to "all"
+        const newFilters = {
+          ...filters,
+          propertyType: "all",
+        };
+        setFilters(newFilters);
+        setDebouncedFilters(newFilters);
       }
     }
     
@@ -144,6 +181,38 @@ function PropertiesList() {
 
   // Track previous filters to prevent unnecessary updates
   const prevFiltersRef = useRef(filters);
+
+  // Update URL when propertyType filter changes
+  useEffect(() => {
+    const currentTypeParam = searchParams.get("type");
+    const newPropertyType = filters.propertyType;
+    
+    // Only update URL if propertyType actually changed and it's a user-initiated change
+    if (prevFiltersRef.current?.propertyType !== newPropertyType && initializedFromUrlRef.current) {
+      // Mark this as a user-initiated URL update
+      isUserInitiatedUrlUpdateRef.current = true;
+      lastUrlUpdateTimeRef.current = Date.now(); // Record when we update the URL
+      
+      setSearchParams((prev) => {
+        const newParams = new URLSearchParams(prev);
+        
+        if (newPropertyType === "all") {
+          // Remove type parameter when "All" is selected
+          newParams.delete("type");
+        } else {
+          // Update type parameter with new value
+          newParams.set("type", newPropertyType);
+        }
+        
+        return newParams;
+      }, { replace: true }); // Use replace to avoid adding to history
+      
+      // Reset the flag after a short delay to allow URL update to complete
+      setTimeout(() => {
+        isUserInitiatedUrlUpdateRef.current = false;
+      }, 100);
+    }
+  }, [filters.propertyType, searchParams, setSearchParams]);
 
   // Debounce filter changes - wait 500ms after user stops changing filters
   useEffect(() => {
@@ -184,12 +253,34 @@ function PropertiesList() {
     }
 
     prevSearchQueryRef.current = searchQuery;
+    
+    // If this change is not from URL reading (i.e., not from isUserInitiatedUrlUpdateRef), 
+    // and we've initialized, then it's user input
+    const isUserInput = initializedFromUrlRef.current && !isUserInitiatedUrlUpdateRef.current;
+    
+    if (isUserInput) {
+      // This is user typing, mark as user-initiated
+      isUserInitiatedSearchRef.current = true;
+      debouncedSearchSourceRef.current = 'user'; // Mark source as user input
+    } else {
+      // This came from URL or initial mount
+      debouncedSearchSourceRef.current = 'url'; // Mark source as URL
+    }
 
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
+    // Store the source for this specific debounce operation
+    const sourceForThisUpdate = isUserInput ? 'user' : 'url';
+
     searchTimeoutRef.current = setTimeout(() => {
+      // Set the source right before updating debouncedSearchQuery
+      debouncedSearchSourceRef.current = sourceForThisUpdate;
+      setIsDebouncedSearchFromUser(sourceForThisUpdate === 'user');
+      if (sourceForThisUpdate === 'user') {
+        isUserInitiatedSearchRef.current = true;
+      }
       setDebouncedSearchQuery(searchQuery);
       // Reset to page 1 when search changes
       setPagination(prev => ({ ...prev, page: 1 }));
@@ -201,6 +292,57 @@ function PropertiesList() {
       }
     };
   }, [searchQuery]);
+
+  // Update URL when debounced search query changes (user-initiated search)
+  useEffect(() => {
+    // Skip on initial mount - only update URL for user-initiated changes
+    if (!initializedFromUrlRef.current) {
+      return;
+    }
+
+    // Only update URL if this was a user-initiated change
+    if (!isDebouncedSearchFromUser) {
+      // Not user-initiated, skip URL update
+      return;
+    }
+
+    const currentQueryParam = searchParams.get("q") || "";
+    const newQuery = debouncedSearchQuery.trim();
+
+    // Always update URL if source is 'user' and query changed (including clearing)
+    if (currentQueryParam !== newQuery) {
+      isUserInitiatedUrlUpdateRef.current = true;
+      isUserInitiatedSearchRef.current = true; // Keep this true to prevent URL-reading effect from interfering
+      lastUrlUpdateTimeRef.current = Date.now(); // Record when we update the URL
+      
+      setSearchParams((prev) => {
+        const newParams = new URLSearchParams(prev);
+        
+        if (newQuery) {
+          newParams.set("q", newQuery);
+        } else {
+          // Remove q parameter if search is cleared
+          newParams.delete("q");
+        }
+        
+        return newParams;
+      }, { replace: true }); // Use replace to avoid adding to history
+      
+      // Reset the flags after a longer delay to ensure URL update completes
+      // and URL-reading effect doesn't interfere
+      setTimeout(() => {
+        isUserInitiatedUrlUpdateRef.current = false;
+        isUserInitiatedSearchRef.current = false;
+        setIsDebouncedSearchFromUser(false); // Reset state after URL update
+        debouncedSearchSourceRef.current = 'url'; // Reset source after URL update
+      }, 300);
+    } else {
+      // Reset flags if no URL update needed (query matches URL already)
+      isUserInitiatedSearchRef.current = false;
+      setIsDebouncedSearchFromUser(false);
+      debouncedSearchSourceRef.current = 'url';
+    }
+  }, [debouncedSearchQuery, isDebouncedSearchFromUser, searchParams, setSearchParams]);
 
   // Transform API properties to match PropertyCard format
   const transformProperties = (apiProperties) => {
@@ -261,6 +403,11 @@ function PropertiesList() {
 
   // Fetch properties from API
   useEffect(() => {
+    // Don't fetch if showing saved properties (they're fetched separately)
+    if (showSavedOnly && isAuthenticated()) {
+      return;
+    }
+
     const fetchProperties = async () => {
       try {
         setLoading(true);
@@ -335,7 +482,8 @@ function PropertiesList() {
     debouncedFilters.amenities?.length || 0, // Use length to avoid object reference issues
     pagination.page, 
     pagination.limit, 
-    cityParam
+    cityParam,
+    showSavedOnly // Add showSavedOnly to dependencies
   ]);
 
   // Prevent body scroll when filter is open
@@ -350,27 +498,150 @@ function PropertiesList() {
     };
   }, [isFilterOpen]);
 
-  const toggleFavorite = (propertyId) => {
+  // Load wishlist on mount
+  useEffect(() => {
+    const loadWishlist = async () => {
+      if (!isAuthenticated()) {
+        return;
+      }
+
+      try {
+        const propertyIds = await getWishlistPropertyIds();
+        setFavoritedIds(new Set(propertyIds));
+      } catch (error) {
+        console.error('Error loading wishlist:', error);
+      }
+    };
+
+    loadWishlist();
+  }, []);
+
+  const toggleFavorite = async (propertyId) => {
+    if (!isAuthenticated()) {
+      // If not authenticated, just update local state (for guest users)
+      setFavoritedIds((prev) => {
+        const newSet = new Set(prev);
+        if (newSet.has(propertyId)) {
+          newSet.delete(propertyId);
+        } else {
+          newSet.add(propertyId);
+        }
+        return newSet;
+      });
+      return;
+    }
+
+    // Update local state immediately for better UX
+    const wasFavorited = favoritedIds.has(propertyId);
     setFavoritedIds((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(propertyId)) {
+      if (wasFavorited) {
         newSet.delete(propertyId);
       } else {
         newSet.add(propertyId);
       }
       return newSet;
     });
+
+    // Call API
+    try {
+      if (wasFavorited) {
+        await removeFromWishlist(propertyId);
+      } else {
+        await addToWishlist(propertyId);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      // Revert on error
+      setFavoritedIds((prev) => {
+        const newSet = new Set(prev);
+        if (wasFavorited) {
+          newSet.add(propertyId);
+        } else {
+          newSet.delete(propertyId);
+        }
+        return newSet;
+      });
+    }
   };
 
   const favoriteCount = favoritedIds.size;
 
-  // Filter for saved properties only
+  // Fetch saved properties from wishlist when showSavedOnly is true
+  useEffect(() => {
+    const fetchSavedProperties = async () => {
+      if (!showSavedOnly || !isAuthenticated()) {
+        return;
+      }
+
+      try {
+        setLoadingWishlist(true);
+        setError(null);
+        // Fetch all wishlist properties (with high limit to get all)
+        const wishlistData = await getUserWishlist({ page: 1, limit: 1000 });
+        let transformed = transformProperties(wishlistData.properties || []);
+        
+        // Filter by search query if provided
+        if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
+          const searchTerm = debouncedSearchQuery.trim().toLowerCase();
+          transformed = transformed.filter((property) => {
+            // Search in title
+            const titleMatch = property.title?.toLowerCase().includes(searchTerm);
+            // Search in address
+            const addressMatch = property.address?.toLowerCase().includes(searchTerm);
+            // Search in property type
+            const typeMatch = property.type?.toLowerCase().includes(searchTerm);
+            // Search in price
+            const priceMatch = property.price?.toLowerCase().includes(searchTerm);
+            
+            return titleMatch || addressMatch || typeMatch || priceMatch;
+          });
+        }
+        
+        setProperties(transformed);
+        setPagination(prev => ({
+          ...prev,
+          total: transformed.length,
+          totalPages: 1,
+          page: 1,
+        }));
+      } catch (error) {
+        console.error('Error fetching saved properties:', error);
+        setError(error.message || 'Failed to load saved properties');
+        setProperties([]);
+      } finally {
+        setLoadingWishlist(false);
+      }
+    };
+
+    fetchSavedProperties();
+  }, [showSavedOnly, debouncedSearchQuery]);
+
+  // Filter for saved properties only (for non-authenticated users or when not fetching from API)
+  // Also apply search filter if needed
   const filteredProperties = useMemo(() => {
-    if (showSavedOnly) {
-      return properties.filter((property) => favoritedIds.has(property.id));
+    let filtered = properties;
+    
+    // For non-authenticated users showing saved only, filter by favoritedIds
+    if (showSavedOnly && !isAuthenticated()) {
+      filtered = filtered.filter((property) => favoritedIds.has(property.id));
     }
-    return properties;
-  }, [properties, showSavedOnly, favoritedIds]);
+    
+    // Apply search filter if there's a search query and we're showing saved properties
+    // (For authenticated users, search is already applied in fetchSavedProperties)
+    if (showSavedOnly && !isAuthenticated() && debouncedSearchQuery && debouncedSearchQuery.trim()) {
+      const searchTerm = debouncedSearchQuery.trim().toLowerCase();
+      filtered = filtered.filter((property) => {
+        const titleMatch = property.title?.toLowerCase().includes(searchTerm);
+        const addressMatch = property.address?.toLowerCase().includes(searchTerm);
+        const typeMatch = property.type?.toLowerCase().includes(searchTerm);
+        const priceMatch = property.price?.toLowerCase().includes(searchTerm);
+        return titleMatch || addressMatch || typeMatch || priceMatch;
+      });
+    }
+    
+    return filtered;
+  }, [properties, showSavedOnly, favoritedIds, debouncedSearchQuery]);
 
   const handleHomeClick = () => {
     // Reset saved view to show all properties
@@ -398,7 +669,19 @@ function PropertiesList() {
               setSearchQuery(value);
               // Page reset is handled by debounce useEffect
             }}
-            onSearch={() => fetchProperties()}
+            onSearch={() => {
+              // Clear any pending debounce
+              if (searchTimeoutRef.current) {
+                clearTimeout(searchTimeoutRef.current);
+              }
+              // Mark as user-initiated
+              isUserInitiatedSearchRef.current = true;
+              debouncedSearchSourceRef.current = 'user';
+              setIsDebouncedSearchFromUser(true);
+              // Immediately update debounced search query and trigger URL update
+              setDebouncedSearchQuery(searchQuery);
+              setPagination(prev => ({ ...prev, page: 1 }));
+            }}
             selectedType={selectedPropertyType}
             onTypeChange={(value) => {
               setSelectedPropertyType(value);

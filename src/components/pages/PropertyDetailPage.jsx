@@ -16,6 +16,9 @@ import ContactOwnerModal from "@/components/frontend/PropertyListDetail/ContactO
 import { getPropertyById } from "@/api/properties";
 import { getCurrentUser } from "@/api/users";
 import { createOrGetChatroom } from "@/api/chat";
+import { addToWishlist, removeFromWishlist, checkWishlist, getWishlistPropertyIds } from "@/api/wishlists";
+import { useAuth } from "@/context/AuthContext";
+import { isAuthenticated } from "@/utils/auth";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { toast } from "react-toastify";
 import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
@@ -23,6 +26,7 @@ import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
 function PropertyDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoritedIds, setFavoritedIds] = useState(new Set());
   const [showSavedOnly, setShowSavedOnly] = useState(false);
@@ -140,13 +144,62 @@ function PropertyDetailPage() {
     }
   };
 
+  // Load wishlist on mount
+  useEffect(() => {
+    const loadWishlist = async () => {
+      if (!isAuthenticated()) {
+        return;
+      }
+
+      try {
+        const propertyIds = await getWishlistPropertyIds();
+        setFavoritedIds(new Set(propertyIds));
+      } catch (error) {
+        console.error('Error loading wishlist:', error);
+      }
+    };
+
+    loadWishlist();
+  }, []);
+
+  // Check if current property is favorited
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      const propertyId = property?._id || property?.id;
+      if (!propertyId) {
+        return;
+      }
+
+      if (isAuthenticated()) {
+        try {
+          const isInWishlist = await checkWishlist(propertyId);
+          setIsFavorited(isInWishlist);
+        } catch (error) {
+          console.error('Error checking wishlist:', error);
+          // Fallback to local state
+          setIsFavorited(favoritedIds.has(propertyId));
+        }
+      } else {
+        // For non-authenticated users, use local state
+        setIsFavorited(favoritedIds.has(propertyId));
+      }
+    };
+
+    checkFavoriteStatus();
+  }, [property?._id, property?.id, favoritedIds]);
+
   // Calculate favorite count
   const favoriteCount = favoritedIds.size;
 
   // Toggle favorite for current property
-  const toggleFavorite = () => {
+  const toggleFavorite = async () => {
     const propertyId = property?._id || property?.id;
-    if (propertyId) {
+    if (!propertyId) {
+      return;
+    }
+
+    if (!isAuthenticated()) {
+      // If not authenticated, just update local state
       setFavoritedIds((prev) => {
         const newSet = new Set(prev);
         if (newSet.has(propertyId)) {
@@ -158,18 +211,47 @@ function PropertyDetailPage() {
         }
         return newSet;
       });
+      return;
+    }
+
+    // Update local state immediately for better UX
+    const wasFavorited = isFavorited;
+    setIsFavorited(!wasFavorited);
+    setFavoritedIds((prev) => {
+      const newSet = new Set(prev);
+      if (wasFavorited) {
+        newSet.delete(propertyId);
+      } else {
+        newSet.add(propertyId);
+      }
+      return newSet;
+    });
+
+    // Call API
+    try {
+      if (wasFavorited) {
+        await removeFromWishlist(propertyId);
+        toast.success('Property removed from favorites');
+      } else {
+        await addToWishlist(propertyId);
+        toast.success('Property added to favorites');
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      // Revert on error
+      setIsFavorited(wasFavorited);
+      setFavoritedIds((prev) => {
+        const newSet = new Set(prev);
+        if (wasFavorited) {
+          newSet.add(propertyId);
+        } else {
+          newSet.delete(propertyId);
+        }
+        return newSet;
+      });
+      toast.error(error?.response?.data?.message || 'Failed to update favorites');
     }
   };
-
-  // Check if current property is favorited on mount
-  useEffect(() => {
-    const propertyId = property?._id || property?.id;
-    if (propertyId && favoritedIds.has(propertyId)) {
-      setIsFavorited(true);
-    } else {
-      setIsFavorited(false);
-    }
-  }, [property?._id, property?.id, favoritedIds]);
 
   // Handle share button click - copy link to clipboard
   const handleShare = async () => {
