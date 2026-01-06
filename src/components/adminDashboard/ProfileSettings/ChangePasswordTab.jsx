@@ -10,27 +10,83 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
     newPassword: "",
     confirmPassword: "",
   });
+  const [fieldErrors, setFieldErrors] = useState({});
   const [showPasswords, setShowPasswords] = useState({
     old: false,
     new: false,
     confirm: false,
   });
 
+  const validatePassword = (password) => {
+    const errors = [];
+
+    if (!/[A-Z]/.test(password)) {
+      errors.push("Must Include 1 Uppercase letter");
+    }
+
+    if (password.length < 8) {
+      errors.push("Password must be at least 8 characters");
+    }
+
+    if (!/[@$!%*?&#]/.test(password)) {
+      errors.push("Use special character (eg. @,!,etc)");
+    }
+
+    return errors;
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const togglePasswordVisibility = (field) => {
     setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
+  const validateForm = () => {
+    const nextErrors = {};
+
+    if (!formData.oldPassword?.trim()) {
+      nextErrors.oldPassword = "Old password is required.";
+    }
+    if (!formData.newPassword?.trim()) {
+      nextErrors.newPassword = "New password is required.";
+    }
+    if (!formData.confirmPassword?.trim()) {
+      nextErrors.confirmPassword = "Confirm password is required.";
+    }
+
+    // Password specification (match backend update-password validator):
+    // Match Create Password rules:
+    // - at least 8 characters
+    // - at least one uppercase letter
+    // - at least one special character
+    if (formData.newPassword?.trim()) {
+      const passwordErrors = validatePassword(formData.newPassword);
+      if (passwordErrors.length > 0) {
+        nextErrors.newPassword = passwordErrors.join(", ");
+      }
+    }
+
+    if (
+      formData.newPassword?.trim() &&
+      formData.confirmPassword?.trim() &&
+      formData.newPassword !== formData.confirmPassword
+    ) {
+      nextErrors.confirmPassword = "New password and confirm password do not match.";
+    }
+
+    setFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.newPassword !== formData.confirmPassword) {
-      toast.error("New password and confirm password do not match");
-      return;
-    }
+    if (!validateForm()) return;
     try {
       await onSave(formData);
       // Reset form
@@ -39,6 +95,7 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
         newPassword: "",
         confirmPassword: "",
       });
+      setFieldErrors({});
       // Show success modal
       if (onSuccess) {
         onSuccess();
@@ -59,12 +116,18 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
         errorMessage = error.message;
       }
       
-      toast.error(errorMessage);
+      // Also show inline so user knows exactly what to fix
+      setFieldErrors((prev) => ({ ...prev, newPassword: errorMessage }));
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 w-full">
+    <form
+      noValidate
+      onInvalid={(e) => e.preventDefault()}
+      onSubmit={handleSubmit}
+      className="space-y-4 w-full"
+    >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Old Password */}
         <div>
@@ -79,7 +142,6 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
               onChange={handleInputChange}
               className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
               placeholder="Enter your old password"
-              required
             />
             <button
               type="button"
@@ -89,6 +151,9 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
               {showPasswords.old ? <BsEye /> : <BsEyeSlash />}
             </button>
           </div>
+          {fieldErrors.oldPassword ? (
+            <p className="mt-1 text-sm text-errorColor">{fieldErrors.oldPassword}</p>
+          ) : null}
         </div>
 
         {/* New Password */}
@@ -104,7 +169,6 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
               onChange={handleInputChange}
               className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
               placeholder="Enter your new password"
-              required
             />
             <button
               type="button"
@@ -114,6 +178,9 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
               {showPasswords.new ? <BsEye /> : <BsEyeSlash />}
             </button>
           </div>
+          {fieldErrors.newPassword ? (
+            <p className="mt-1 text-sm text-errorColor">{fieldErrors.newPassword}</p>
+          ) : null}
         </div>
       </div>
       {/* Confirm Password */}
@@ -129,7 +196,6 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
             onChange={handleInputChange}
             className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
             placeholder="Enter your confirm password"
-            required
           />
           <button
             type="button"
@@ -139,6 +205,9 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
             {showPasswords.confirm ? <BsEye /> : <BsEyeSlash />}
           </button>
         </div>
+        {fieldErrors.confirmPassword ? (
+          <p className="mt-1 text-sm text-errorColor">{fieldErrors.confirmPassword}</p>
+        ) : null}
       </div>
 
 

@@ -171,6 +171,36 @@ function FileUpload({
     return (bytes / (1024 * 1024)).toFixed(2) + " MB";
   };
 
+  const getFileTypeLabel = (file) => {
+    const name = file?.name || "";
+    const ext = name.includes(".") ? name.split(".").pop().toLowerCase() : "";
+
+    // Prefer extension from filename (most reliable for user uploads)
+    const normalized = ext === "jpeg" ? "jpg" : ext;
+    if (normalized) return normalized.toUpperCase();
+
+    // Fallback to mime type if no extension
+    const mime = (file?.type || "").toLowerCase();
+    if (mime.startsWith("image/")) return mime.split("/")[1].toUpperCase();
+    if (mime === "application/pdf") return "PDF";
+
+    return "FILE";
+  };
+
+  const renderFileTypeBadge = (file) => {
+    const label = getFileTypeLabel(file);
+    if (label === "PDF") return <PdfIcon />;
+
+    // Match PdfIcon dimensions/colors so UI stays the same
+    return (
+      <div className="w-[36px] h-[36px] bg-[#F9F9FC] border border-[#E6E8EC] rounded-[4px] flex items-center justify-center">
+        <span className="text-[11px] font-bold text-[#5A5E67] leading-none">
+          {label}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <div>
       {label && (
@@ -222,7 +252,7 @@ function FileUpload({
                 >
                   <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                     <div className="flex-shrink-0">
-                      <PdfIcon />
+                      {renderFileTypeBadge(file)}
                     </div>
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-xs sm:text-sm font-medium text-darkGray truncate">

@@ -171,6 +171,21 @@ export const AuthProvider = ({ children }) => {
     navigate('/');
   };
 
+  /**
+   * Update stored user data (e.g. after profile edit) so UI reflects changes immediately.
+   * Keeps localStorage and in-memory context state in sync.
+   * @param {Object} updates - Partial user object to merge into current user.
+   */
+  const updateUser = (updates) => {
+    if (!updates || typeof updates !== 'object') return;
+    setUser((prev) => {
+      const merged = { ...(prev || {}), ...updates };
+      // Keep localStorage in sync; prefer current token state, fallback to stored token.
+      storeAuthData(merged, token || getToken());
+      return merged;
+    });
+  };
+
   // Only compute these values on client side to avoid SSR issues
   const authValue = {
     user,
@@ -180,6 +195,7 @@ export const AuthProvider = ({ children }) => {
     userName: loading ? '' : getUserName(),
     login,
     logout,
+    updateUser,
     loading,
   };
 
