@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import FileUpload from "@/components/FileUpload";
 import SupportSuccessModal from "@/components/adminDashboard/Support/SupportSuccessModal";
-import { createSupportTicket, getSupportTicketById, uploadSupportTicketMedia } from "@/api/supportTickets";
+import { createSupportTicket, getSupportTicketById, uploadSupportTicketMedia, getMySupportTickets } from "@/api/supportTickets";
 import { FiPlus, FiDownload, FiX } from "react-icons/fi";
 import Pagination from "@/components/adminDashboard/common/Pagination";
 
@@ -35,40 +35,36 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
 
   const loadTickets = async () => {
     try {
-      const ticketIds = JSON.parse(localStorage.getItem('supportTicketIds') || '[]');
-      const ticketsData = [];
+      const response = await getMySupportTickets({
+        page: 1,
+        limit: 1000, // Get all tickets, frontend will handle pagination
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      });
       
-      for (const ticketId of ticketIds) {
-        try {
-          const response = await getSupportTicketById(ticketId);
-          let ticketData = null;
-          
-          if (response?.data) {
-            ticketData = response.data;
-          } else if (response?._id || response?.id) {
-            ticketData = response;
-          } else if (response?.ticket) {
-            ticketData = response.ticket;
-          }
-          
-          if (ticketData) {
-            if (!ticketData.media || !Array.isArray(ticketData.media)) {
-              ticketData.media = [];
-            }
-            ticketsData.push(ticketData);
-          }
-        } catch (error) {
-          console.error(`Error loading ticket ${ticketId}:`, error);
-          const updatedIds = ticketIds.filter(id => id !== ticketId);
-          localStorage.setItem('supportTicketIds', JSON.stringify(updatedIds));
-        }
+      let ticketsData = [];
+      
+      if (response?.data?.tickets) {
+        ticketsData = response.data.tickets;
+      } else if (response?.tickets) {
+        ticketsData = response.tickets;
+      } else if (Array.isArray(response?.data)) {
+        ticketsData = response.data;
+      } else if (Array.isArray(response)) {
+        ticketsData = response;
       }
       
-      ticketsData.sort((a, b) => new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at));
+      // Ensure media is an array for each ticket
+      ticketsData = ticketsData.map(ticket => ({
+        ...ticket,
+        media: Array.isArray(ticket.media) ? ticket.media : []
+      }));
+      
       setTickets(ticketsData);
       setCurrentPage(1);
     } catch (error) {
       console.error('Error loading tickets:', error);
+      setTickets([]);
     } finally {
       setIsLoading(false);
     }
@@ -126,12 +122,6 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
         } catch (uploadError) {
           console.error('Error uploading files:', uploadError);
         }
-      }
-
-      const ticketIds = JSON.parse(localStorage.getItem('supportTicketIds') || '[]');
-      if (!ticketIds.includes(ticketId)) {
-        ticketIds.push(ticketId);
-        localStorage.setItem('supportTicketIds', JSON.stringify(ticketIds));
       }
 
       setFormData({

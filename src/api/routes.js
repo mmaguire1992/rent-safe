@@ -63,6 +63,7 @@ export const dashboard = {
 // Support Tickets Routes
 export const supportTickets = {
   create: '/support-tickets',
+  getAll: '/support-tickets',
   getById: (id) => `/support-tickets/${id}`,
   uploadMedia: (id) => `/support-tickets/${id}/media`,
   uploadMultipleMedia: (id) => `/support-tickets/${id}/media/multiple`,

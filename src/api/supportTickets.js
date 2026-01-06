@@ -21,6 +21,23 @@ export async function createSupportTicket(ticketData) {
 }
 
 /**
+ * Get all support tickets for the logged-in user
+ * @param {Object} queryParams - Query parameters (page, limit, status, priority, sortBy, sortOrder)
+ * @returns {Promise<Object>} Support tickets data with pagination
+ */
+export async function getMySupportTickets(queryParams = {}) {
+  try {
+    const queryString = new URLSearchParams(queryParams).toString();
+    const url = queryString ? `${supportTicketRoutes.getAll}?${queryString}` : supportTicketRoutes.getAll;
+    const responseData = await useGetApi(url, true);
+    return responseData;
+  } catch (error) {
+    console.error('Error in getMySupportTickets:', error);
+    throw error;
+  }
+}
+
+/**
  * Get support ticket by ID
  * @param {string} id - Ticket ID
  * @returns {Promise<Object>} Support ticket data
