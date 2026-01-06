@@ -93,7 +93,7 @@ function ProfileMenu() {
             <button
               onClick={() => {
                 setShowMenu(false);
-                navigate("/rent-support");
+                navigate("/support");
               }}
               className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-50"
             >

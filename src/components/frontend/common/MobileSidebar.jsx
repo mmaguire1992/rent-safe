@@ -168,7 +168,7 @@ function MobileSidebar({ isOpen, onClose }) {
                 Property History
               </button>
               <button
-                onClick={() => handleNavigation("/rent-support")}
+                onClick={() => handleNavigation("/support")}
                 className="w-full text-left px-4 py-2 text-sm font-normal font-nunito text-white hover:bg-white/10 rounded-lg transition-colors"
               >
                 Support

@@ -1161,7 +1161,7 @@ export const sidebarMenuItems = [
   {
     icon: SupportIcon,
     label: "Support",
-    path: "/dashboard/support",
+    path: "/support",
     badge: null,
   },
 ];
