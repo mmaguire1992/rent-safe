@@ -56,44 +56,58 @@ export const AuthProvider = ({ children }) => {
       '/create-password',
       '/password-success',
       '/properties',
-      '/profile',
       '/support'
     ];
     
+    // Ensure pathname is a string
+    const currentPath = typeof pathname === 'string' ? pathname : String(pathname || '');
+    
     // Check if current route is public (including signup sub-routes and public routes)
-    const isPublicRoute = publicRoutes.includes(pathname) || 
-                         pathname.startsWith('/signup') || 
-                         pathname.startsWith('/properties') ||
-                         pathname.startsWith('/property/') || // Property detail pages (singular)
-                         pathname.startsWith('/profile') ||
-                         pathname.startsWith('/support');
+    const isPublicRoute = publicRoutes.includes(currentPath) || 
+                         currentPath.startsWith('/signup') || 
+                         currentPath.startsWith('/properties') ||
+                         currentPath.startsWith('/property/') || // Property detail pages (singular)
+                         currentPath.startsWith('/support');
+    
+    // Profile route should be accessible to authenticated users only
+    const isProfileRoute = currentPath.startsWith('/profile');
     
     if (!isAuth) {
       // User is NOT authenticated
       // Block access to ALL routes except public auth routes
-      if (!isPublicRoute) {
+      // Profile requires authentication
+      if (!isPublicRoute && !isProfileRoute) {
+        navigate('/login');
+        return;
+      }
+      // If trying to access profile without auth, redirect to login
+      if (isProfileRoute) {
         navigate('/login');
         return;
       }
     } else {
       // User IS authenticated
-      // Don't redirect from property detail pages, properties list, or support pages
-      const isPropertyOrSupportRoute = pathname.startsWith('/property/') || 
-                                       pathname.startsWith('/properties') ||
-                                       pathname.startsWith('/support');
+      // Don't redirect from property detail pages, properties list, support pages, or profile
+      const isPropertyOrSupportRoute = currentPath.startsWith('/property/') || 
+                                       currentPath.startsWith('/properties') ||
+                                       currentPath.startsWith('/support') ||
+                                       isProfileRoute;
       
       // Redirect from public auth routes to appropriate dashboard/landing
-      // But allow property detail pages and properties list to be accessible
+      // But allow property detail pages, properties list, support, and profile to be accessible
       if (isPublicRoute && !isPropertyOrSupportRoute) {
-        redirectBasedOnUserType(navigate, pathname);
+        redirectBasedOnUserType(navigate, currentPath);
         return;
       }
       
       // Check if user is accessing wrong route (owner on landing, renter on dashboard)
-      if (currentUserType === 'owner' && (pathname === '/landing' || pathname === '/')) {
+      // But don't redirect from profile page
+      if (!isProfileRoute) {
+        if (currentUserType === 'owner' && (currentPath === '/landing' || currentPath === '/')) {
         navigate('/dashboard');
-      } else if (currentUserType === 'renter' && pathname.startsWith('/dashboard')) {
+        } else if (currentUserType === 'renter' && currentPath.startsWith('/dashboard')) {
         navigate('/landing');
+        }
       }
     }
   }, [pathname, loading, navigate]);
@@ -135,7 +149,8 @@ export const AuthProvider = ({ children }) => {
       setToken(userToken);
       
       // Redirect based on user type
-      redirectBasedOnUserType(navigate, pathname);
+      const currentPath = typeof pathname === 'string' ? pathname : String(pathname || '');
+      redirectBasedOnUserType(navigate, currentPath);
       
       return { success: true };
     } catch (error) {

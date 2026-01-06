@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from '@/lib/react-router-compat';
+import { toast } from 'react-toastify';
 import ThreeDotsIcon from "@/svg/threeDotsIcon";
 
 function PropertiesMobileCards({
@@ -33,13 +34,70 @@ function PropertiesMobileCards({
     setOpenDropdownId(openDropdownId === propertyId ? null : propertyId);
   };
 
+  // Handle share button click - copy property link to clipboard
+  const handleShare = async (propertyId, e) => {
+    if (e) e.stopPropagation();
+    
+    try {
+      if (!propertyId) {
+        toast.error('Property ID not available');
+        setOpenDropdownId(null);
+        return;
+      }
+
+      // Construct property detail URL (public route for renters to view)
+      const propertyUrl = `${window.location.origin}/properties/${propertyId}`;
+      
+      // Try modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(propertyUrl);
+        toast.success('Link copied to clipboard!');
+      } else {
+        // Fallback for browsers that don't support clipboard API
+        const textArea = document.createElement('textarea');
+        textArea.value = propertyUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          const successful = document.execCommand('copy');
+          document.body.removeChild(textArea);
+          
+          if (successful) {
+            toast.success('Link copied to clipboard!');
+          } else {
+            throw new Error('execCommand failed');
+          }
+        } catch (err) {
+          document.body.removeChild(textArea);
+          throw err;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      toast.error('Failed to copy link. Please copy manually.');
+    }
+    
+    setOpenDropdownId(null);
+  };
+
   const handleAction = (action, propertyId, e) => {
     if (e) e.stopPropagation();
-    console.log(`${action} property:`, propertyId);
-    if (action === "Edit") {
+    
+    if (action === "edit") {
       navigate(`/dashboard/properties/${propertyId}`);
-    }
+      setOpenDropdownId(null);
+    } else if (action === "share") {
+      handleShare(propertyId, e);
+    } else if (action === "delete") {
+      // Delete functionality can be added here
+      console.log(`Delete property:`, propertyId);
     setOpenDropdownId(null);
+    }
   };
   return (
     <div className="md:hidden space-y-3">

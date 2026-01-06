@@ -25,6 +25,7 @@ const Navbar = () => {
   const [remainingContacts, setRemainingContacts] = useState(null);
   const [contactLimit, setContactLimit] = useState(5);
   const [loading, setLoading] = useState(true);
+  const [profileImage, setProfileImage] = useState(null);
 
   const handleScrollToSection = (e, sectionId) => {
     e.preventDefault();
@@ -63,10 +64,10 @@ const Navbar = () => {
     setIsOpen(false);
   };
 
-  // Fetch user contacts
+  // Fetch user contacts and profile image
   useEffect(() => {
-    const fetchUserContacts = async () => {
-      if (!isAuthenticated || userType !== 'renter') {
+    const fetchUserData = async () => {
+      if (!isAuthenticated) {
         setLoading(false);
         return;
       }
@@ -74,20 +75,29 @@ const Navbar = () => {
       try {
         const userData = await getCurrentUser();
         if (userData) {
-          setRemainingContacts(userData.remainingContacts ?? null);
-          setContactLimit(userData.chatContactLimit ?? 5);
+          // Set contacts for renters
+          if (userType === 'renter') {
+            setRemainingContacts(userData.remainingContacts ?? null);
+            setContactLimit(userData.chatContactLimit ?? 5);
+          }
+          // Set profile image from userInfo
+          if (userData.userInfo?.profileImage) {
+            setProfileImage(userData.userInfo.profileImage);
+          }
         }
       } catch (err) {
-        console.error('Error fetching user contacts:', err);
+        console.error('Error fetching user data:', err);
         // Set defaults on error
-        setRemainingContacts(null);
-        setContactLimit(5);
+        if (userType === 'renter') {
+          setRemainingContacts(null);
+          setContactLimit(5);
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserContacts();
+    fetchUserData();
   }, [isAuthenticated, userType]);
 
   // Close renter menu when clicking outside
@@ -329,9 +339,17 @@ const Navbar = () => {
                     className="flex items-center gap-2 cursor-pointer border border-lightGray rounded-full px-3 py-1.5 hover:bg-gray-50 transition-colors"
                   >
                     <div className="relative">
-                      <div className="w-8 h-8 bg-[#E8E2FF] rounded-full flex items-center justify-center text-primary font-bold text-sm">
-                        {getUserInitials()}
-                      </div>
+                      {profileImage ? (
+                        <img
+                          src={profileImage}
+                          alt={userName || 'User'}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 bg-[#E8E2FF] rounded-full flex items-center justify-center text-primary font-bold text-sm">
+                          {getUserInitials()}
+                        </div>
+                      )}
                       <span className="absolute -top-1 -right-1">
                         <GreenCheckedIcon />
                       </span>
@@ -352,9 +370,17 @@ const Navbar = () => {
                       <div className="px-4 py-3 border-b border-gray-200">
                         <div className="flex items-center gap-3">
                           <div className="relative">
-                            <div className="w-12 h-12 bg-[#6B4EFF] rounded-full flex items-center justify-center text-white font-bold">
-                              {getUserInitials()}
-                            </div>
+                            {profileImage ? (
+                              <img
+                                src={profileImage}
+                                alt={userName || 'User'}
+                                className="w-12 h-12 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-[#6B4EFF] rounded-full flex items-center justify-center text-white font-bold">
+                                {getUserInitials()}
+                              </div>
+                            )}
                             <span className="absolute -top-1 -right-1">
                               <GreenCheckedIcon />
                             </span>

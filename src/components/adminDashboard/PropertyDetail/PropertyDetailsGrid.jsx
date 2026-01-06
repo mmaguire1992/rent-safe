@@ -7,6 +7,16 @@ const DummyAmenityIcon = () => (
 );
 
 function PropertyDetailsGrid({ propertyData }) {
+  // Helper function to format text: replace underscores with spaces and capitalize
+  const formatText = (text) => {
+    if (!text) return '';
+    return text
+      .replace(/_/g, ' ') // Replace underscores with spaces
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   const getAmenityIconComponent = (amenity) => {
     const Icon = getAmenityIcon(amenity);
     return Icon || DummyAmenityIcon;
@@ -79,7 +89,7 @@ function PropertyDetailsGrid({ propertyData }) {
                   <Icon />
                 </span>
                 <span className="text-base font-normal font-nunito text-secondary">
-                  {amenity}
+                  {formatText(amenity)}
                 </span>
               </div>
             );
@@ -99,7 +109,7 @@ function PropertyDetailsGrid({ propertyData }) {
                     <Icon />
                   </span>
                   <span className="text-base font-normal font-nunito text-secondary">
-                    {utility}
+                    {formatText(utility)}
                   </span>
                 </div>
               );

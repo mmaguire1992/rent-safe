@@ -12,6 +12,7 @@ function ButtonDropdown({
   placeholder = "Select an option",
   className = "",
   showFilterIcon = false,
+  label = "Status",
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -51,7 +52,7 @@ function ButtonDropdown({
           <FiFilter className="absolute left-3 text-darkGray" />
         )} */}
         <span className="text-darkGray text-sm md:text-base font-nunito font-bold">
-          Status:
+          {label}:
         </span>
         <span className="text-darkGray text-sm md:text-base font-nunito font-bold">
           {displayText}

@@ -10,6 +10,8 @@ function ProofOfIncomeSection({
   handleDateChange,
   handleDropdownChange,
   incomeTypeOptions,
+  existingDocuments = [],
+  onDocumentsUpdated,
 }) {
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
@@ -69,8 +71,11 @@ function ProofOfIncomeSection({
       </div>
 
       <DocumentUpload
-        label="Upload document to verify the above information"
-        maxFiles={5}
+        label="Upload document to verify proof of income"
+        maxFiles={3}
+        docType="pay_slip"
+        existingDocuments={existingDocuments}
+        onDocumentsUpdated={onDocumentsUpdated}
       />
     </div>
   );

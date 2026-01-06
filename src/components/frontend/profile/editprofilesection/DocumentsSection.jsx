@@ -10,6 +10,7 @@ function DocumentsSection({
   handleDateChange,
   handleDropdownChange,
   documentTypeOptions,
+  onDocumentsUpdated,
 }) {
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
@@ -56,7 +57,34 @@ function DocumentsSection({
 
       <DocumentUpload
         label="Upload document to verify the above information"
-        maxFiles={5}
+        maxFiles={1}
+        docType={(() => {
+          // Map dropdown values to backend docType enum values
+          const docTypeMap = {
+            'passport': 'passport',
+            'driving-license': 'driving_license',
+            'id-card': 'national_id',
+          };
+          return docTypeMap[formData.documentType] || 'passport';
+        })()}
+        documentMetadata={{
+          documentType: formData.documentType || '',
+          documentNumber: formData.documentNumber || '',
+          documentExpire: formData.documentExpire || '',
+        }}
+        onDocumentsUpdated={onDocumentsUpdated}
+        onDocumentDeleted={() => {
+          // Clear document metadata fields when document is deleted
+          if (handleDropdownChange) {
+            handleDropdownChange('documentType', '');
+          }
+          if (handleChange) {
+            handleChange({ target: { name: 'documentNumber', value: '' } });
+          }
+          if (handleDateChange) {
+            handleDateChange('documentExpire', '');
+          }
+        }}
       />
     </div>
   );

@@ -82,10 +82,10 @@ function ProfileMenu() {
               className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-50"
               onClick={() => {
                 setShowMenu(false);
-                navigate("/profileManagement");
+                navigate("/profile");
               }}
             >
-              Profile Setting
+              Profile Settings
             </button>
             <button className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-50">
               Property History

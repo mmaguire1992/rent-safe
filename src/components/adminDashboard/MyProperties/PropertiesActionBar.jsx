@@ -19,22 +19,23 @@ function PropertiesActionBar({
   sortBy,
   setSortBy,
   navigate,
+  onExport,
 }) {
   const getStatusDisplayText = (value) => {
-    if (value === "all") return "Status: All";
+    if (value === "all") return "All";
     const option = statusOptions.find((opt) => opt.value === value);
-    return option ? `Status: ${option.label}` : "Status: All";
+    return option ? option.label : "All";
   };
 
   const getTypeDisplayText = (value) => {
-    if (value === "all") return "Type: All";
+    if (value === "all") return "All";
     const option = typeOptions.find((opt) => opt.value === value);
-    return option ? `Type: ${option.label}` : "Type: All";
+    return option ? option.label : "All";
   };
 
   const getSortDisplayText = (value) => {
     const option = sortOptions.find((opt) => opt.value === value);
-    return option ? `Sort: ${option.label}` : "Sort: Recent";
+    return option ? option.label : "Recent";
   };
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -125,6 +126,7 @@ function PropertiesActionBar({
                       placeholder={getStatusDisplayText(statusFilter)}
                       className="h-[40px] w-full"
                       showFilterIcon={true}
+                      label="Status"
                     />
                   </div>
 
@@ -137,6 +139,7 @@ function PropertiesActionBar({
                       placeholder={getTypeDisplayText(typeFilter)}
                       className="h-[40px] w-full"
                       showFilterIcon={true}
+                      label="Type"
                     />
                   </div>
 
@@ -149,6 +152,7 @@ function PropertiesActionBar({
                       placeholder={getSortDisplayText(sortBy)}
                       className="h-[40px] w-full"
                       showFilterIcon={true}
+                      label="Sort"
                     />
                   </div>
                 </div>
@@ -176,6 +180,7 @@ function PropertiesActionBar({
               placeholder={getStatusDisplayText(statusFilter)}
               className="h-[40px]"
               showFilterIcon={true}
+              label="Status"
             />
           </div>
 
@@ -188,6 +193,7 @@ function PropertiesActionBar({
               placeholder={getTypeDisplayText(typeFilter)}
               className="h-[40px]"
               showFilterIcon={true}
+              label="Type"
             />
           </div>
 
@@ -200,6 +206,7 @@ function PropertiesActionBar({
               placeholder={getSortDisplayText(sortBy)}
               className="h-[40px]"
               showFilterIcon={true}
+              label="Sort"
             />
           </div>
           <button
@@ -211,7 +218,10 @@ function PropertiesActionBar({
               <GoPlus className="text-xl md:text-2xl" />
             </span>
           </button>
-          <button className="bg-white border border-[#4A2FCC] h-[38px] text-[#4A2FCC] px-3 md:px-6 py-1.5 md:py-2 rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors flex items-center gap-2 md:gap-3 text-sm md:text-base">
+          <button 
+            onClick={onExport}
+            className="bg-white border border-[#4A2FCC] h-[38px] text-[#4A2FCC] px-3 md:px-6 py-1.5 md:py-2 rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors flex items-center gap-2 md:gap-3 text-sm md:text-base"
+          >
             <span className="inline">Export</span>
             <FiDownload className="text-sm md:text-base" />
           </button>

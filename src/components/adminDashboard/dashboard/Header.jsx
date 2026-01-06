@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from '@/lib/react-router-compat';
 import { useAuth } from '@/context/AuthContext';
+import { getCurrentUser } from "@/api/users";
 import {
   FiSearch,
   FiBell,
@@ -19,8 +20,9 @@ import LogoutIcon from "@/svg/logoutIcon";
 
 function Header({ onMenuClick }) {
   const navigate = useNavigate();
-  const { logout, userName, user } = useAuth();
+  const { logout, userName, user, isAuthenticated } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
   const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside
@@ -39,6 +41,24 @@ function Header({ onMenuClick }) {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [dropdownOpen]);
+
+  // Fetch profile image
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      if (!isAuthenticated) return;
+      
+      try {
+        const userData = await getCurrentUser();
+        if (userData?.userInfo?.profileImage) {
+          setProfileImage(userData.userInfo.profileImage);
+        }
+      } catch (err) {
+        console.error('Error fetching profile image:', err);
+      }
+    };
+
+    fetchProfileImage();
+  }, [isAuthenticated]);
 
   const handleLogout = () => {
     logout();
@@ -117,9 +137,17 @@ function Header({ onMenuClick }) {
               className="flex items-center gap-2 md:gap-3 cursor-pointer border border-lightGray rounded-full p-1"
             >
               <div className="relative">
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-[#E8E2FF] rounded-full flex items-center justify-center text-primary font-bold text-sm md:text-base">
-                  {getUserInitials()}
-                </div>
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt={displayName}
+                    className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 md:w-10 md:h-10 bg-[#E8E2FF] rounded-full flex items-center justify-center text-primary font-bold text-sm md:text-base">
+                    {getUserInitials()}
+                  </div>
+                )}
                 <span className="absolute -top-1 -right-1">
                   <GreenCheckedIcon />
                 </span>
@@ -143,9 +171,17 @@ function Header({ onMenuClick }) {
                 <div className="p-4 border-b border-lightGray">
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <div className="w-12 h-12 bg-[#6B4EFF] rounded-full flex items-center justify-center text-white font-bold">
-                        {getUserInitials()}
-                      </div>
+                      {profileImage ? (
+                        <img
+                          src={profileImage}
+                          alt={displayName}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-[#6B4EFF] rounded-full flex items-center justify-center text-white font-bold">
+                          {getUserInitials()}
+                        </div>
+                      )}
                       <span className="absolute -top-1 -right-1">
                         <GreenCheckedIcon />
                       </span>

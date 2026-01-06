@@ -2,7 +2,7 @@ import WhiteGuarantorIcon from "@/svg/whiteGuarantorIcon";
 import DocumentUpload from "./DocumentUpload";
 import BlueGrantorIcon from "../../../../svg/websiteSvg/blueGrantorIcon";
 
-function GuarantorInformationSection({ formData, handleChange }) {
+function GuarantorInformationSection({ formData, handleChange, existingDocuments = [], onDocumentsUpdated }) {
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
       <div className="flex items-center gap-4 mb-6">
@@ -157,8 +157,11 @@ function GuarantorInformationSection({ formData, handleChange }) {
       </div>
 
       <DocumentUpload
-        label="Upload document to verify the above information"
-        maxFiles={5}
+        label="Upload document to verify guarantor information"
+        maxFiles={1}
+        docType="other"
+        existingDocuments={existingDocuments}
+        onDocumentsUpdated={onDocumentsUpdated}
       />
     </div>
   );

@@ -61,7 +61,7 @@ function PropertyHeader({
           </button>
           {!showRenterDetails && (
             <>
-              <button
+              {/* <button
                 onClick={onEdit}
                 className="flex items-center gap-2 md:px-6 px-4 py-1.5 border border-[#4A2FCC] text-white rounded-[10px]   transition-colors"
               >
@@ -69,7 +69,7 @@ function PropertyHeader({
                   Edit
                 </span>
                 <BlueEditIcon className="text-[#4A2FCC]" />
-              </button>
+              </button> */}
               <button
                 onClick={onDelete}
                 className="flex items-center gap-2 md:px-6 px-4 py-1.5 border border-[#D24343] text-white rounded-[10px]  transition-colors"

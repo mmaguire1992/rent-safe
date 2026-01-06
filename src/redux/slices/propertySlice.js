@@ -186,10 +186,46 @@ const propertySlice = createSlice({
       })
       .addCase(fetchMyProperties.fulfilled, (state, action) => {
         state.loading = false;
-        const data = action.payload?.data || action.payload;
-        state.myProperties = Array.isArray(data) ? data : (data?.properties || []);
-        if (data?.pagination) {
-          state.pagination = data.pagination;
+        const response = action.payload;
+        
+        // Handle different response structures
+        let properties = [];
+        let paginationData = {};
+        
+        // The API function returns { properties, total, page, limit, totalPages }
+        if (response?.properties) {
+          properties = Array.isArray(response.properties) ? response.properties : [];
+          paginationData = {
+            total: response.total || response.count || 0,
+            count: response.total || response.count || 0,
+            page: response.page || 1,
+            limit: response.limit || 10,
+            totalPages: response.totalPages || 1,
+          };
+        } else if (response?.data) {
+          // If response has data property (raw API response)
+          if (response.data.properties) {
+            properties = Array.isArray(response.data.properties) ? response.data.properties : [];
+            paginationData = {
+              total: response.data.count || response.data.total || 0,
+              count: response.data.count || response.data.total || 0,
+              page: response.data.page || 1,
+              limit: response.data.limit || 10,
+              totalPages: response.data.totalPages || 1,
+            };
+          } else if (Array.isArray(response.data)) {
+            properties = response.data;
+          }
+        } else if (Array.isArray(response)) {
+          properties = response;
+        }
+        
+        state.myProperties = properties;
+        if (Object.keys(paginationData).length > 0) {
+          state.pagination = {
+            ...state.pagination,
+            ...paginationData,
+          };
         }
       })
       .addCase(fetchMyProperties.rejected, (state, action) => {

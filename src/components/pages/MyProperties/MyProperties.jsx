@@ -9,6 +9,7 @@ import PropertiesActionBar from "@/components/adminDashboard/MyProperties/Proper
 import PropertiesTable from "@/components/adminDashboard/MyProperties/PropertiesTable";
 import PropertiesMobileCards from "@/components/adminDashboard/MyProperties/PropertiesMobileCards";
 import { fetchMyProperties } from '@/redux/slices/propertySlice';
+import { toast } from 'react-toastify';
 
 function MyProperties() {
   const navigate = useNavigate();
@@ -152,6 +153,119 @@ function MyProperties() {
     }
   };
 
+  // Export properties to CSV
+  const handleExportCSV = () => {
+    if (!allProperties || allProperties.length === 0) {
+      toast.error('No properties to export');
+      return;
+    }
+
+    try {
+      // Define CSV headers
+      const headers = [
+        'Title',
+        'Property Type',
+        'Bedrooms',
+        'Bathrooms',
+        'Rent',
+        'Currency',
+        'Deposit',
+        'Status',
+        'Location',
+        'City',
+        'Postcode',
+        'Country',
+        'Leads',
+        'Views',
+        'Date Added',
+        'Approved On'
+      ];
+
+      // Convert properties to CSV rows
+      const csvRows = allProperties.map((property) => {
+        // Build address parts
+        const address = property.address || {};
+        const city = address.city || '';
+        const postcode = address.postcode || '';
+        const country = address.country || '';
+        const fullAddress = [
+          address.address,
+          city,
+          address.county,
+          postcode,
+          country
+        ].filter(Boolean).join(', ');
+
+        // Format dates
+        const formatDate = (dateString) => {
+          if (!dateString) return '';
+          try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric'
+            });
+          } catch (e) {
+            return '';
+          }
+        };
+
+        // Format currency symbol
+        const currency = property.currency || 'GBP';
+        const rentValue = property.rent || 0;
+
+        // Format status
+        const status = property.status 
+          ? property.status.charAt(0).toUpperCase() + property.status.slice(1).replace(/_/g, ' ')
+          : 'Draft';
+
+        return [
+          `"${(property.title || 'Untitled Property').replace(/"/g, '""')}"`,
+          `"${(property.propertyType || '').charAt(0).toUpperCase() + (property.propertyType || '').slice(1)}"`,
+          property.bedrooms || 0,
+          property.bathrooms || 0,
+          rentValue,
+          currency,
+          property.deposit || 0,
+          `"${status}"`,
+          `"${fullAddress.replace(/"/g, '""')}"`,
+          `"${city.replace(/"/g, '""')}"`,
+          `"${postcode.replace(/"/g, '""')}"`,
+          `"${country.replace(/"/g, '""')}"`,
+          property.leadsCount || property.leads || 0,
+          property.views || property.viewCount || 0,
+          `"${formatDate(property.createdAt)}"`,
+          `"${formatDate(property.approvedAt)}"`
+        ];
+      });
+
+      // Combine headers and rows
+      const csvContent = [
+        headers.join(','),
+        ...csvRows.map(row => row.join(','))
+      ].join('\n');
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `properties_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Properties exported successfully');
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      toast.error('Failed to export properties');
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="block">
@@ -176,6 +290,7 @@ function MyProperties() {
           sortBy={sortBy}
           setSortBy={setSortBy}
           navigate={navigate}
+          onExport={handleExportCSV}
         />
 
         {/* Error State */}

@@ -23,7 +23,11 @@ function PropertiesList() {
   const [isDebouncedSearchFromUser, setIsDebouncedSearchFromUser] = useState(false);
   const searchTimeoutRef = useRef(null);
   const [favoritedIds, setFavoritedIds] = useState(new Set());
-  const [showSavedOnly, setShowSavedOnly] = useState(false);
+  // Initialize showSavedOnly from URL parameter
+  const [showSavedOnly, setShowSavedOnly] = useState(() => {
+    const saved = searchParams.get("saved");
+    return saved === "true";
+  });
   const [loadingWishlist, setLoadingWishlist] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [properties, setProperties] = useState([]);
@@ -56,18 +60,18 @@ function PropertiesList() {
   };
 
   const [filters, setFilters] = useState({
-    propertyType: getInitialPropertyType(),
+    propertyType: getInitialPropertyType() === 'all' ? [] : [getInitialPropertyType()],
     amenities: [],
-    bhk: "all",
+    bhk: [],
     priceMin: 0,
     priceMax: 10000,
   });
 
   // Debounced filters state - used for API calls (initialize immediately with URL params)
   const [debouncedFilters, setDebouncedFilters] = useState({
-    propertyType: getInitialPropertyType(),
+    propertyType: getInitialPropertyType() === 'all' ? [] : [getInitialPropertyType()],
     amenities: [],
-    bhk: "all",
+    bhk: [],
     priceMin: 0,
     priceMax: 10000,
   });
@@ -86,6 +90,8 @@ function PropertiesList() {
   const debouncedSearchSourceRef = useRef('url'); // 'url' or 'user'
   // Track when URL was last updated to prevent immediate re-reading
   const lastUrlUpdateTimeRef = useRef(0);
+  // Track if saved parameter update was user-initiated
+  const isUserInitiatedSavedUpdateRef = useRef(false);
 
   // Read search query and type from URL on component mount or when URL changes
   useEffect(() => {
@@ -108,9 +114,17 @@ function PropertiesList() {
     const currentQuery = queryParam || "";
     
     // Check if we need to update - compare with both current state and debounced state
-    const shouldUpdateType = currentType !== debouncedFilters.propertyType && 
-                             currentType !== filters.propertyType &&
-                             (currentType || debouncedFilters.propertyType !== "all");
+    // Normalize propertyType for comparison (convert array to string for comparison)
+    const currentFiltersPropertyType = Array.isArray(filters.propertyType) 
+      ? (filters.propertyType.length === 1 ? filters.propertyType[0] : (filters.propertyType.length > 0 ? filters.propertyType.join(',') : null))
+      : (filters.propertyType === 'all' || !filters.propertyType ? null : filters.propertyType);
+    
+    const currentDebouncedPropertyType = Array.isArray(debouncedFilters.propertyType)
+      ? (debouncedFilters.propertyType.length === 1 ? debouncedFilters.propertyType[0] : (debouncedFilters.propertyType.length > 0 ? debouncedFilters.propertyType.join(',') : null))
+      : (debouncedFilters.propertyType === 'all' || !debouncedFilters.propertyType ? null : debouncedFilters.propertyType);
+    
+    const shouldUpdateType = currentType !== currentDebouncedPropertyType && 
+                             currentType !== currentFiltersPropertyType;
     const shouldUpdateQuery = currentQuery !== debouncedSearchQuery && 
                               currentQuery !== searchQuery;
     
@@ -140,9 +154,9 @@ function PropertiesList() {
         
         // Update filters immediately
         const newFilters = {
-          propertyType: normalizedType,
+          propertyType: normalizedType ? [normalizedType] : [],
           amenities: [],
-          bhk: "all",
+          bhk: [],
           priceMin: 0,
           priceMax: 10000,
         };
@@ -155,20 +169,20 @@ function PropertiesList() {
       } else if (!initializedFromUrlRef.current) {
         // Only reset to defaults on initial mount if no type param
         const defaultFilters = {
-          propertyType: "all",
+          propertyType: [],
           amenities: [],
-          bhk: "all",
+          bhk: [],
           priceMin: 0,
           priceMax: 10000,
         };
         setFilters(defaultFilters);
         setDebouncedFilters(defaultFilters);
         setSelectedPropertyType("apartment");
-      } else if (currentType === null && filters.propertyType !== "all") {
-        // URL param was removed (user selected "All"), update filter to "all"
+      } else if (currentType === null && (Array.isArray(filters.propertyType) ? filters.propertyType.length > 0 : filters.propertyType !== "all")) {
+        // URL param was removed (user selected "All"), update filter to empty array
         const newFilters = {
           ...filters,
-          propertyType: "all",
+          propertyType: [],
         };
         setFilters(newFilters);
         setDebouncedFilters(newFilters);
@@ -181,14 +195,27 @@ function PropertiesList() {
 
   // Track previous filters to prevent unnecessary updates
   const prevFiltersRef = useRef(filters);
+  
+  // Track previous propertyType for URL updates
+  const prevPropertyTypeForUrlRef = useRef(null);
 
   // Update URL when propertyType filter changes
   useEffect(() => {
-    const currentTypeParam = searchParams.get("type");
-    const newPropertyType = filters.propertyType;
+    if (!initializedFromUrlRef.current) {
+      // Don't update URL until we've initialized from URL
+      prevPropertyTypeForUrlRef.current = Array.isArray(filters.propertyType) 
+        ? (filters.propertyType.length === 1 ? filters.propertyType[0] : (filters.propertyType.length > 0 ? filters.propertyType.join(',') : null))
+        : (filters.propertyType === 'all' || !filters.propertyType ? null : filters.propertyType);
+      return;
+    }
     
-    // Only update URL if propertyType actually changed and it's a user-initiated change
-    if (prevFiltersRef.current?.propertyType !== newPropertyType && initializedFromUrlRef.current) {
+    const currentTypeParam = searchParams.get("type");
+    const newPropertyType = Array.isArray(filters.propertyType) 
+      ? filters.propertyType.length === 1 ? filters.propertyType[0] : (filters.propertyType.length > 1 ? filters.propertyType.join(',') : null)
+      : (filters.propertyType === 'all' || !filters.propertyType ? null : filters.propertyType);
+    
+    // Only update URL if propertyType actually changed and it's different from URL param
+    if (prevPropertyTypeForUrlRef.current !== newPropertyType && newPropertyType !== currentTypeParam) {
       // Mark this as a user-initiated URL update
       isUserInitiatedUrlUpdateRef.current = true;
       lastUrlUpdateTimeRef.current = Date.now(); // Record when we update the URL
@@ -196,21 +223,28 @@ function PropertiesList() {
       setSearchParams((prev) => {
         const newParams = new URLSearchParams(prev);
         
-        if (newPropertyType === "all") {
-          // Remove type parameter when "All" is selected
+        if (!newPropertyType || (Array.isArray(filters.propertyType) && filters.propertyType.length === 0)) {
+          // Remove type parameter when "All" is selected or array is empty
           newParams.delete("type");
         } else {
-          // Update type parameter with new value
-          newParams.set("type", newPropertyType);
+          // Update type parameter with first value (for backward compatibility with URL)
+          const typeValue = Array.isArray(filters.propertyType) ? filters.propertyType[0] : newPropertyType;
+          newParams.set("type", typeValue);
         }
         
         return newParams;
       }, { replace: true }); // Use replace to avoid adding to history
       
+      // Update the ref to track this change
+      prevPropertyTypeForUrlRef.current = newPropertyType;
+      
       // Reset the flag after a short delay to allow URL update to complete
       setTimeout(() => {
         isUserInitiatedUrlUpdateRef.current = false;
       }, 100);
+    } else {
+      // Update ref even if we don't update URL
+      prevPropertyTypeForUrlRef.current = newPropertyType;
     }
   }, [filters.propertyType, searchParams, setSearchParams]);
 
@@ -428,14 +462,26 @@ function PropertiesList() {
           apiParams.city = cityParam;
         }
 
-        // Add property type filter (using debounced filters)
-        if (debouncedFilters.propertyType && debouncedFilters.propertyType !== "all") {
-          apiParams.propertyType = debouncedFilters.propertyType;
+        // Add property type filter (using debounced filters) - support multiple selections
+        if (debouncedFilters.propertyType) {
+          const propertyTypes = Array.isArray(debouncedFilters.propertyType) 
+            ? debouncedFilters.propertyType 
+            : (debouncedFilters.propertyType === "all" || !debouncedFilters.propertyType ? [] : [debouncedFilters.propertyType]);
+          
+          if (propertyTypes.length > 0) {
+            apiParams.propertyType = propertyTypes.join(',');
+          }
         }
 
-        // Add bedrooms filter (using debounced filters)
-        if (debouncedFilters.bhk && debouncedFilters.bhk !== "all") {
-          apiParams.bedrooms = debouncedFilters.bhk;
+        // Add bedrooms filter (using debounced filters) - support multiple selections
+        if (debouncedFilters.bhk) {
+          const bhkValues = Array.isArray(debouncedFilters.bhk) 
+            ? debouncedFilters.bhk 
+            : (debouncedFilters.bhk === "all" || !debouncedFilters.bhk ? [] : [debouncedFilters.bhk]);
+          
+          if (bhkValues.length > 0) {
+            apiParams.bedrooms = bhkValues.join(',');
+          }
         }
 
         // Add price range filters (using debounced filters)
@@ -475,8 +521,8 @@ function PropertiesList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     debouncedSearchQuery, 
-    debouncedFilters.propertyType, 
-    debouncedFilters.bhk, 
+    JSON.stringify(debouncedFilters.propertyType), // Use JSON.stringify for array comparison
+    JSON.stringify(debouncedFilters.bhk), // Use JSON.stringify for array comparison
     debouncedFilters.priceMin, 
     debouncedFilters.priceMax, 
     debouncedFilters.amenities?.length || 0, // Use length to avoid object reference issues
@@ -497,6 +543,78 @@ function PropertiesList() {
       document.body.style.overflow = "unset";
     };
   }, [isFilterOpen]);
+
+  // Track if we've initialized saved state from URL
+  const initializedSavedFromUrlRef = useRef(false);
+  // Track the last saved param value we processed to avoid redundant updates
+  const lastProcessedSavedParamRef = useRef(null);
+
+  // Check for saved parameter in URL on mount and when URL changes (external navigation)
+  useEffect(() => {
+    // Skip if this was a user-initiated URL update
+    if (isUserInitiatedSavedUpdateRef.current) {
+      isUserInitiatedSavedUpdateRef.current = false;
+      // Update the ref to track what we just set
+      lastProcessedSavedParamRef.current = searchParams.get("saved");
+      return;
+    }
+
+    // Skip if URL was just updated (within last 500ms) to prevent reading back our own changes
+    const timeSinceLastUpdate = Date.now() - lastUrlUpdateTimeRef.current;
+    if (timeSinceLastUpdate < 500) {
+      return;
+    }
+
+    const savedParam = searchParams.get("saved");
+    
+    // Skip if we've already processed this value
+    if (lastProcessedSavedParamRef.current === savedParam) {
+      return;
+    }
+    
+    const shouldShowSaved = savedParam === "true";
+    
+    // Only update if state doesn't match URL
+    if (shouldShowSaved !== showSavedOnly) {
+      lastProcessedSavedParamRef.current = savedParam;
+      setShowSavedOnly(shouldShowSaved);
+      if (!initializedSavedFromUrlRef.current) {
+        initializedSavedFromUrlRef.current = true;
+      }
+    }
+  }, [searchParams]); // Only depend on searchParams
+
+  // Update URL when showSavedOnly changes (user-initiated toggle)
+  useEffect(() => {
+    // Skip on initial mount - let the URL reading effect handle initial sync
+    if (!initializedSavedFromUrlRef.current) {
+      return;
+    }
+
+    const currentSavedParam = searchParams.get("saved");
+    const shouldHaveSavedParam = showSavedOnly;
+    
+    // Only update URL if there's a mismatch
+    if (shouldHaveSavedParam && currentSavedParam !== "true") {
+      isUserInitiatedSavedUpdateRef.current = true;
+      lastUrlUpdateTimeRef.current = Date.now();
+      lastProcessedSavedParamRef.current = "true";
+      setSearchParams((prev) => {
+        const newParams = new URLSearchParams(prev);
+        newParams.set("saved", "true");
+        return newParams;
+      }, { replace: true });
+    } else if (!shouldHaveSavedParam && currentSavedParam === "true") {
+      isUserInitiatedSavedUpdateRef.current = true;
+      lastUrlUpdateTimeRef.current = Date.now();
+      lastProcessedSavedParamRef.current = null;
+      setSearchParams((prev) => {
+        const newParams = new URLSearchParams(prev);
+        newParams.delete("saved");
+        return newParams;
+      }, { replace: true });
+    }
+  }, [showSavedOnly, setSearchParams]); // Only depend on showSavedOnly and setSearchParams
 
   // Load wishlist on mount
   useEffect(() => {
@@ -571,10 +689,15 @@ function PropertiesList() {
   useEffect(() => {
     const fetchSavedProperties = async () => {
       if (!showSavedOnly || !isAuthenticated()) {
+        // If not showing saved or not authenticated, ensure loading is false
+        if (showSavedOnly && !isAuthenticated()) {
+          setLoading(false);
+        }
         return;
       }
 
       try {
+        setLoading(true);
         setLoadingWishlist(true);
         setError(null);
         // Fetch all wishlist properties (with high limit to get all)
@@ -610,6 +733,7 @@ function PropertiesList() {
         setError(error.message || 'Failed to load saved properties');
         setProperties([]);
       } finally {
+        setLoading(false);
         setLoadingWishlist(false);
       }
     };
@@ -646,6 +770,7 @@ function PropertiesList() {
   const handleHomeClick = () => {
     // Reset saved view to show all properties
     setShowSavedOnly(false);
+    // URL will be updated by the useEffect that watches showSavedOnly
   };
 
   return (
@@ -687,7 +812,7 @@ function PropertiesList() {
               setSelectedPropertyType(value);
               setFilters((prev) => ({
                 ...prev,
-                propertyType: value,
+                propertyType: value === 'all' ? [] : [value],
               }));
               setPagination(prev => ({ ...prev, page: 1 }));
             }}
@@ -707,57 +832,59 @@ function PropertiesList() {
           )}
 
           {/* Mobile Filter Overlay */}
-          <>
-            {/* Backdrop */}
-            {isFilterOpen && (
-              <div
-                className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity duration-300"
-                onClick={() => setIsFilterOpen(false)}
-              />
-            )}
-
-            {/* Filter Panel */}
-            <div
-              className={`fixed top-0 left-0 right-0 bg-white z-50 lg:hidden transform transition-transform duration-300 ease-in-out overflow-y-auto max-h-screen ${
-                isFilterOpen
-                  ? "translate-y-0"
-                  : "-translate-y-full pointer-events-none"
-              }`}
-            >
-              <div className="sticky top-0 bg-white border-b border-lightGray px-4 py-4 flex items-center justify-between z-10">
-                <h2 className="text-xl font-bold text-secondary">Filters</h2>
-                <button
+          {!showSavedOnly && (
+            <>
+              {/* Backdrop */}
+              {isFilterOpen && (
+                <div
+                  className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity duration-300"
                   onClick={() => setIsFilterOpen(false)}
-                  className="text-secondary hover:text-primary transition-colors"
-                >
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M18 6L6 18M6 6L18 18"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <div className="p-4">
-                <PropertyFilters 
-                  initialFilters={filters}
-                  onFilterChange={(newFilters) => {
-                    setFilters(newFilters);
-                    setPagination(prev => ({ ...prev, page: 1 }));
-                  }} 
                 />
+              )}
+
+              {/* Filter Panel */}
+              <div
+                className={`fixed top-0 left-0 right-0 bg-white z-50 lg:hidden transform transition-transform duration-300 ease-in-out overflow-y-auto max-h-screen ${
+                  isFilterOpen
+                    ? "translate-y-0"
+                    : "-translate-y-full pointer-events-none"
+                }`}
+              >
+                <div className="sticky top-0 bg-white border-b border-lightGray px-4 py-4 flex items-center justify-between z-10">
+                  <h2 className="text-xl font-bold text-secondary">Filters</h2>
+                  <button
+                    onClick={() => setIsFilterOpen(false)}
+                    className="text-secondary hover:text-primary transition-colors"
+                  >
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M18 6L6 18M6 6L18 18"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <div className="p-4">
+                  <PropertyFilters 
+                    initialFilters={filters}
+                    onFilterChange={(newFilters) => {
+                      setFilters(newFilters);
+                      setPagination(prev => ({ ...prev, page: 1 }));
+                    }} 
+                  />
+                </div>
               </div>
-            </div>
-          </>
+            </>
+          )}
 
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
             {!showSavedOnly && (

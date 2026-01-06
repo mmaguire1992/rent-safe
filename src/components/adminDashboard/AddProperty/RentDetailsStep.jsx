@@ -62,6 +62,20 @@ function RentDetailsStep({
   };
 
   const handleChange = (field, value) => {
+    // For monthly rent, only allow digits and decimal point
+    if (field === "monthlyRent") {
+      // Remove all non-numeric characters except decimal point
+      value = value.replace(/[^0-9.]/g, "");
+      // Ensure only one decimal point
+      const parts = value.split(".");
+      if (parts.length > 2) {
+        value = parts[0] + "." + parts.slice(1).join("");
+      }
+      // Prevent negative values
+      if (value !== "" && parseFloat(value) < 0) {
+        value = "0";
+      }
+    }
     setFormData({ ...formData, [field]: value });
     // Clear error for this field when user starts typing
     if (errors && errors[field] && setErrors) {
@@ -164,8 +178,20 @@ function RentDetailsStep({
                   type="number"
                   value={charge.amount}
                   onChange={(e) => {
+                    let value = e.target.value;
+                    // Remove all non-numeric characters except decimal point
+                    value = value.replace(/[^0-9.]/g, "");
+                    // Ensure only one decimal point
+                    const parts = value.split(".");
+                    if (parts.length > 2) {
+                      value = parts[0] + "." + parts.slice(1).join("");
+                    }
+                    // Prevent negative values
+                    if (value !== "" && parseFloat(value) < 0) {
+                      value = "0";
+                    }
                     const newCharges = [...formData.additionalCharges];
-                    newCharges[index].amount = e.target.value;
+                    newCharges[index].amount = value;
                     setFormData({
                       ...formData,
                       additionalCharges: newCharges,

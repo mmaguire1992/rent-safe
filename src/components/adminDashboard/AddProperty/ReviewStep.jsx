@@ -539,7 +539,7 @@ function ReviewStep({ formData }) {
         )}
 
         {/* Preferred Renter Type */}
-        {formData.preferredRenterType && (
+        {formData.preferredRenterTypes && formData.preferredRenterTypes.length > 0 && (
           <div className="block">
             <h4 className="text-base md:text-xl font-bold font-nunito text-secondary mb-1">
               Preferred Renter Type
@@ -547,10 +547,7 @@ function ReviewStep({ formData }) {
             <div className="flex items-start md:items-center gap-2 md:gap-6  md:flex-wrap flex-col md:flex-row">
               {preferredRenterTypeOptions.map((option) => {
                 const Icon = getPreferredRenterIcon(option.value);
-                const isSelected =
-                  formData.preferredRenterType === option.value ||
-                  (formData.preferredRenterTypes &&
-                    formData.preferredRenterTypes.includes(option.value));
+                const isSelected = formData.preferredRenterTypes && formData.preferredRenterTypes.includes(option.value);
                 return (
                   <div
                     key={option.value}

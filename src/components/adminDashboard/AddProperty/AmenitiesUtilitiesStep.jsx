@@ -29,6 +29,18 @@ function AmenitiesUtilitiesStep({
     }
   }, [errors]);
 
+  // Validate utilities when they change and are touched
+  useEffect(() => {
+    if (touched.utilities && formData.utilities.length > 0 && setErrors) {
+      const hasEmptyUtilities = formData.utilities.some(util => !util || !util.trim());
+      if (hasEmptyUtilities) {
+        setErrors({ ...errors, utilities: "Please select a utility for all added fields" });
+      } else if (errors?.utilities) {
+        setErrors({ ...errors, utilities: "" });
+      }
+    }
+  }, [formData.utilities, touched.utilities]);
+
   const handleToggleAmenityWithValidation = (amenity) => {
     handleToggleAmenity(amenity);
     setTouched({ ...touched, amenities: true });
@@ -43,9 +55,14 @@ function AmenitiesUtilitiesStep({
     newUtilities[index] = value;
     setFormData({ ...formData, utilities: newUtilities });
     setTouched({ ...touched, utilities: true });
-    // Clear error when user selects a utility
-    if (errors && errors.utilities && setErrors) {
-      setErrors({ ...errors, utilities: "" });
+    // Validate utilities after change
+    if (setErrors) {
+      const hasEmptyUtilities = newUtilities.some(util => !util || !util.trim());
+      if (hasEmptyUtilities) {
+        setErrors({ ...errors, utilities: "Please select a utility for all added fields" });
+      } else {
+        setErrors({ ...errors, utilities: "" });
+      }
     }
   };
 
@@ -155,14 +172,18 @@ function AmenitiesUtilitiesStep({
           <h3 className="text-base font-semibold text-secondary">Utilities</h3>
           <button
             onClick={() => {
+              const newUtilities = [...formData.utilities, ""];
               setFormData({
                 ...formData,
-                utilities: [...formData.utilities, ""],
+                utilities: newUtilities,
               });
               setTouched({ ...touched, utilities: true });
-              // Clear error when user adds a utility field
-              if (errors && errors.utilities && setErrors) {
-                setErrors({ ...errors, utilities: "" });
+              // Validate utilities after adding a new field
+              if (setErrors) {
+                const hasEmptyUtilities = newUtilities.some(util => !util || !util.trim());
+                if (hasEmptyUtilities) {
+                  setErrors({ ...errors, utilities: "Please select a utility for all added fields" });
+                }
               }
             }}
             className="flex items-center gap-1 text-[#6B4EFF] hover:text-opacity-80 transition-colors"
@@ -185,15 +206,21 @@ function AmenitiesUtilitiesStep({
                 {index > 0 && (
                   <button
                     onClick={() => {
+                      const newUtilities = formData.utilities.filter(
+                        (_, i) => i !== index
+                      );
                       setFormData({
                         ...formData,
-                        utilities: formData.utilities.filter(
-                          (_, i) => i !== index
-                        ),
+                        utilities: newUtilities,
                       });
-                      // Clear error when user removes a utility
-                      if (errors && errors.utilities && setErrors) {
-                        setErrors({ ...errors, utilities: "" });
+                      // Re-validate utilities after removal
+                      if (setErrors) {
+                        const hasEmptyUtilities = newUtilities.some(util => !util || !util.trim());
+                        if (hasEmptyUtilities) {
+                          setErrors({ ...errors, utilities: "Please select a utility for all added fields" });
+                        } else {
+                          setErrors({ ...errors, utilities: "" });
+                        }
                       }
                     }}
                     className="p-1 text-red-600  rounded-lg transition-colors"

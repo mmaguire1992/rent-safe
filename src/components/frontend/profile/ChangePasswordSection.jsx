@@ -1,9 +1,16 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BsEye, BsEyeSlash } from "react-icons/bs";
+import { changePassword } from "@/api/users";
+import { getCurrentUser } from "@/api/users";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "react-toastify";
+import { FiLock } from "react-icons/fi";
+import SectionHeader from "./editprofilesection/SectionHeader";
 
 function ChangePasswordSection() {
+  const { logout } = useAuth();
   const [formData, setFormData] = useState({
     oldPassword: "",
     newPassword: "",
@@ -14,42 +21,232 @@ function ChangePasswordSection() {
     new: false,
     confirm: false,
   });
+  const [loading, setLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [errors, setErrors] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [touched, setTouched] = useState({
+    oldPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
+
+  // Load user email on mount
+  useEffect(() => {
+    const loadUserEmail = async () => {
+      try {
+        const userData = await getCurrentUser();
+        if (userData?.email) {
+          setUserEmail(userData.email);
+        }
+      } catch (error) {
+        console.error('Error loading user email:', error);
+      }
+    };
+    loadUserEmail();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+    
+    // Validate on change (but don't show error until blur or submit)
+    if (touched[name]) {
+      validateField(name, value);
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    validateField(name, value);
+  };
+
+  const validateField = (name, value) => {
+    let error = "";
+
+    switch (name) {
+      case "oldPassword":
+        if (!value) {
+          error = "Current password is required";
+        }
+        break;
+      case "newPassword":
+        if (!value) {
+          error = "New password is required";
+        } else {
+          const validation = validatePassword(value);
+          if (!validation.isValid) {
+            const errors = Object.values(validation.errors).filter(Boolean);
+            error = errors[0] || "Password does not meet requirements";
+          }
+        }
+        break;
+      case "confirmPassword":
+        if (!value) {
+          error = "Please confirm your new password";
+        } else if (formData.newPassword && value !== formData.newPassword) {
+          error = "Passwords do not match";
+        }
+        break;
+      default:
+        break;
+    }
+
+    setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
   const togglePasswordVisibility = (field) => {
     setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
-  const handleSubmit = (e) => {
+  const validatePassword = (password) => {
+    // At least 8 characters, one uppercase, one lowercase, one number
+    const minLength = password.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    
+    return {
+      isValid: minLength && hasUpperCase && hasLowerCase && hasNumber,
+      errors: {
+        minLength: !minLength ? "Password must be at least 8 characters" : null,
+        hasUpperCase: !hasUpperCase ? "Password must contain at least one uppercase letter" : null,
+        hasLowerCase: !hasLowerCase ? "Password must contain at least one lowercase letter" : null,
+        hasNumber: !hasNumber ? "Password must contain at least one number" : null,
+      }
+    };
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.newPassword !== formData.confirmPassword) {
-      alert("New password and confirm password do not match");
+
+    // Mark all fields as touched to show validation messages
+    setTouched({
+      oldPassword: true,
+      newPassword: true,
+      confirmPassword: true,
+    });
+
+    // Validate all fields and collect errors
+    const newErrors = {
+      oldPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    };
+
+    // Validate old password
+    if (!formData.oldPassword) {
+      newErrors.oldPassword = "Current password is required";
+    }
+
+    // Validate new password
+    if (!formData.newPassword) {
+      newErrors.newPassword = "New password is required";
+    } else {
+      const passwordValidation = validatePassword(formData.newPassword);
+      if (!passwordValidation.isValid) {
+        const errors = Object.values(passwordValidation.errors).filter(Boolean);
+        newErrors.newPassword = errors[0] || "Password does not meet requirements";
+      }
+    }
+
+    // Validate confirm password
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = "Please confirm your new password";
+    } else if (formData.newPassword && formData.confirmPassword !== formData.newPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    // Set all errors at once
+    setErrors(newErrors);
+
+    // Check if there are any errors
+    const hasErrors = Object.values(newErrors).some(error => error !== "");
+
+    if (hasErrors) {
+      // Show toast for first error found
+      if (newErrors.oldPassword) {
+        toast.error(newErrors.oldPassword);
+      } else if (newErrors.newPassword) {
+        toast.error(newErrors.newPassword);
+      } else if (newErrors.confirmPassword) {
+        toast.error(newErrors.confirmPassword);
+      }
       return;
     }
-    onSave(formData);
+
+    if (!userEmail) {
+      toast.error("User email not found. Please refresh the page.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await changePassword({
+        email: userEmail,
+        oldPassword: formData.oldPassword,
+        newPassword: formData.newPassword,
+      });
+
+      toast.success("Password changed successfully! Please login again with your new password.");
+      
     // Reset form
     setFormData({
       oldPassword: "",
       newPassword: "",
       confirmPassword: "",
     });
-    // Show success modal
-    if (onSuccess) {
-      onSuccess();
+      setErrors({
+        oldPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setTouched({
+        oldPassword: false,
+        newPassword: false,
+        confirmPassword: false,
+      });
+
+      // Logout user after successful password change (security best practice)
+      setTimeout(() => {
+        logout();
+        window.location.href = '/login';
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error changing password:', error);
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Failed to change password. Please try again.';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
   return (
-    <div className="border border-lightGray rounded-[10px] p-4">
-      <form onSubmit={handleSubmit} className="space-y-4 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
+      <SectionHeader 
+        icon={() => <FiLock className="w-5 h-5 text-primary" />} 
+        title="Change Password" 
+      />
+
+      <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Old Password */}
           <div>
-            <label className="block text-base font-semibold font-nunito text-secondary mb-1">
-              Old Password
+            <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+              Current Password <span className="text-errorColor">*</span>
             </label>
             <div className="relative">
               <input
@@ -57,24 +254,34 @@ function ChangePasswordSection() {
                 name="oldPassword"
                 value={formData.oldPassword}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
-                placeholder="Enter your old password"
+                onBlur={handleBlur}
+                className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+                  touched.oldPassword && errors.oldPassword
+                    ? "border-errorColor"
+                    : "border-lightGray"
+                }`}
+                placeholder="Enter your current password"
                 required
+                disabled={loading}
               />
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility("old")}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-darkGray hover:text-secondary"
+                disabled={loading}
               >
-                {showPasswords.old ? <BsEye /> : <BsEyeSlash />}
+                {showPasswords.old ? <BsEye className="w-5 h-5" /> : <BsEyeSlash className="w-5 h-5" />}
               </button>
             </div>
+            {touched.oldPassword && errors.oldPassword && (
+              <p className="text-xs text-errorColor mt-1">{errors.oldPassword}</p>
+            )}
           </div>
 
           {/* New Password */}
           <div>
-            <label className="block text-base font-semibold font-nunito text-secondary mb-1">
-              New Password
+            <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+              New Password <span className="text-errorColor">*</span>
             </label>
             <div className="relative">
               <input
@@ -82,24 +289,39 @@ function ChangePasswordSection() {
                 name="newPassword"
                 value={formData.newPassword}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+                onBlur={handleBlur}
+                className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+                  touched.newPassword && errors.newPassword
+                    ? "border-errorColor"
+                    : "border-lightGray"
+                }`}
                 placeholder="Enter your new password"
                 required
+                disabled={loading}
               />
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility("new")}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-darkGray hover:text-secondary"
+                disabled={loading}
               >
-                {showPasswords.new ? <BsEye /> : <BsEyeSlash />}
+                {showPasswords.new ? <BsEye className="w-5 h-5" /> : <BsEyeSlash className="w-5 h-5" />}
               </button>
             </div>
+            {touched.newPassword && errors.newPassword ? (
+              <p className="text-xs text-errorColor mt-1">{errors.newPassword}</p>
+            ) : formData.newPassword && !errors.newPassword ? (
+              <p className="text-xs text-darkGray mt-1">
+                Must be at least 8 characters with uppercase, lowercase, and number
+              </p>
+            ) : null}
           </div>
         </div>
+
         {/* Confirm Password */}
         <div>
-          <label className="block text-base font-semibold font-nunito text-secondary mb-1">
-            Confirm Password
+          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+            Confirm New Password <span className="text-errorColor">*</span>
           </label>
           <div className="relative">
             <input
@@ -107,27 +329,38 @@ function ChangePasswordSection() {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
-              placeholder="Enter your confirm password"
+              onBlur={handleBlur}
+              className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+                touched.confirmPassword && errors.confirmPassword
+                  ? "border-errorColor"
+                  : "border-lightGray"
+              }`}
+              placeholder="Confirm your new password"
               required
+              disabled={loading}
             />
             <button
               type="button"
               onClick={() => togglePasswordVisibility("confirm")}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-darkGray hover:text-secondary"
+              disabled={loading}
             >
-              {showPasswords.confirm ? <BsEye /> : <BsEyeSlash />}
+              {showPasswords.confirm ? <BsEye className="w-5 h-5" /> : <BsEyeSlash className="w-5 h-5" />}
             </button>
           </div>
+          {touched.confirmPassword && errors.confirmPassword && (
+            <p className="text-xs text-errorColor mt-1">{errors.confirmPassword}</p>
+          )}
         </div>
 
         {/* Save Button */}
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-4">
           <button
             type="submit"
-            className="px-8 py-3 w-full sm:w-auto bg-blueGradient text-white rounded-[10px] text-base shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors font-bold font-nunito"
+            disabled={loading}
+            className="px-8 py-3 w-full sm:w-auto bg-blueGradient text-white rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors shadow-[0px_2px_10px_0px_#00000033] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save Changes
+            {loading ? 'Changing Password...' : 'Change Password'}
           </button>
         </div>
       </form>

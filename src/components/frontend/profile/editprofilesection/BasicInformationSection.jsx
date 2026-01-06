@@ -1,13 +1,19 @@
+import { useState } from "react";
 import BlueUserIcon from "@/svg/blueUserIcon";
 import BlueUploadIcon from "@/svg/blueUploadIcon";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
 import SectionHeader from "./SectionHeader";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { FiTrash2 } from "react-icons/fi";
 
 function BasicInformationSection({
   formData,
   handleChange,
   handleImageUpload,
+  onRemoveProfilePicture,
 }) {
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [removing, setRemoving] = useState(false);
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 sm:p-6">
       <SectionHeader icon={BlueUserIcon} title="Basic Information" />
@@ -16,8 +22,10 @@ function BasicInformationSection({
         <div className="block mb-6">
           {/* Profile Image Upload */}
           <div className="flex flex-col md:flex-row gap-3 sm:gap-6">
-            <div className="w-[74px] h-[74px] mx-auto bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+            <div className="w-[74px] h-[74px] mx-auto bg-gray-100 rounded-full flex items-center justify-center relative">
               {formData.profileImage ? (
+                <>
+                  <div className="w-full h-full rounded-full overflow-hidden">
                 <img
                   src={
                     typeof formData.profileImage === "string"
@@ -25,8 +33,21 @@ function BasicInformationSection({
                       : URL.createObjectURL(formData.profileImage)
                   }
                   alt="Profile"
-                  className="w-full h-full object-cover rounded-full"
-                />
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {onRemoveProfilePicture && (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteModalOpen(true)}
+                      className="absolute -top-2 -right-2 bg-errorColor text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-700 transition-colors shadow-lg border-2 border-white z-10"
+                      title="Remove profile picture"
+                      disabled={removing}
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </>
               ) : (
                 <div className="text-6xl text-gray-400">🏔️</div>
               )}
@@ -216,6 +237,28 @@ function BasicInformationSection({
           </div>
         </div>
       </div>
+
+      {/* Delete Profile Picture Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={async () => {
+          setRemoving(true);
+          try {
+            await onRemoveProfilePicture();
+            setDeleteModalOpen(false);
+          } catch (error) {
+            // Error is already handled in the parent component
+          } finally {
+            setRemoving(false);
+          }
+        }}
+        title="Remove Profile Picture"
+        message="Are you sure you want to remove your profile picture? This action cannot be undone."
+        confirmText="Remove"
+        cancelText="Cancel"
+        isProcessing={removing}
+      />
     </div>
   );
 }

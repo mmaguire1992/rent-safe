@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useEffect } from "react";
-import { FiUpload, FiCheckCircle } from "react-icons/fi";
+import { FiUpload, FiCheckCircle, FiTrash2 } from "react-icons/fi";
 import BlueUploadIcon from "@/svg/blueUploadIcon";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { deleteProfilePicture, getCurrentUser } from "@/api/users";
+import { toast } from "react-toastify";
 
 function EditProfileTab({ profileData, onSave, loading = false, error = null }) {
   const [isMounted, setIsMounted] = useState(false);
@@ -22,6 +25,8 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
     profileData?.profileImage || null
   );
   const [imagePreview, setImagePreview] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
   // Handle client-side mounting
   useEffect(() => {
@@ -114,6 +119,31 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
     }
   };
 
+  const handleRemoveProfilePicture = async () => {
+    try {
+      await deleteProfilePicture();
+      toast.success('Profile picture removed successfully');
+      
+      // Clear profile image from state
+      setProfileImage(null);
+      setImagePreview(null);
+      
+      // Refresh user data to get updated profile
+      const updatedUserData = await getCurrentUser();
+      if (updatedUserData?.userInfo) {
+        // Update profileData if parent component provides a callback
+        // For now, just clear the local state
+        setProfileImage(null);
+        setImagePreview(null);
+      }
+    } catch (error) {
+      console.error('Error removing profile picture:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to remove profile picture';
+      toast.error(errorMessage);
+      throw error; // Re-throw so the modal can handle it
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave({ ...formData, profileImage });
@@ -123,23 +153,36 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Profile Image Upload */}
       <div className="flex flex-col md:flex-row gap-6">
-        <div className="w-[74px] h-[74px] mx-auto md:mx-0 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
-          {isMounted && imagePreview ? (
-            <img
-              src={imagePreview}
-              alt="Profile"
-              className="w-full h-full object-cover rounded-full"
-              onError={(e) => {
-                // Fallback if image fails to load
-                e.target.style.display = 'none';
-                e.target.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
-          ) : null}
-          {(!isMounted || !imagePreview) && (
-            <div className="text-6xl text-gray-400 flex items-center justify-center">
-              <span>🏔️</span>
-            </div>
+        <div className="relative w-[74px] h-[74px] mx-auto md:mx-0">
+          <div className="w-[74px] h-[74px] bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+            {isMounted && imagePreview ? (
+              <img
+                src={imagePreview}
+                alt="Profile"
+                className="w-full h-full object-cover rounded-full"
+                onError={(e) => {
+                  // Fallback if image fails to load
+                  e.target.style.display = 'none';
+                  e.target.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            {(!isMounted || !imagePreview) && (
+              <div className="text-6xl text-gray-400 flex items-center justify-center">
+                <span>🏔️</span>
+              </div>
+            )}
+          </div>
+          {isMounted && imagePreview && (
+            <button
+              type="button"
+              onClick={() => setDeleteModalOpen(true)}
+              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-600 transition-colors shadow-md border-2 border-white z-20 cursor-pointer"
+              title="Remove profile picture"
+              disabled={removing}
+            >
+              <FiTrash2 className="w-3.5 h-3.5" />
+            </button>
           )}
         </div>
         <div className="flex-1 flex flex-col items-center md:items-start justify-center">
@@ -334,6 +377,28 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
           {loading ? "Saving..." : "Save Changes"}
         </button>
       </div>
+
+      {/* Delete Profile Picture Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={async () => {
+          setRemoving(true);
+          try {
+            await handleRemoveProfilePicture();
+            setDeleteModalOpen(false);
+          } catch (error) {
+            // Error is already handled in handleRemoveProfilePicture
+          } finally {
+            setRemoving(false);
+          }
+        }}
+        title="Remove Profile Picture"
+        message="Are you sure you want to remove your profile picture? This action cannot be undone."
+        confirmText="Remove"
+        cancelText="Cancel"
+        isProcessing={removing}
+      />
     </form>
   );
 }

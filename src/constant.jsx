@@ -987,9 +987,12 @@ export const properties = [
 
 export const statusOptions = [
   { value: "all", label: "All" },
+  { value: "draft", label: "Draft" },
+  { value: "pending_approval", label: "Pending Approval" },
   { value: "active", label: "Active" },
-  { value: "pending", label: "Pending" },
   { value: "inactive", label: "Inactive" },
+  { value: "rented", label: "Rent Out" },
+  { value: "suspended", label: "Suspended" },
 ];
 
 export const typeOptions = [
