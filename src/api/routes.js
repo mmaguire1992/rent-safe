@@ -3,7 +3,7 @@
  * Centralized endpoint definitions for all API calls
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export const BASE_URL = API_BASE_URL;
 
@@ -50,13 +50,22 @@ export const chat = {
   getChatroomMessages: (chatroomId) => `/chat/chatrooms/${chatroomId}/messages`,
   uploadMedia: '/chat/upload-media',
   getRecentRequests: '/chat/recent-requests',
-  deleteChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}`,
-  blockUnblockChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}/block`,
+  updateChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}`,
 };
 
 // Dashboard Routes
 export const dashboard = {
   getOwnerStats: '/dashboard/owner-stats',
+  deleteChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}`,
+  blockUnblockChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}/block`,
+};
+
+// Support Tickets Routes
+export const supportTickets = {
+  create: '/support-tickets',
+  getById: (id) => `/support-tickets/${id}`,
+  uploadMedia: (id) => `/support-tickets/${id}/media`,
+  uploadMultipleMedia: (id) => `/support-tickets/${id}/media/multiple`,
 };
 
 // Wishlist Routes
