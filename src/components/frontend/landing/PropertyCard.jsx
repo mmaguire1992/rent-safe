@@ -1,6 +1,7 @@
 'use client'
 
 import { useNavigate } from '@/lib/react-router-compat';
+import { toast } from 'react-toastify';
 import HeartIcon from "@/svg/websiteSvg/heartIcon";
 import ShareIcon from "@/svg/websiteSvg/shareIcon";
 import LocationIcon from "@/svg/websiteSvg/locationIcon";
@@ -25,6 +26,55 @@ function PropertyCard({ property, isFavorited = false, onToggleFavorite }) {
       navigate(`/properties/${property.id}`);
     } else {
       navigate("/properties");
+    }
+  };
+
+  // Handle share button click - copy property link to clipboard
+  const handleShare = async (e) => {
+    e.stopPropagation(); // Prevent card click
+    
+    try {
+      // Construct property detail URL
+      const propertyId = property?.id || property?._id;
+      if (!propertyId) {
+        toast.error('Property ID not available');
+        return;
+      }
+
+      const propertyUrl = `${window.location.origin}/properties/${propertyId}`;
+      
+      // Try modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(propertyUrl);
+        toast.success('Link copied to clipboard!');
+      } else {
+        // Fallback for browsers that don't support clipboard API
+        const textArea = document.createElement('textarea');
+        textArea.value = propertyUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          const successful = document.execCommand('copy');
+          document.body.removeChild(textArea);
+          
+          if (successful) {
+            toast.success('Link copied to clipboard!');
+          } else {
+            throw new Error('execCommand failed');
+          }
+        } catch (err) {
+          document.body.removeChild(textArea);
+          throw err;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      toast.error('Failed to copy link. Please copy manually.');
     }
   };
   return (
@@ -62,8 +112,9 @@ function PropertyCard({ property, isFavorited = false, onToggleFavorite }) {
             </span>
             <div className="flex items-center gap-3">
               <button
-                onClick={(e) => e.stopPropagation()}
+                onClick={handleShare}
                 className="text-text-secondary hover:text-primary transition-colors"
+                title="Share property"
               >
                 <ShareIcon />
               </button>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from '@/lib/react-router-compat';
 import { toast } from "react-toastify";
+import { useAuth } from "@/context/AuthContext";
 import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
 import Breadcrumb from "@/components/adminDashboard/common/Breadcrumb";
 import EditProfileTab from "@/components/adminDashboard/ProfileSettings/EditProfileTab";
@@ -28,6 +29,7 @@ import { logout } from "@/redux/slices/authSlice";
 function ProfileSettings() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { updateUser } = useAuth();
   const { userInfo, loading, updating, uploading, changingPassword, error } = useSelector((state) => state.user);
   const [activeTab, setActiveTab] = useState("edit");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -68,9 +70,7 @@ function ProfileSettings() {
 
   // Transform userInfo to profileSettingsData format
   const profileSettingsData = userInfo ? {
-    fullName: userInfo.userInfo?.name?.first && userInfo.userInfo?.name?.last
-      ? `${userInfo.userInfo.name.first} ${userInfo.userInfo.name.last}`.trim()
-      : `${userInfo.firstName || ''} ${userInfo.lastName || ''}`.trim() || '',
+    fullName: `${userInfo.firstName || userInfo.userInfo?.name?.first || ''} ${userInfo.lastName || userInfo.userInfo?.name?.last || ''}`.trim() || '',
     email: userInfo.email || '',
     phoneNumber: userInfo.phone || userInfo.userInfo?.phone || '',
     businessName: userInfo.userInfo?.businessName || '',
@@ -150,6 +150,9 @@ function ProfileSettings() {
       // The updateUserInfo already returns the complete updated profile from backend
       // But we'll refresh to ensure we have the latest data including any server-side changes
       await dispatch(fetchUserInfo());
+
+      // Keep AuthContext/localStorage userData in sync so header name updates immediately
+      updateUser({ firstName, lastName });
       
       // Show success message
       toast.success('Profile updated successfully!');
@@ -383,7 +386,7 @@ function ProfileSettings() {
                     profileData={profileSettingsData}
                     onSave={handleSaveProfile}
                     loading={updating || uploading}
-                    error={error}
+                    error={null}
                   />
                 )}
               {activeTab === "password" && (

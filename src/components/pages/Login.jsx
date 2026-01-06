@@ -44,7 +44,7 @@ function Login() {
     } else {
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
+      if (!emailRegex.test(formData.email.trim())) {
         newErrors.email = "Please enter a valid email address.";
       }
     }
@@ -129,7 +129,7 @@ function Login() {
         </div>
 
         {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
+        <form noValidate onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
           {/* Email Field */}
           <div>
             <label

@@ -5,17 +5,74 @@ import { FiEye, FiUser } from "react-icons/fi";
 import GrayLeadsIcon from "@/svg/grayLeadsIcon";
 import DownArrowIcon from "@/svg/downArrowIcon";
 
-const statusOptions = [
+// Available status options for editing (only active and rented)
+const editableStatusOptions = [
   { value: "active", label: "Active" },
-  { value: "rent-out", label: "Rent Out" },
+  { value: "rented", label: "Rent Out" },
 ];
 
+// Format status for display
+const formatStatus = (status) => {
+  if (!status) return 'Draft';
+  
+  const statusMap = {
+    'draft': 'Draft',
+    'pending_approval': 'Pending Approval',
+    'active': 'Active',
+    'inactive': 'Inactive',
+    'rented': 'Rent Out',
+    'suspended': 'Suspended'
+  };
+  
+  return statusMap[status.toLowerCase()] || status;
+};
+
+// Get status badge color
+const getStatusBadgeColor = (status) => {
+  const statusLower = status?.toLowerCase() || '';
+  
+  if (statusLower === 'active') {
+    return 'bg-[#DFFFE6] text-[#00893A]';
+  } else if (statusLower === 'rented') {
+    return 'bg-[#FFF5CC] text-[#D19600]';
+  } else if (statusLower === 'pending_approval') {
+    return 'bg-blue-100 text-blue-600';
+  } else if (statusLower === 'draft') {
+    return 'bg-gray-100 text-gray-600';
+  } else if (statusLower === 'suspended') {
+    return 'bg-red-100 text-red-600';
+  } else {
+    return 'bg-gray-100 text-secondary';
+  }
+};
+
 function PropertyStatusCard({ propertyData, onStatusChange }) {
-  const [selectedStatus, setSelectedStatus] = useState(
-    propertyData.status?.toLowerCase() || "active"
-  );
+  const currentStatus = propertyData.status?.toLowerCase() || 'draft';
+  
+  // Determine if status can be edited (only active and rented can be toggled)
+  const canEditStatus = currentStatus === 'active' || currentStatus === 'rented';
+  
+  // Get available options based on current status
+  const getAvailableOptions = () => {
+    if (currentStatus === 'active') {
+      // If active, can only change to rented
+      return editableStatusOptions.filter(opt => opt.value === 'rented');
+    } else if (currentStatus === 'rented') {
+      // If rented, can only change to active
+      return editableStatusOptions.filter(opt => opt.value === 'active');
+    }
+    // For other statuses, show both options (though they might not be selectable)
+    return editableStatusOptions;
+  };
+
+  const [selectedStatus, setSelectedStatus] = useState(currentStatus);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  // Update selected status when propertyData changes
+  useEffect(() => {
+    setSelectedStatus(currentStatus);
+  }, [currentStatus]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -31,6 +88,11 @@ function PropertyStatusCard({ propertyData, onStatusChange }) {
   }, []);
 
   const handleStatusSelect = (value) => {
+    if (!canEditStatus) {
+      setIsDropdownOpen(false);
+      return;
+    }
+    
     setSelectedStatus(value);
     setIsDropdownOpen(false);
     if (onStatusChange) {
@@ -38,10 +100,11 @@ function PropertyStatusCard({ propertyData, onStatusChange }) {
     }
   };
 
-  const selectedOption = statusOptions.find(
+  const availableOptions = getAvailableOptions();
+  const selectedOption = editableStatusOptions.find(
     (opt) => opt.value === selectedStatus
   );
-  const displayLabel = selectedOption?.label || "Active";
+  const displayLabel = formatStatus(selectedStatus);
 
   return (
     <div className="bg-white rounded-[20px] border border-lightGray md:p-6 p-4">
@@ -55,37 +118,36 @@ function PropertyStatusCard({ propertyData, onStatusChange }) {
           </p>
           <div className="relative" ref={dropdownRef}>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-                  selectedStatus === "active"
-                    ? "bg-[#DFFFE6] text-[#00893A] hover:bg-green-200"
-                    : "bg-gray-100 text-secondary hover:bg-gray-200"
-                }`}
-              >
-                <span>{displayLabel}</span>
-              </button>
-              <DownArrowIcon className="w-2 h-2 text-darkGray" />
-            </div>
-            {isDropdownOpen && (
-              <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-lg border border-lightGray z-50 min-w-[110px] py-1 overflow-hidden">
-                {statusOptions.map((option) => (
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(currentStatus)}`}>
+                {displayLabel}
+              </span>
+              {canEditStatus && (
+                <>
                   <button
-                    key={option.value}
                     type="button"
-                    onClick={() => handleStatusSelect(option.value)}
-                    className={`w-full text-left px-4 py-1 text-sm font-normal transition-colors hover:bg-gray-50 ${
-                      selectedStatus === option.value
-                        ? "text-[#6B4EFF] font-medium"
-                        : "text-secondary"
-                    }`}
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title="Change status"
                   >
-                    {option.label}
+                    <DownArrowIcon className="w-3 h-3 text-darkGray" />
                   </button>
-                ))}
-              </div>
-            )}
+                  {isDropdownOpen && availableOptions.length > 0 && (
+                    <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-lg border border-lightGray z-50 min-w-[120px] py-1 overflow-hidden">
+                      {availableOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => handleStatusSelect(option.value)}
+                          className="w-full text-left px-4 py-2 text-sm font-normal transition-colors hover:bg-gray-50 text-secondary"
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-4 justify-between">

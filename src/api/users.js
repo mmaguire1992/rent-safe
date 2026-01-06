@@ -108,6 +108,20 @@ export const uploadProfilePicture = async (file) => {
 };
 
 /**
+ * Delete profile picture
+ * @returns {Promise<Object>} - Delete response
+ */
+export const deleteProfilePicture = async () => {
+  try {
+    const response = await apiClient.delete('/users/profile-picture');
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('Error deleting profile picture:', error);
+    throw error;
+  }
+};
+
+/**
  * Change password
  * @param {Object} passwordData - Password change data
  * @param {string} passwordData.email - User email

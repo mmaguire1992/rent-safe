@@ -11,11 +11,13 @@ import WhiteHomeIcon from "@/svg/whiteHomeIcon";
 import WhitePropertiesIcon from "../../../svg/whitePropertiesIcon";
 import WhiteMessageIcon from "../../../svg/whiteMessageIcon";
 import { useAuth } from "@/context/AuthContext";
+import { getCurrentUser } from "@/api/users";
 
 function MobileSidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuExpanded, setIsMenuExpanded] = useState(true);
+  const [profileImage, setProfileImage] = useState(null);
   const { isAuthenticated, userName, user, logout, userType } = useAuth();
 
   // Prevent body scroll when sidebar is open
@@ -29,6 +31,24 @@ function MobileSidebar({ isOpen, onClose }) {
       document.body.style.overflow = "unset";
     };
   }, [isOpen]);
+
+  // Fetch profile image
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      if (!isAuthenticated) return;
+      
+      try {
+        const userData = await getCurrentUser();
+        if (userData?.userInfo?.profileImage) {
+          setProfileImage(userData.userInfo.profileImage);
+        }
+      } catch (err) {
+        console.error('Error fetching profile image:', err);
+      }
+    };
+
+    fetchProfileImage();
+  }, [isAuthenticated]);
 
   const handleNavigation = (path) => {
     navigate(path);
@@ -98,9 +118,17 @@ function MobileSidebar({ isOpen, onClose }) {
                 className="w-full flex items-center gap-4 transition-opacity"
               >
                 <div className="relative">
-                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xl font-bold">{getUserInitials()}</span>
-                  </div>
+                  {profileImage ? (
+                    <img
+                      src={profileImage}
+                      alt={userName || 'User'}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xl font-bold">{getUserInitials()}</span>
+                    </div>
+                  )}
                   <div className="absolute -top-0 -right-1">
                     <GreenCheckedIcon />
                   </div>

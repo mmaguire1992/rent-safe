@@ -29,7 +29,6 @@ function PropertyDetailPage() {
   const { user } = useAuth();
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoritedIds, setFavoritedIds] = useState(new Set());
-  const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -279,6 +278,34 @@ function PropertyDetailPage() {
     }
   };
 
+  // Helper function to get ordinal suffix (st, nd, rd, th)
+  const getOrdinalSuffix = (day) => {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
+
+  // Format date with ordinal suffix (e.g., "15th Nov 2025")
+  const formatDateWithOrdinal = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'N/A';
+      const day = date.getDate();
+      const month = date.toLocaleDateString('en-GB', { month: 'short' });
+      const year = date.getFullYear();
+      const ordinalSuffix = getOrdinalSuffix(day);
+      return `${day}${ordinalSuffix} ${month} ${year}`;
+    } catch (e) {
+      console.error('Error formatting date:', e);
+      return 'N/A';
+    }
+  };
+
   // Transform API property data to component format
   const transformPropertyData = (apiProperty) => {
     if (!apiProperty) return null;
@@ -399,8 +426,8 @@ function PropertyDetailPage() {
     <div className="min-h-screen bg-bg-primary">
       <PropertiesHeader
         favoriteCount={favoriteCount}
-        onHeartClick={() => setShowSavedOnly(!showSavedOnly)}
-        isSavedView={showSavedOnly}
+        onHeartClick={() => navigate('/properties?saved=true')}
+        isSavedView={false}
       />
 
       {/* Navigation Bar */}
@@ -464,6 +491,7 @@ function PropertyDetailPage() {
               ...property,
               monthlyRent: property.rent,
               furnishedStatus: property.furnished,
+              availableFrom: formatDateWithOrdinal(property.availableFrom),
               amenities: property.amenities || [],
               utilities: property.utilitiesIncluded ? Object.keys(property.utilitiesIncluded).filter(key => property.utilitiesIncluded[key]) : [],
             }} />
@@ -475,7 +503,7 @@ function PropertyDetailPage() {
 
             <RenterProfileDescription
               description={property.idealRenterProfile}
-              preferredRenterTypes={property.preferredRenterType}
+              preferredRenterTypes={property.preferredRenterType || property.preferredRenterTypes || []}
               requirements={property.additionalRequirements}
             />
           </div>

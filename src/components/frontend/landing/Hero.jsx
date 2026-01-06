@@ -1,3 +1,7 @@
+'use client'
+
+import { useNavigate } from '@/lib/react-router-compat'
+import { useAuth } from '@/context/AuthContext'
 import BlueTrustedIcon from "../../../svg/websiteSvg/blueTrustedIcon";
 import Badge from "./Badge";
 import Button from "./Button";
@@ -7,6 +11,27 @@ import ShielIcon from "@/svg/websiteSvg/shielIcon";
 import UsersIcon from "@/svg/websiteSvg/usersIcon";
 
 function Hero() {
+  const navigate = useNavigate();
+  const { userType, isAuthenticated, loading } = useAuth();
+
+  const handleRentClick = () => {
+    navigate('/properties');
+  };
+
+  const handlePropertyClick = () => {
+    if (userType === 'owner') {
+      navigate('/dashboard/properties/add');
+    } else {
+      // If not owner, redirect to signup or login
+      navigate('/signup');
+    }
+  };
+
+  // Determine which buttons to show
+  // Show both buttons if not authenticated, or show specific button based on user type
+  const showRentButton = !loading && (!isAuthenticated || userType === 'renter');
+  const showPropertyButton = !loading && (!isAuthenticated || userType === 'owner');
+
   return (
     <section
       id="properties"
@@ -31,12 +56,22 @@ function Hero() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <button className="bg-blueGradient text-white px-4 md:px-7 py-2 md:py-3 rounded-[10px] text-base font-bold font-nunito">
+              {showRentButton && (
+                <button 
+                  onClick={handleRentClick}
+                  className="bg-blueGradient text-white px-4 md:px-7 py-2 md:py-3 rounded-[10px] text-base font-bold font-nunito hover:opacity-90 transition-opacity"
+                >
                 I'm Looking to Rent
               </button>
-              <button className="bg-white text-[#4A2FCC] border border-[#4A2FCC] px-4 md:px-7 py-2 md:py-3 rounded-[10px] text-base font-bold font-nunito">
+              )}
+              {showPropertyButton && (
+                <button 
+                  onClick={handlePropertyClick}
+                  className="bg-white text-[#4A2FCC] border border-[#4A2FCC] px-4 md:px-7 py-2 md:py-3 rounded-[10px] text-base font-bold font-nunito hover:bg-[#4A2FCC] hover:text-white transition-colors"
+                >
                 I have a Property
               </button>
+              )}
             </div>
           </div>
           {/* Right Image */}

@@ -72,6 +72,9 @@ export function useSearchParams() {
   const router = useRouter()
   const pathname = usePathname()
   
+  // Ensure pathname is always a string
+  const currentPathname = typeof pathname === 'string' ? pathname : String(pathname || '')
+  
   // Create a URLSearchParams object from Next.js searchParams
   const params = new URLSearchParams()
   nextSearchParams.forEach((value, key) => {
@@ -86,7 +89,7 @@ export function useSearchParams() {
       if (result instanceof URLSearchParams) {
         // If updater returns URLSearchParams, use it directly
         const search = result.toString()
-        const newUrl = search ? `${pathname}?${search}` : pathname
+        const newUrl = search ? `${currentPathname}?${search}` : currentPathname
         
         if (options?.replace) {
           router.replace(newUrl)
@@ -103,7 +106,7 @@ export function useSearchParams() {
           }
         })
         const search = newParams.toString()
-        const newUrl = search ? `${pathname}?${search}` : pathname
+        const newUrl = search ? `${currentPathname}?${search}` : currentPathname
         
         if (options?.replace) {
           router.replace(newUrl)
@@ -120,7 +123,7 @@ export function useSearchParams() {
         }
       })
       const search = newParams.toString()
-      const newUrl = search ? `${pathname}?${search}` : pathname
+      const newUrl = search ? `${currentPathname}?${search}` : currentPathname
       
       if (options?.replace) {
         router.replace(newUrl)

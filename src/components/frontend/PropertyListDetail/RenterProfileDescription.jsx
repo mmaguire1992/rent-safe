@@ -69,23 +69,27 @@ function RenterProfileDescription({
     return null;
   };
 
-  // Use extracted preferred type from description, or fall back to prop
-  const preferredRenterType = useMemo(() => {
+  // Format all preferred renter types for display
+  const formattedPreferredRenterTypes = useMemo(() => {
     // First try to use extracted type from description
     if (extractedPreferredType) {
-      return formatPreferredRenterType(extractedPreferredType);
+      const formatted = formatPreferredRenterType(extractedPreferredType);
+      return formatted ? [formatted] : [];
     }
     
     // Fall back to preferredRenterTypes prop
     if (preferredRenterTypes) {
-      // If it's an array, take the first one
+      // If it's an array, format all
       if (Array.isArray(preferredRenterTypes) && preferredRenterTypes.length > 0) {
-        return formatPreferredRenterType(preferredRenterTypes[0]);
+        return preferredRenterTypes
+          .map(type => formatPreferredRenterType(type))
+          .filter(type => type !== null);
       }
       // If it's a single value
-      return formatPreferredRenterType(preferredRenterTypes);
+      const formatted = formatPreferredRenterType(preferredRenterTypes);
+      return formatted ? [formatted] : [];
     }
-    return null;
+    return [];
   }, [extractedPreferredType, preferredRenterTypes]);
 
   // Use extracted requirements from description, or fall back to prop
@@ -101,7 +105,7 @@ function RenterProfileDescription({
 
   // Only show sections that have content
   const hasDescription = cleanDescription && cleanDescription.trim().length > 0;
-  const hasPreferredType = preferredRenterType !== null;
+  const hasPreferredType = formattedPreferredRenterTypes.length > 0;
   // Show requirements section even if it says "no requirement"
   const hasRequirements = displayRequirements && displayRequirements.trim().length > 0;
 
@@ -139,21 +143,21 @@ function RenterProfileDescription({
             Preferred Renter Type
           </h2>
           <div className="flex sm:items-center flex-col sm:flex-row sm:gap-4 flex-wrap">
-            {preferredRenterType && (() => {
-              const Icon = getPreferredRenterIcon(preferredRenterType.label || preferredRenterType.value);
+            {formattedPreferredRenterTypes.map((type, index) => {
+              const Icon = getPreferredRenterIcon(type.label || type.value);
               return (
-                <div className="flex items-center gap-2 py-1.5 sm:py-3 transition-colors">
+                <div key={index} className="flex items-center gap-2 py-1.5 sm:py-3 transition-colors">
                   {Icon && (
                     <span className="bg-[#FFDDEE] w-[36px] h-[36px] rounded-[10px] flex items-center justify-center">
                       <Icon />
                     </span>
                   )}
                   <span className="text-sm sm:text-base font-normal font-nunito text-darkGray">
-                    {preferredRenterType.label || preferredRenterType.value}
+                    {type.label || type.value}
                   </span>
                 </div>
               );
-            })()}
+            })}
           </div>
         </div>
       )}

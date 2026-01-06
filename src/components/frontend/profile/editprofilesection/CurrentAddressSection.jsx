@@ -2,7 +2,7 @@ import BlueLocationIcon from "@/svg/blueLocationIcon";
 import SectionHeader from "./SectionHeader";
 import DocumentUpload from "./DocumentUpload";
 
-function CurrentAddressSection({ formData, handleChange }) {
+function CurrentAddressSection({ formData, handleChange, existingDocuments = [], onDocumentsUpdated }) {
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
       <SectionHeader icon={BlueLocationIcon} title="Current Address" />
@@ -81,7 +81,10 @@ function CurrentAddressSection({ formData, handleChange }) {
 
       <DocumentUpload
         label="Upload document to verify the above information"
-        maxFiles={5}
+        maxFiles={1}
+        docType="proof_of_address"
+        existingDocuments={existingDocuments}
+        onDocumentsUpdated={onDocumentsUpdated}
       />
     </div>
   );

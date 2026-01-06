@@ -7,6 +7,8 @@ function IdentityInformationSection({
   formData,
   handleChange,
   handleDateChange,
+  existingDocuments = [],
+  onDocumentsUpdated,
 }) {
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
@@ -35,6 +37,7 @@ function IdentityInformationSection({
             value={formData.dateOfBirth}
             onChange={(value) => handleDateChange("dateOfBirth", value)}
             placeholder="DD/MM/YYYY"
+            maxDate={new Date().toISOString().split('T')[0]} // Allow past dates, but not future dates
           />
         </div>
 
@@ -83,7 +86,14 @@ function IdentityInformationSection({
 
       <DocumentUpload
         label="Upload document to verify the above information"
-        maxFiles={5}
+        maxFiles={1}
+        docType="identity_proof"
+        existingDocuments={existingDocuments}
+        onFilesChange={(files) => {
+          // Handle files change if needed
+          console.log('Documents updated:', files);
+        }}
+        onDocumentsUpdated={onDocumentsUpdated}
       />
     </div>
   );

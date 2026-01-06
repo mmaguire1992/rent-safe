@@ -59,11 +59,32 @@ export const getUserType = () => {
 export const redirectBasedOnUserType = (navigate, currentPath = null) => {
   if (!isClient()) return; // Don't redirect during SSR
   
+  // Ensure currentPath is a string
+  const path = typeof currentPath === 'string' ? currentPath : String(currentPath || '');
+  
   if (!isAuthenticated()) {
     // Not authenticated - redirect to login
-    if (currentPath !== '/login') {
+    if (path !== '/login') {
       navigate('/login');
     }
+    return;
+  }
+
+  // Routes that should be accessible to all authenticated users (no redirect)
+  const sharedRoutes = [
+    '/profile',
+    '/properties',
+    '/support',
+    '/chat'
+  ];
+  
+  // Check if current path is a shared route or starts with a shared route prefix
+  const isSharedRoute = sharedRoutes.some(route => 
+    path === route || path.startsWith(`${route}/`)
+  ) || path.startsWith('/property/'); // Property detail pages
+  
+  // Don't redirect from shared routes
+  if (isSharedRoute) {
     return;
   }
 
@@ -71,12 +92,12 @@ export const redirectBasedOnUserType = (navigate, currentPath = null) => {
   
   if (userType === 'owner') {
     // Owner should go to dashboard
-    if (currentPath !== '/dashboard' && !currentPath?.startsWith('/dashboard')) {
+    if (path !== '/dashboard' && !path.startsWith('/dashboard')) {
       navigate('/dashboard');
     }
   } else if (userType === 'renter') {
     // Renter should go to landing
-    if (currentPath !== '/landing' && currentPath !== '/') {
+    if (path !== '/landing' && path !== '/') {
       navigate('/landing');
     }
   } else {

@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useEffect } from "react";
-import { FiUpload, FiCheckCircle } from "react-icons/fi";
+import { FiUpload, FiCheckCircle, FiTrash2 } from "react-icons/fi";
 import BlueUploadIcon from "@/svg/blueUploadIcon";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { deleteProfilePicture, getCurrentUser } from "@/api/users";
+import { toast } from "react-toastify";
 
 function EditProfileTab({ profileData, onSave, loading = false, error = null }) {
   const [isMounted, setIsMounted] = useState(false);
@@ -18,10 +21,13 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
     country: profileData?.country || "",
     postcode: profileData?.postcode || "",
   });
+  const [fieldErrors, setFieldErrors] = useState({});
   const [profileImage, setProfileImage] = useState(
     profileData?.profileImage || null
   );
   const [imagePreview, setImagePreview] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
   // Handle client-side mounting
   useEffect(() => {
@@ -78,6 +84,25 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear field error as user edits
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    const nextErrors = {};
+
+    if (!formData.fullName?.trim()) {
+      nextErrors.fullName = "Full name is required.";
+    }
+
+    if (!formData.phoneNumber?.trim()) {
+      nextErrors.phoneNumber = "Phone number is required.";
+    }
+
+    setFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleImageUpload = (files) => {
@@ -99,14 +124,17 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
                          fileName.endsWith('.jpeg');
       
       if (!isValidType) {
-        alert('Please select a valid image file (HEIC, WEBP, PNG, or JPG)');
+        toast.error('Please select a valid image file (HEIC, WEBP, PNG, or JPG).');
+        // Clear input so user can re-select the same file
+        if (files?.target) files.target.value = '';
         return;
       }
       
       // Validate file size (max 5MB)
       const maxSize = 5 * 1024 * 1024; // 5MB in bytes
       if (file.size > maxSize) {
-        alert('Image size must be less than 5MB');
+        toast.error('Image size must be less than 5MB.');
+        if (files?.target) files.target.value = '';
         return;
       }
       
@@ -114,37 +142,81 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
     }
   };
 
+  const handleRemoveProfilePicture = async () => {
+    try {
+      await deleteProfilePicture();
+      toast.success('Profile picture removed successfully');
+      
+      // Clear profile image from state
+      setProfileImage(null);
+      setImagePreview(null);
+      
+      // Refresh user data to get updated profile
+      const updatedUserData = await getCurrentUser();
+      if (updatedUserData?.userInfo) {
+        // Update profileData if parent component provides a callback
+        // For now, just clear the local state
+        setProfileImage(null);
+        setImagePreview(null);
+      }
+    } catch (error) {
+      console.error('Error removing profile picture:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to remove profile picture';
+      toast.error(errorMessage);
+      throw error; // Re-throw so the modal can handle it
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
     onSave({ ...formData, profileImage });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form
+      noValidate
+      onInvalid={(e) => e.preventDefault()}
+      onSubmit={handleSubmit}
+      className="space-y-6"
+    >
       {/* Profile Image Upload */}
       <div className="flex flex-col md:flex-row gap-6">
-        <div className="w-[74px] h-[74px] mx-auto md:mx-0 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
-          {isMounted && imagePreview ? (
-            <img
-              src={imagePreview}
-              alt="Profile"
-              className="w-full h-full object-cover rounded-full"
-              onError={(e) => {
-                // Fallback if image fails to load
-                e.target.style.display = 'none';
-                e.target.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
-          ) : null}
-          {(!isMounted || !imagePreview) && (
-            <div className="text-6xl text-gray-400 flex items-center justify-center">
-              <span>🏔️</span>
-            </div>
+        <div className="relative w-[74px] h-[74px] mx-auto md:mx-0">
+          <div className="w-[74px] h-[74px] bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+            {isMounted && imagePreview ? (
+              <img
+                src={imagePreview}
+                alt="Profile"
+                className="w-full h-full object-cover rounded-full"
+                onError={(e) => {
+                  // Fallback if image fails to load
+                  e.target.style.display = 'none';
+                  e.target.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            {(!isMounted || !imagePreview) && (
+              <div className="text-6xl text-gray-400 flex items-center justify-center">
+                <span>🏔️</span>
+              </div>
+            )}
+          </div>
+          {isMounted && imagePreview && (
+            <button
+              type="button"
+              onClick={() => setDeleteModalOpen(true)}
+              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-600 transition-colors shadow-md border-2 border-white z-20 cursor-pointer"
+              title="Remove profile picture"
+              disabled={removing}
+            >
+              <FiTrash2 className="w-3.5 h-3.5" />
+            </button>
           )}
         </div>
         <div className="flex-1 flex flex-col items-center md:items-start justify-center">
           <div className="text-base font-semibold font-nunito text-secondary mb-2">
-            upload Image <span className="text-errorColor">*</span>
+            Upload Image <span className="text-errorColor">*</span>
           </div>
           <button
             type="button"
@@ -190,6 +262,9 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
             className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
             placeholder="Enter your full name"
           />
+          {fieldErrors.fullName ? (
+            <p className="mt-1 text-sm text-errorColor">{fieldErrors.fullName}</p>
+          ) : null}
         </div>
 
         {/* Email Address */}
@@ -203,7 +278,8 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+              disabled
+              className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary bg-gray-100 cursor-not-allowed opacity-70"
               placeholder="Enter your email"
             />
             {isMounted && profileData?.isEmailVerified && (
@@ -237,6 +313,9 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
               </button>
             )}
           </div>
+          {fieldErrors.phoneNumber ? (
+            <p className="mt-1 text-sm text-errorColor">{fieldErrors.phoneNumber}</p>
+          ) : null}
         </div>
 
         {/* Business Name */}
@@ -334,6 +413,28 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
           {loading ? "Saving..." : "Save Changes"}
         </button>
       </div>
+
+      {/* Delete Profile Picture Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={async () => {
+          setRemoving(true);
+          try {
+            await handleRemoveProfilePicture();
+            setDeleteModalOpen(false);
+          } catch (error) {
+            // Error is already handled in handleRemoveProfilePicture
+          } finally {
+            setRemoving(false);
+          }
+        }}
+        title="Remove Profile Picture"
+        message="Are you sure you want to remove your profile picture? This action cannot be undone."
+        confirmText="Remove"
+        cancelText="Cancel"
+        isProcessing={removing}
+      />
     </form>
   );
 }

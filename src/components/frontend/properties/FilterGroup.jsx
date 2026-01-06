@@ -21,9 +21,23 @@ function FilterGroup({
       </div>
       <div className="flex flex-wrap gap-2">
         {options.map((option) => {
-          const isSelected = isMultiSelect
-            ? selectedValues.includes(option.value)
-            : String(selectedValue) === String(option.value);
+          let isSelected = false;
+          
+          if (isMultiSelect) {
+            // For multi-select, check if value is in selectedValues array
+            // Special handling for "all" option - it's selected when array is empty
+            if (option.value === 'all') {
+              isSelected = !selectedValues || (Array.isArray(selectedValues) && selectedValues.length === 0);
+            } else {
+              // Convert both to strings for comparison to handle type mismatches
+              const optionValueStr = String(option.value);
+              isSelected = Array.isArray(selectedValues) && 
+                          selectedValues.some(val => String(val) === optionValueStr);
+            }
+          } else {
+            // For single select
+            isSelected = String(selectedValue) === String(option.value);
+          }
 
           return (
             <FilterButton

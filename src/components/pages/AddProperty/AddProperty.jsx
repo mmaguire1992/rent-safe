@@ -18,6 +18,7 @@ import ReviewStep from "@/components/adminDashboard/AddProperty/ReviewStep";
 import { addPropertySteps, amenitiesList } from "@/constant";
 import { createNewProperty } from '@/redux/slices/propertySlice';
 import { uploadMultiplePropertyMedia } from '@/api/properties';
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 function AddProperty() {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ function AddProperty() {
   const [currentStep, setCurrentStep] = useState(1);
   const [showAIModal, setShowAIModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [aiDescription, setAiDescription] = useState("");
   const [createdPropertyId, setCreatedPropertyId] = useState(null);
   const [submitError, setSubmitError] = useState(null);
@@ -53,7 +55,7 @@ function AddProperty() {
     utilities: [""],
     images: [],
     renterProfileDescription: "",
-    preferredRenterType: "",
+    preferredRenterTypes: [],
     additionalRequirements: "",
     coordinates: [], // [longitude, latitude]
   });
@@ -143,8 +145,9 @@ function AddProperty() {
     let idealRenterProfile = "";
     if (data.renterProfileDescription) {
       idealRenterProfile = data.renterProfileDescription;
-      if (data.preferredRenterType) {
-        idealRenterProfile += ` Preferred renter type: ${data.preferredRenterType}.`;
+      if (data.preferredRenterTypes && Array.isArray(data.preferredRenterTypes) && data.preferredRenterTypes.length > 0) {
+        const typesString = data.preferredRenterTypes.join(", ");
+        idealRenterProfile += ` Preferred renter type: ${typesString}.`;
       }
       if (data.additionalRequirements) {
         idealRenterProfile += ` Additional requirements: ${data.additionalRequirements}`;
@@ -625,7 +628,7 @@ function AddProperty() {
 
           <div className="flex items-center justify-between mt-6   ">
             <button
-              onClick={() => navigate("/dashboard/properties")}
+              onClick={() => setShowCancelModal(true)}
               className="px-4 md:px-6 py-1.5 font-nunito border border-[#F1F1F1] rounded-[10px] text-base text-secondary font-bold bg-[#F1F1F1] transition-colors"
             >
               Cancel
@@ -678,6 +681,19 @@ function AddProperty() {
         setShowSuccessModal={setShowSuccessModal}
         formData={formData}
         propertyId={createdPropertyId}
+      />
+
+      <ConfirmationModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={() => {
+          setShowCancelModal(false);
+          navigate("/dashboard/properties");
+        }}
+        title="Cancel Property Creation"
+        message="Are you sure you want to cancel? All your progress will be lost if you continue."
+        confirmText="Yes, Cancel"
+        cancelText="Continue Editing"
       />
     </DashboardLayout>
   );

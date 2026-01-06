@@ -14,12 +14,8 @@ function HeaderIcons({
   const location = useLocation();
 
   const handleHouseClick = () => {
-    // If already on properties page, use callback to reset saved view
-    if (location.pathname === "/properties" && onHomeClick) {
-      onHomeClick();
-    } else {
-      navigate("/properties");
-    }
+    // Navigate to landing page
+    navigate("/landing");
   };
 
   const handleChatClick = () => {

@@ -67,10 +67,12 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
   };
 
   const handleChange = (fieldName, value) => {
-    // For number fields, prevent negative values
-    if ((fieldName === "bedrooms" || fieldName === "bathrooms") && value !== "") {
-      const numValue = parseInt(value);
-      if (!isNaN(numValue) && numValue < 0) {
+    // For number fields, only allow digits (0-9)
+    if (fieldName === "bedrooms" || fieldName === "bathrooms") {
+      // Remove all non-digit characters
+      value = value.replace(/[^0-9]/g, "");
+      // Prevent negative values
+      if (value !== "" && parseInt(value) < 0) {
         value = "0";
       }
     }

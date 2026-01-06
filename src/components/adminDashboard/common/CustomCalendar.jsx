@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { FiChevronLeft, FiChevronRight, FiCalendar } from "react-icons/fi";
 import GrayCalendarIcon from "@/svg/grayCalendarIcon";
 
-function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate }) {
+function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, maxDate }) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const calendarRef = useRef(null);
@@ -12,7 +12,7 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate }
   // Parse value to Date object
   const selectedDate = value ? new Date(value) : null;
   
-  // Get minimum date object (default to today if not provided)
+  // Get minimum date object (no default - allow all past dates if not provided)
   // Always calculate fresh to ensure we're using current date
   const getMinDateObj = () => {
     if (minDate) {
@@ -22,10 +22,21 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate }
       min.setHours(0, 0, 0, 0);
       return min;
     }
-    // Default to today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
+    // No minimum date restriction - allow all past dates
+    return null;
+  };
+
+  // Get maximum date object (no default - allow all future dates if not provided)
+  const getMaxDateObj = () => {
+    if (maxDate) {
+      // Parse the maxDate string (format: YYYY-MM-DD)
+      const [year, month, day] = maxDate.split('-').map(Number);
+      const max = new Date(year, month - 1, day);
+      max.setHours(23, 59, 59, 999);
+      return max;
+    }
+    // No maximum date restriction - allow all future dates
+    return null;
   };
 
   // Close calendar when clicking outside
@@ -76,10 +87,15 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate }
   // Navigate months
   const goToPreviousMonth = () => {
     const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
-    // Don't allow navigating to months before minDate
+    // Don't allow navigating to months before minDate (if minDate is set)
     const minDateObj = getMinDateObj();
+    if (minDateObj) {
     const minMonth = new Date(minDateObj.getFullYear(), minDateObj.getMonth(), 1);
     if (newDate >= minMonth) {
+        setCurrentDate(newDate);
+      }
+    } else {
+      // No minDate restriction - allow navigating to any past month
       setCurrentDate(newDate);
     }
   };
@@ -102,10 +118,16 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate }
     );
     newDate.setHours(0, 0, 0, 0);
     
-    // Double-check that the date is not before minDate
+    // Check minDate restriction (if set)
     const minDateToCompare = getMinDateObj();
-    if (newDate.getTime() < minDateToCompare.getTime()) {
-      return; // Prevent selecting past dates
+    if (minDateToCompare && newDate.getTime() < minDateToCompare.getTime()) {
+      return; // Prevent selecting dates before minDate
+    }
+    
+    // Check maxDate restriction
+    const maxDateToCompare = getMaxDateObj();
+    if (maxDateToCompare && newDate.getTime() > maxDateToCompare.getTime()) {
+      return; // Prevent selecting dates after maxDate
     }
     
     onChange(formatDateForInput(newDate));
@@ -132,7 +154,7 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate }
     );
   };
 
-  // Check if date is disabled (before minDate)
+  // Check if date is disabled (before minDate or after maxDate)
   const isDisabled = (day) => {
     if (!day) return true;
     const dateToCheck = new Date(
@@ -142,11 +164,19 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate }
     );
     dateToCheck.setHours(0, 0, 0, 0);
     
-    // Get fresh minDate to ensure it's current
+    // Check minDate restriction (if set)
     const minDateToCompare = getMinDateObj();
+    if (minDateToCompare && dateToCheck.getTime() < minDateToCompare.getTime()) {
+      return true; // Disable if before minDate
+    }
     
-    // Compare dates - disable if dateToCheck is before minDate
-    return dateToCheck.getTime() < minDateToCompare.getTime();
+    // Check maxDate restriction
+    const maxDateToCompare = getMaxDateObj();
+    if (maxDateToCompare && dateToCheck.getTime() > maxDateToCompare.getTime()) {
+      return true; // Disable if after maxDate
+    }
+    
+    return false;
   };
 
   // Generate calendar days
@@ -210,6 +240,7 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate }
               onClick={goToPreviousMonth}
               disabled={(() => {
                 const minDateObj = getMinDateObj();
+                if (!minDateObj) return false; // No restriction if no minDate
                 return new Date(currentDate.getFullYear(), currentDate.getMonth(), 1) <= new Date(minDateObj.getFullYear(), minDateObj.getMonth(), 1);
               })()}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

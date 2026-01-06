@@ -1,8 +1,15 @@
-import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";
+import MultiSelectDropdown from "@/components/adminDashboard/common/MultiSelectDropdown";
 import { preferredRenterTypeOptions } from "@/constant";
 import BlueAIIcon from "@/svg/blueAIIcon";
 
 function RenterDescriptionStep({ formData, setFormData, setShowAIModal }) {
+  const handlePreferredRenterTypeChange = (selectedValues) => {
+    setFormData({
+      ...formData,
+      preferredRenterTypes: selectedValues,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -47,16 +54,11 @@ function RenterDescriptionStep({ formData, setFormData, setShowAIModal }) {
           <label className="block text-sm md:text-base font-nunito font-semibold text-secondary mb-1">
             Preferred Renter Type
           </label>
-          <CustomDropdown
+          <MultiSelectDropdown
             options={preferredRenterTypeOptions}
-            value={formData.preferredRenterType}
-            onChange={(value) =>
-              setFormData({
-                ...formData,
-                preferredRenterType: value,
-              })
-            }
-            placeholder="Select an option"
+            value={formData.preferredRenterTypes || []}
+            onChange={handlePreferredRenterTypeChange}
+            placeholder="Select preferred renter types"
           />
         </div>
 
