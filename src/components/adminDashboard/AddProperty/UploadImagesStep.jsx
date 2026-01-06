@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 import { FiX, FiUpload } from "react-icons/fi";
 
 function UploadImagesStep({ formData, setFormData, errors, setErrors }) {
@@ -42,11 +43,25 @@ function UploadImagesStep({ formData, setFormData, errors, setErrors }) {
   };
 
   const handleFiles = (files) => {
-    const imageFiles = Array.from(files).filter((file) => {
+    const allFiles = Array.from(files);
+    const imageFiles = allFiles.filter((file) => {
       const fileType = file.type.toLowerCase();
       // Only accept image files
       return fileType.startsWith("image/");
     });
+
+    // Check for invalid files
+    const invalidFiles = allFiles.filter((file) => {
+      const fileType = file.type.toLowerCase();
+      return !fileType.startsWith("image/");
+    });
+
+    // Show error message for invalid files
+    if (invalidFiles.length > 0) {
+      const count = invalidFiles.length;
+      const fileText = count === 1 ? 'file' : 'files';
+      toast.error(`Invalid file format. ${count} ${fileText} rejected. Only image files (JPG, PNG, GIF, WEBP) are allowed.`);
+    }
 
     if (imageFiles.length > 0) {
       const newImages = imageFiles.map((file) => ({
