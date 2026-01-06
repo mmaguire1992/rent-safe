@@ -15,7 +15,7 @@ function SearchBar() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [propertyType, setPropertyType] = useState("apartment"); // Default to apartment
+  const [propertyType, setPropertyType] = useState(""); // Default to apartment
   const searchTimeoutRef = useRef(null);
 
   // Debounce search query - wait 500ms after user stops typing
