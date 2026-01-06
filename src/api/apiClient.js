@@ -44,6 +44,31 @@ apiClient.interceptors.response.use(
   (error) => {
     // Handle 401 - Unauthorized
     if (error.response?.status === 401 && typeof window !== 'undefined') {
+      const message =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        '';
+
+      // If the backend indicates the account is inactive/deactivated, show a toast after redirect.
+      // We store it because a hard redirect can prevent the toast from rendering in time.
+      const lower = String(message).toLowerCase();
+      const isDeactivated =
+        lower.includes('deactivated') ||
+        lower.includes('inactive') ||
+        lower.includes('account is deactivated') ||
+        lower.includes('user account is inactive');
+
+      if (isDeactivated) {
+        try {
+          sessionStorage.setItem(
+            'authRedirectToast',
+            'Your account has been deactivated. Please contact support.'
+          );
+        } catch (_) {
+          // no-op
+        }
+      }
+
       localStorage.removeItem('userToken');
       localStorage.removeItem('userData');
       // Redirect to login page
