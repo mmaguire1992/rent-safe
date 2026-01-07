@@ -91,6 +91,24 @@ export const updateUserProfile = async (profileData) => {
  */
 export const uploadProfilePicture = async (file) => {
   try {
+    // Validate file before proceeding
+    if (!file) {
+      throw new Error('No file provided');
+    }
+    
+    // Check if it's actually a File object, not a blob URL string
+    if (typeof file === 'string') {
+      if (file.startsWith('blob:')) {
+        throw new Error('Invalid file: received blob URL instead of File object. Please select the file again.');
+      } else {
+        throw new Error('Invalid file: received string instead of File object. Please select the file again.');
+      }
+    }
+    
+    if (!(file instanceof File) && !(file instanceof Blob)) {
+      throw new Error('Invalid file: must be a File object');
+    }
+    
     const formData = new FormData();
     // Backend expects field name to be 'profileImage' (not 'file')
     formData.append('profileImage', file);
@@ -100,6 +118,7 @@ export const uploadProfilePicture = async (file) => {
         'Content-Type': 'multipart/form-data',
       },
     });
+    
     return response.data?.data || response.data;
   } catch (error) {
     console.error('Error uploading profile picture:', error);

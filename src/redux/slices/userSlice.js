@@ -239,12 +239,12 @@ const userSlice = createSlice({
         state.uploading = false;
         // Update userInfo with profile picture data
         if (state.userInfo) {
-          // Update userInfo.profilePicture if returned
+          // Update userInfo.profileImage if returned (FIXED: was profilePicture)
           if (action.payload?.profileImage) {
             if (state.userInfo.userInfo) {
-              state.userInfo.userInfo.profilePicture = action.payload.profileImage;
+              state.userInfo.userInfo.profileImage = action.payload.profileImage;
             } else {
-              state.userInfo.userInfo = { profilePicture: action.payload.profileImage };
+              state.userInfo.userInfo = { profileImage: action.payload.profileImage };
             }
           }
         }

@@ -112,6 +112,13 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
     if (fileList && fileList.length > 0) {
       const file = fileList[0];
       
+      // Validate that it's actually a File object
+      if (!(file instanceof File)) {
+        toast.error('Invalid file: Please select a valid image file.');
+        if (files?.target) files.target.value = '';
+        return;
+      }
+      
       // Validate file type
       const validTypes = ['image/heic', 'image/webp', 'image/png', 'image/jpeg', 'image/jpg'];
       const fileType = file.type.toLowerCase();
@@ -170,6 +177,13 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    
+    // Ensure we're passing a File object, not a blob URL
+    if (profileImage && typeof profileImage === 'string' && profileImage.startsWith('blob:')) {
+      toast.error('Invalid file: Please select the image file again.');
+      return;
+    }
+    
     onSave({ ...formData, profileImage });
   };
 
