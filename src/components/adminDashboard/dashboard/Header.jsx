@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from '@/lib/react-router-compat';
 import { useAuth } from '@/context/AuthContext';
 import { getCurrentUser } from "@/api/users";
+import { getNotifications } from "@/api/notifications";
 import {
   FiSearch,
   FiBell,
@@ -17,13 +18,17 @@ import BlueSearchIcon from "@/svg/blueSearchIcon";
 import BellIcon from "@/svg/bellIcon";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
 import LogoutIcon from "@/svg/logoutIcon";
+import NotificationDropdown from "../common/NotificationDropdown";
 
 function Header({ onMenuClick }) {
   const navigate = useNavigate();
   const { logout, userName, user, isAuthenticated } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
+  const notificationRef = useRef(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -58,6 +63,27 @@ function Header({ onMenuClick }) {
     };
 
     fetchProfileImage();
+  }, [isAuthenticated]);
+
+  // Fetch notifications count on mount and periodically
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const fetchNotificationCount = async () => {
+      try {
+        const data = await getNotifications({ page: 1, limit: 1 });
+        setUnreadCount(data.unreadCount || 0);
+      } catch (error) {
+        console.error('Error fetching notification count:', error);
+      }
+    };
+
+    fetchNotificationCount();
+    
+    // Refresh notification count every 30 seconds
+    const interval = setInterval(fetchNotificationCount, 30000);
+    
+    return () => clearInterval(interval);
   }, [isAuthenticated]);
 
   const handleLogout = () => {
@@ -125,9 +151,27 @@ function Header({ onMenuClick }) {
             </button>
           </div>
 
-          <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <BellIcon />
-          </button>
+          <div className="relative" ref={notificationRef}>
+            <button
+              onClick={() => {
+                setNotificationDropdownOpen(!notificationDropdownOpen);
+                setDropdownOpen(false);
+              }}
+              className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <BellIcon />
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+            <NotificationDropdown
+              isOpen={notificationDropdownOpen}
+              onClose={() => setNotificationDropdownOpen(false)}
+              onUnreadCountChange={(count) => setUnreadCount(count)}
+            />
+          </div>
           <div
             className="flex items-center gap-2 md:gap-3 relative"
             ref={dropdownRef}

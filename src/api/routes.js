@@ -78,3 +78,9 @@ export const wishlists = {
   getWishlistPropertyIds: '/wishlists/ids',
 };
 
+// Notifications Routes
+export const notifications = {
+  getNotifications: '/notifications',
+  markAsRead: '/notifications/mark-read',
+};
+

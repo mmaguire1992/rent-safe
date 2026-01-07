@@ -20,7 +20,6 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
   });
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
@@ -200,7 +199,6 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
       const query = searchQuery.toLowerCase().trim();
       const subjectMatch = (ticket.subject || '').toLowerCase().includes(query);
       const descriptionMatch = (ticket.description || '').toLowerCase().includes(query);
-      
       if (!subjectMatch && !descriptionMatch) {
         return false;
       }
