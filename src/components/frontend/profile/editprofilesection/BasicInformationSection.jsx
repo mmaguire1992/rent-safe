@@ -54,7 +54,7 @@ function BasicInformationSection({
             </div>
             <div className="flex-1 flex flex-col justify-center items-center sm:items-start">
               <div className="text-base font-semibold font-nunito text-secondary mb-2">
-                upload Image <span className="text-errorColor">*</span>
+                Upload Image <span className="text-errorColor">*</span>
               </div>
               <button
                 type="button"

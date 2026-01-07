@@ -39,7 +39,7 @@ function CurrentPlanDetails({ currentPlan, onCancel, onUpgrade }) {
                 <GreenClockIcon />
                 <span className="text-base font-normal font-nunito text-secondary">
                   Renewal Date:
-                  <span className="font-bold">{currentPlan.renewalDate}</span>
+                  <span className="font-bold ml-1">{currentPlan.renewalDate}</span>
                 </span>
               </div>
               <div className="flex items-center gap-2">

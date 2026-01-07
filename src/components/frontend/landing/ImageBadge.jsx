@@ -1,7 +1,7 @@
 function ImageBadge({ icon, text, position = "top-left" }) {
   const positionClasses = {
-    "top-left": "top-[-20px] sm:top-[-20px] left-3 sm:left-4",
-    "bottom-right": "bottom-3 sm:bottom-[10rem] right-3 sm:right-[-50px]",
+    "top-left": "top-[-20px] md:top-[-20px] left-3 sm:left-4",
+    "bottom-right": "bottom-3 md:bottom-[10rem] right-3 lg:right-[-50px]",
   };
 
   // Split text into main and subtitle
@@ -11,7 +11,7 @@ function ImageBadge({ icon, text, position = "top-left" }) {
 
   return (
     <div
-      className={`absolute ${positionClasses[position]} bg-white rounded-xl px-4 py-3 shadow-lg flex items-center gap-3`}
+      className={`absolute ${positionClasses[position]} bg-white rounded-xl px-4 py-4 shadow-lg flex items-center gap-3`}
     >
       {/* Purple square with icon */}
       <div className="bg-blueGradient1 rounded-2xl p-2.5 flex-shrink-0 w-10 h-10 flex items-center justify-center">

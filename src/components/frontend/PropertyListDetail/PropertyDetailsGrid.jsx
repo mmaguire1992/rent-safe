@@ -36,9 +36,9 @@ function PropertyDetailsGrid({ propertyData }) {
         <h4 className="text-lg sm:text-xl font-bold font-nunito text-secondary mb-1">
           Property Details
         </h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 mt-5">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-            <p className="text-sm sm:text-base font-normal font-nunito text-darkGray">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3  gap-3 sm:gap-4 mt-5">
+          <div className="flex sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <p className="text-sm sm:text-base font-normal w-[120px] md:w-auto font-nunito text-darkGray">
               Monthly Rent:
             </p>
             <p className="text-sm sm:text-base font-bold font-nunito text-secondary">
@@ -46,8 +46,8 @@ function PropertyDetailsGrid({ propertyData }) {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-            <p className="text-sm sm:text-base font-normal font-nunito text-darkGray">
+          <div className="flex sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <p className="text-sm sm:text-base font-normal w-[120px] md:w-auto font-nunito text-darkGray">
               Property Type:
             </p>
             <p className="text-sm sm:text-base font-bold font-nunito text-secondary">
@@ -55,8 +55,8 @@ function PropertyDetailsGrid({ propertyData }) {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-            <p className="text-sm sm:text-base font-normal font-nunito text-darkGray">
+          <div className="flex sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <p className="text-sm sm:text-base font-normal w-[120px] md:w-auto font-nunito text-darkGray">
               Furnished Status:
             </p>
             <p className="text-sm sm:text-base font-bold font-nunito text-secondary capitalize">
@@ -64,8 +64,8 @@ function PropertyDetailsGrid({ propertyData }) {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-            <p className="text-sm sm:text-base font-normal font-nunito text-darkGray">
+          <div className="flex sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <p className="text-sm sm:text-base font-normal w-[120px] md:w-auto font-nunito text-darkGray">
               Available From:
             </p>
             <p className="text-sm sm:text-base font-bold font-nunito text-secondary">
@@ -83,6 +83,7 @@ function PropertyDetailsGrid({ propertyData }) {
         <div className="flex sm:items-center flex-col sm:flex-row gap-3 sm:gap-4 flex-wrap">
           {propertyData.amenities?.map((amenity, index) => {
             const Icon = getAmenityIconComponent(amenity);
+            const displayName = amenity?.replace(/_/g, ' ') || amenity;
             return (
               <div key={index} className="flex items-center gap-3">
                 <span className="bg-[#E8E2FF] w-[36px] h-[36px] rounded-[10px] flex items-center justify-center">
@@ -103,6 +104,7 @@ function PropertyDetailsGrid({ propertyData }) {
           <div className="flex sm:items-center flex-col sm:flex-row gap-3 sm:gap-4 flex-wrap">
             {propertyData.utilities?.map((utility, index) => {
               const Icon = getUtilityIconComponent(utility);
+              const displayName = utility?.replace(/_/g, ' ') || utility;
               return (
                 <div key={index} className="flex items-center gap-2">
                   <span className="bg-[#FFF5CC] w-[36px] h-[36px] rounded-[10px] flex items-center justify-center">

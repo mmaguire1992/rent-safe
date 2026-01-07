@@ -1,6 +1,10 @@
 import { FiX, FiCheckCircle } from "react-icons/fi";
 import SuccessfullyCheck from "@/svg/successfullyCheck";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+
 function SupportSuccessModal({ isOpen, onClose }) {
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   return (
@@ -31,14 +35,14 @@ function SupportSuccessModal({ isOpen, onClose }) {
         </p>
 
         {/* Button */}
-        <div className="flex justify-center w-full ">
+        {/* <div className="flex justify-center w-full ">
           <button
             onClick={onClose}
             className="px-8 py-3 bg-[#F1F1F1] w-full text-darkGray rounded-[10px] hover:bg-gray-300 transition-colors font-semibold font-nunito"
           >
             Cancel
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

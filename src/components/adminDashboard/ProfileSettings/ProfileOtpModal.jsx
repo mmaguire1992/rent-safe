@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FiX } from "react-icons/fi";
 import { maskEmail } from "@/utils/emailUtils";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 function ProfileOtpModal({
   isOpen,
@@ -16,6 +17,7 @@ function ProfileOtpModal({
   const [canResend, setCanResend] = useState(false);
   const inputRefs = useRef([]);
   const maskedEmail = maskEmail(email);
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) return;

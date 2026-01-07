@@ -3,8 +3,11 @@
 import { useNavigate } from '@/lib/react-router-compat';
 import { FiX, FiCheckCircle } from "react-icons/fi";
 import SuccessfullyCheck from "@/svg/successfullyCheck";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+
 function SuccessModal({ showSuccessModal, setShowSuccessModal, formData, propertyId }) {
   const navigate = useNavigate();
+  useBodyScrollLock(showSuccessModal);
 
   if (!showSuccessModal) return null;
 

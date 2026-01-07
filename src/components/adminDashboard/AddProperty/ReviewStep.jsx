@@ -552,19 +552,19 @@ function ReviewStep({ formData }) {
                   <div
                     key={option.value}
                     className={`flex items-center gap-2 py-1 md:py-3 transition-colors ${
-                      isSelected ? "opacity-100" : "opacity-40"
+                      isSelected ? "opacity-100" : "opacity-100"
                     }`}
                   >
                     {Icon && (
                       <span className={`w-[36px] h-[36px] rounded-[10px] flex items-center justify-center ${
-                        isSelected ? "bg-[#FFDDEE]" : "bg-gray-100"
+                        isSelected ? "bg-[#FFDDEE]" : "bg-[#FFDDEE]"
                       }`}>
                         <Icon />
                       </span>
                     )}
                     <span
                       className={`text-base font-normal font-nunito ${
-                        isSelected ? "text-secondary font-semibold" : "text-darkGray"
+                        isSelected ? "text-secondary font-normal" : "text-secondary font-normal"
                       }`}
                     >
                       {option.label}

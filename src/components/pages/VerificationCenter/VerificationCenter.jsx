@@ -18,6 +18,7 @@ import {
 } from "@/redux/slices/verificationSlice";
 import { documentTypeOptions } from "@/constant";
 import { downloadDocument, deleteDocument } from "@/api/verification";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 // Map backend docType to frontend document type options
 // Convert underscores to hyphens: "tax_document" → "tax-document"
@@ -176,6 +177,9 @@ function VerificationCenter() {
   // State for delete confirmation modal
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState(null);
+
+  // Lock body scroll when modal is open
+  useBodyScrollLock(deleteModalOpen);
 
   const handleReupload = () => {
     // Store the rejected document's ID and docType for reupload

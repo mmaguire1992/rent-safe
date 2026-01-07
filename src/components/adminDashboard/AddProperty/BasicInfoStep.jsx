@@ -123,7 +123,7 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
         <div className="grid lg:grid-cols-2 grid-cols-1 gap-4">
           <div>
             <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-1">
-              Property Title
+              Property Title<span className="text-red-600">*</span>
             </label>
             <input
               type="text"
@@ -143,8 +143,8 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
           </div>
 
           <div>
-            <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-2">
-              Property Type
+            <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-1">
+              Property Type <span className="text-red-600">*</span>
             </label>
             <CustomDropdown
               options={addPropertyTypeOptions}
@@ -163,7 +163,7 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="block text-sm md:text-base font-nunito font-bold text-secondary">
-              Property Description
+              Property Description<span className="text-red-600">*</span>
             </label>
           </div>
           <div className="relative">
@@ -181,7 +181,7 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
             />
             <button
               onClick={() => setShowAIModal(true)}
-              className="lg:absolute bottom-3 right-2 flex items-center gap-2 px-4 py-2 bg-[#E8E2FF] text-[#6B4EFF] rounded-[10px] font-bold hover:bg-opacity-90 transition-colors text-base"
+              className="md:absolute bottom-3 right-2 flex items-center gap-2 px-4 py-2 bg-[#E8E2FF] text-[#6B4EFF] rounded-[10px] font-bold hover:bg-opacity-90 transition-colors text-base"
             >
               <BlueAIIcon />
               AI Content Generator
@@ -195,7 +195,7 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
         <div className="grid lg:grid-cols-2 grid-cols-1 gap-4">
           <div>
             <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-1">
-              Bedrooms
+              Bedrooms<span className="text-red-600">*</span>
             </label>
             <div className="relative">
               <input
@@ -237,7 +237,7 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
 
           <div>
             <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-1">
-              Bathrooms
+              Bathrooms<span className="text-red-600">*</span>
             </label>
             <div className="relative">
               <input

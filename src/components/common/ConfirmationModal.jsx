@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 const ConfirmationModal = ({
   isOpen,
@@ -12,6 +13,8 @@ const ConfirmationModal = ({
   cancelText = 'Cancel',
   isProcessing = false,
 }) => {
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   return (

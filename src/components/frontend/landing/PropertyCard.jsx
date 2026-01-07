@@ -113,7 +113,7 @@ function PropertyCard({ property, isFavorited = false, onToggleFavorite }) {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleShare}
-                className="text-text-secondary hover:text-primary transition-colors"
+                className="text-[#9FA3AA] hover:text-[#000000] transition-colors"
                 title="Share property"
               >
                 <ShareIcon />
@@ -127,8 +127,8 @@ function PropertyCard({ property, isFavorited = false, onToggleFavorite }) {
                 }}
                 className={`transition-colors ${
                   isFavorited
-                    ? "text-red-500"
-                    : "text-text-secondary hover:text-primary"
+                    ? "text-red-400"
+                    : "text-[#9FA3AA] hover:text-[#000000]"
                 }`}
               >
                 <HeartIcon isFilled={isFavorited} />

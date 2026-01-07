@@ -82,7 +82,7 @@ function SummaryCards({ summaryCards }) {
         return (
           <div
             key={index}
-            className="rounded-lg p-5 md:p-6  bg-cover bg-center bg-no-repeat min-h-[170px] card_summary_box"
+            className="rounded-lg p-5 md:p-6 bg-cover bg-center bg-no-repeat min-h-[170px] card_summary_box"
             style={{
               backgroundImage: 'url("/images/dashboard/boxgraybg.png")',
               backgroundSize: "100% 170px",

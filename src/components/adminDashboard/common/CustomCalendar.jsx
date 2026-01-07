@@ -220,7 +220,9 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, 
           value={formatDateForDisplay(value)}
           placeholder={placeholder}
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full px-4 py-3 pr-12 border h-[52px] border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 cursor-pointer"
+          className={`w-full px-4 py-3 pr-12 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 cursor-pointer ${
+            error ? "border-red-500" : "border-lightGray"
+          }`}
         />
         <button
           type="button"

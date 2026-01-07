@@ -60,7 +60,7 @@ const Whychooseus = () => {
         </div>
 
         {/* Cards */}
-        <div className="grid md:gap-4 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid md:gap-4 gap-6 sm:grid-cols-2 lg:grid-cols-4 px-4 sm:px-6 lg:px-8">
           {reasons.map((item) => (
             <div
               key={item.title}
@@ -90,8 +90,8 @@ const Whychooseus = () => {
               </div>
 
               <p className="mt-4 flex gap-1  justify-center text-[#5A5E67] w-full pt-4 border-t border-t-[#E6E8EC] text-base font-normal font-nunito">
-                <span className="text-[#6B4EFF] font-bold font-nunito">
-                  {item.value}
+                <span className="text-[#6B4EFF] font-semibold text-xl">
+                  <strong>{item.value}</strong>
                 </span>
                 {item.stat}
               </p>

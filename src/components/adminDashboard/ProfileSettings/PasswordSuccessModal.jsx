@@ -1,6 +1,10 @@
 import { FiX, FiCheckCircle } from "react-icons/fi";
 import SuccessfullyCheck from "@/svg/successfullyCheck";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+
 function PasswordSuccessModal({ isOpen, onClose }) {
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   return (

@@ -157,6 +157,7 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
         </div>
 
         {/* New Password */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
           <label className="block text-base font-semibold font-nunito text-secondary mb-1">
             New Password
@@ -182,7 +183,7 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
             <p className="mt-1 text-sm text-errorColor">{fieldErrors.newPassword}</p>
           ) : null}
         </div>
-      </div>
+      
       {/* Confirm Password */}
       <div>
         <label className="block text-base font-semibold font-nunito text-secondary mb-1">
@@ -209,7 +210,7 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
           <p className="mt-1 text-sm text-errorColor">{fieldErrors.confirmPassword}</p>
         ) : null}
       </div>
-
+      </div>
 
       {/* Save Button */}
       <div className="flex justify-end">
@@ -220,6 +221,7 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
         >
           {loading ? "Changing Password..." : "Save Changes"}
         </button>
+      </div>
       </div>
     </form>
   );

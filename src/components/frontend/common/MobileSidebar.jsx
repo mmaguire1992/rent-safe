@@ -5,7 +5,6 @@ import { useNavigate, useLocation } from '@/lib/react-router-compat';
 import { IoClose } from "react-icons/io5";
 import { FiChevronUp, FiChevronDown } from "react-icons/fi";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
-import WhiteLogo from "../../../assests/images/whiteLogo.png";
 import WhiteLogout from "@/svg/whiteLogout";
 import WhiteHomeIcon from "@/svg/whiteHomeIcon";
 import WhitePropertiesIcon from "../../../svg/whitePropertiesIcon";
@@ -100,7 +99,7 @@ function MobileSidebar({ isOpen, onClose }) {
           {/* Header with Logo */}
           <div className="flex items-center justify-between px-6 pt-6 pb-4">
             <div className="flex items-center gap-3">
-              <img src={WhiteLogo} alt="Rent Safe" className="" />
+              <img src="/images/whiteLogo.png" alt="Rent Safe" className="" />
             </div>
             <button
               onClick={onClose}
