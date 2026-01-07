@@ -38,7 +38,6 @@ function ProfileSettings() {
   const [otpEmail, setOtpEmail] = useState("");
   const [pendingPhoneUpdate, setPendingPhoneUpdate] = useState(null);
   const [pendingProfileUpdate, setPendingProfileUpdate] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
 
   // Fetch user info on mount and when component becomes visible
   // Always fetch to get latest data from server
@@ -156,8 +155,6 @@ function ProfileSettings() {
       
       // Show success message
       toast.success('Profile updated successfully!');
-      setSuccessMessage('Profile updated successfully!');
-      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
       console.error('Error saving profile:', error);
       // Extract error message - could be string (from Redux) or object (from axios)
@@ -198,8 +195,6 @@ function ProfileSettings() {
         
         // Show success message
         toast.success('Phone number verified and profile updated successfully!');
-        setSuccessMessage('Phone number verified and profile updated successfully!');
-        setTimeout(() => setSuccessMessage(null), 5000);
       }
       setIsProfileOtpOpen(false);
     } catch (error) {
@@ -363,13 +358,6 @@ function ProfileSettings() {
             ))}
           </div>
           <div className="bg-white rounded-xl border border-lightGray p-4">
-            {/* Success Message */}
-            {successMessage && (
-              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-600 text-sm font-medium">{successMessage}</p>
-              </div>
-            )}
-
             {/* Loading State */}
             {loading && !userInfo && (
               <div className="flex items-center justify-center py-12">

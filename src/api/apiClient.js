@@ -32,6 +32,7 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('❌ [API Client] Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
