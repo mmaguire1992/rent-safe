@@ -22,12 +22,16 @@ function CityCard({ city }) {
   return (
     <div className="bg-white p-3 rounded-2xl shadow-md hover:shadow-lg transition-shadow overflow-hidden border border-border flex-shrink-0 cursor-pointer">
       {/* City Image */}
-      <div className="w-full h-[200px] sm:h-[200px] rounded-2xl overflow-hidden">
+      <div className="w-full h-[200px] sm:h-[288px] rounded-2xl overflow-hidden">
         {imageSrc ? (
           <img
             src={imageSrc}
             alt={city.name}
             className="w-full h-full object-cover rounded-2xl"
+            style={{
+              imageRendering: '-webkit-optimize-contrast',
+            }}
+            loading="eager"
             onError={(e) => {
               // Hide image on error
               e.target.style.display = 'none';

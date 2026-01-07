@@ -31,7 +31,7 @@ const Features = () => {
   return (
     <section
       id="features"
-      className="w-full py-8 bg-blueGradient2 text-white md:py-14 lg:py-16 scroll-mt-[88px]"
+      className="w-full py-4 bg-blueGradient2 text-white md:pt-14 lg:pt-16  scroll-mt-[88px]"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col-reverse gap-10 lg:flex-row items-center ">
@@ -73,11 +73,11 @@ const Features = () => {
                 );
               })}
 
-              <div className=" w-full  flex justify-center">
+              {/* <div className=" w-full  flex justify-center">
                 <button className="py-3 px-4 w-full md:w-1/2 mt-2 bg-white text-[#4A2FCC] font-bold text-sm lg:hidden  rounded-xl ">
                   Explore Services
                 </button>
-              </div>
+              </div> */}
             </div>
           </div>
           <div className="right relative lg:w-1/2 ml-4 w-full px-2 flex justify-center">

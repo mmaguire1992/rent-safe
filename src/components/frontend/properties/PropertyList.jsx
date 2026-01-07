@@ -1,12 +1,18 @@
 import { useNavigate } from '@/lib/react-router-compat';
 import PropertyCard from "@/components/frontend/landing/PropertyCard";
 import Button from "@/components/frontend/landing/Button";
+import HouseIcon from "@/svg/websiteSvg/houseIcon";
 
 function PropertyList({ properties, favoritedIds, onToggleFavorite, isSavedView = false, pagination = null }) {
   const navigate = useNavigate();
   if (!properties || properties.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="mb-4 flex items-center justify-center overflow-visible">
+          <div className="text-[#9FA3AA] scale-150" style={{ overflow: 'visible' }}>
+            <HouseIcon isFilled={false} />
+          </div>
+        </div>
         <p className="text-text-secondary text-lg">No properties found</p>
       </div>
     );

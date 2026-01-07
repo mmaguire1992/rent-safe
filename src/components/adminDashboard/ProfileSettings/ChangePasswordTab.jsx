@@ -65,7 +65,7 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 w-full">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+     
         {/* Old Password */}
         <div>
           <label className="block text-base font-semibold font-nunito text-secondary mb-1">
@@ -92,6 +92,7 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
         </div>
 
         {/* New Password */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
           <label className="block text-base font-semibold font-nunito text-secondary mb-1">
             New Password
@@ -115,7 +116,7 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
             </button>
           </div>
         </div>
-      </div>
+      
       {/* Confirm Password */}
       <div>
         <label className="block text-base font-semibold font-nunito text-secondary mb-1">
@@ -140,7 +141,7 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
           </button>
         </div>
       </div>
-
+      </div>
 
       {/* Save Button */}
       <div className="flex justify-end">

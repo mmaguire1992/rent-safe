@@ -1,8 +1,11 @@
 import { FiX } from "react-icons/fi";
 import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";
 import { propertyDropdownOptions } from "@/constant";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 function SendOfferModal({ isOpen, onClose, formData, setFormData, onSend }) {
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   return (

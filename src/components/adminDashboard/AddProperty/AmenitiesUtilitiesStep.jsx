@@ -152,7 +152,7 @@ function AmenitiesUtilitiesStep({
 
       <div className="border border-lightGray rounded-xl p-4 bg-white">
         <div className="flex items-center justify-between mb-1 ">
-          <h3 className="text-base font-semibold text-secondary">Utilities</h3>
+          <h3 className="text-base font-semibold text-secondary">Utilities <span className="text-red-600">*</span></h3>
           <button
             onClick={() => {
               setFormData({

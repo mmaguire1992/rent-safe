@@ -660,7 +660,7 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
       </div>
       <div className="w-full">
         <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-1">
-          Address <span className="text-xs text-gray-500 font-normal">(Required - Start typing to search)</span>
+          Address <span className="text-red-500">*</span> <span className="text-xs text-gray-500 font-normal">(Required - Start typing to search)</span>
         </label>
         <input
           ref={addressInputRef}
@@ -679,14 +679,14 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
           <p className="mt-1 text-sm text-red-600">{errors.address}</p>
         )}
         {!errors?.address && formData.address && (
-          <p className="mt-1 text-xs text-green-600">✓ Address validated</p>
+          <p className="mt-1 text-xs text-green-600">✓ Address validated<span className="!text-red-500">*</span></p>
         )}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div>
             <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-1">
-              City <span className="text-xs text-gray-500 font-normal">(Required - Auto-filled)</span>
+              City<span className="text-red-500">*</span> <span className="text-xs text-gray-500 font-normal">(Required - Auto-filled)</span>
             </label>
             <input
               type="text"
@@ -713,7 +713,7 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
 
           <div>
             <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-1">
-              State/Province <span className="text-xs text-gray-500 font-normal">(Auto-filled)</span>
+              State/Province <span className="text-red-500">*</span><span className="text-xs text-gray-500 font-normal">(Auto-filled)</span>
             </label>
             <input
               type="text"
@@ -729,7 +729,7 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
 
           <div>
             <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-1">
-              Postcode <span className="text-xs text-gray-500 font-normal">(Required - Auto-filled)</span>
+              Postcode <span className="text-red-500">*</span><span className="text-xs text-gray-500 font-normal">(Required - Auto-filled)</span>
             </label>
             <input
               type="text"
@@ -759,7 +759,7 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
 
           <div>
             <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-1">
-              Country <span className="text-xs text-gray-500 font-normal">(Auto-filled)</span>
+              Country <span className="text-red-500">*</span><span className="text-xs text-gray-500 font-normal">(Auto-filled)</span>
             </label>
             <input
               type="text"

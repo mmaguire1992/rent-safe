@@ -39,7 +39,7 @@ function ProgressIndicator({ steps, currentStep }) {
                     </div>
                     {index < steps.length - 1 && (
                       <div
-                        className={`flex-1 h-0.5 border-t-[3px] -ml-[47px] -mr-[45px] sm:-mr-[40px] mt-[-22px] z-0 ${
+                        className={`flex-1 h-0.5 border-t-[3px] -ml-[47px] -mr-[45px] sm:-mr-[40px] mt-[-32px] z-0 ${
                           isCompleted
                             ? "border-purple-600 border-dashed"
                             : "border-gray-300 border-dashed"

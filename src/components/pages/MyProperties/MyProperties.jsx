@@ -8,6 +8,7 @@ import Pagination from "@/components/adminDashboard/common/Pagination";
 import PropertiesActionBar from "@/components/adminDashboard/MyProperties/PropertiesActionBar";
 import PropertiesTable from "@/components/adminDashboard/MyProperties/PropertiesTable";
 import PropertiesMobileCards from "@/components/adminDashboard/MyProperties/PropertiesMobileCards";
+import HouseIcon from "@/svg/websiteSvg/houseIcon";
 import { fetchMyProperties } from '@/redux/slices/propertySlice';
 
 function MyProperties() {
@@ -65,6 +66,11 @@ function MyProperties() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, typeFilter, searchQuery, sortBy]);
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
 
   // Transform properties to match table component expectations
   // No client-side filtering - all done on backend
@@ -217,7 +223,14 @@ function MyProperties() {
                 </div>
               ) : currentProperties.length === 0 ? (
                 <div className="p-8 text-center">
-                  <p className="text-darkGray text-sm sm:text-base">No properties found. Try adjusting your filters or add a new property.</p>
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="mb-4 flex items-center justify-center overflow-visible">
+                      <div className="text-[#9FA3AA] scale-150" style={{ overflow: 'visible' }}>
+                        <HouseIcon isFilled={false} />
+                      </div>
+                    </div>
+                    <p className="text-darkGray text-sm sm:text-base">No properties found. Try adjusting your filters or add a new property.</p>
+                  </div>
                 </div>
               ) : (
                 <>

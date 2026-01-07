@@ -1,7 +1,10 @@
 import { FiX, FiAlertTriangle } from "react-icons/fi";
 import RemoveLargeIcon from "@/svg/removeLargeIcon";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 function DeleteAccountModal({ isOpen, onClose, onConfirm }) {
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   return (

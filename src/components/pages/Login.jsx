@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Link } from '@/lib/react-router-compat';
 import AuthLayout from "@/components/AuthLayout";
 import CustomCheckbox from "@/components/adminDashboard/common/CustomCheckbox";
-import { BsEye, BsEyeSlash } from "react-icons/bs";
+import EyeIcon from "@/svg/eyeIcon";
+import EyeSlashIcon from "@/svg/eyeSlashIcon";
 import { useAuth } from "@/context/AuthContext";
 
 function Login() {
@@ -84,7 +85,7 @@ function Login() {
       <div className="block">
         {/* Logo */}
         <div className="mb-6">
-          <img src="/images/dashboard/mainLogo.png" alt="Logo" className="justify-center" />
+          <img src="/images/dashboard/mainLogoBK.png" alt="Logo" className="justify-center" />
         </div>
 
         {/* Welcome Message */}
@@ -150,9 +151,9 @@ function Login() {
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary"
                 >
                   {showPassword ? (
-                    <BsEye className="text-xl" />
+                    <EyeIcon />
                   ) : (
-                    <BsEyeSlash className="text-xl" />
+                    <EyeSlashIcon />
                   )}
                 </button>
               </div>

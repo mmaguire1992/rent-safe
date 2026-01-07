@@ -21,7 +21,7 @@ function PropertySearch({
 
   return (
     <div className="w-full max-w-5xl mx-auto mb-6">
-      <div className="bg-white rounded-2xl shadow-lg border border-border-search p-4 sm:p-5 flex flex-col gap-3 sm:gap-4">
+      <div className="bg-white rounded-2xl shadow-lg border border-[#7356FF] p-4 sm:p-5 flex flex-col gap-3 sm:gap-4">
         {/* Mobile: Dropdown and Search in same row */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
           {/* Property Type Dropdown - Visible on mobile */}

@@ -91,7 +91,7 @@ function RentDetailsStep({
         <div className="grid lg:grid-cols-2 grid-cols-1 gap-4">
           <div>
             <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-1">
-              Monthly Rent (€)
+              Monthly Rent (€)<span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -112,7 +112,7 @@ function RentDetailsStep({
 
           <div>
             <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-1">
-              Available From
+              Available From <span className="text-red-500">*</span>
             </label>
             <CustomCalendar
               value={formData.availableFrom}
@@ -122,6 +122,7 @@ function RentDetailsStep({
               }}
               minDate={minDate}
               placeholder="dd/mm/yyyy"
+              error={touched.availableFrom && errors?.availableFrom}
             />
             {touched.availableFrom && errors?.availableFrom && (
               <p className="mt-1 text-sm text-red-600">{errors.availableFrom}</p>
@@ -185,17 +186,22 @@ function RentDetailsStep({
 
         <div>
           <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-1">
-            Furnished Status
+            Furnished Status<span className="text-red-500">*</span>
           </label>
           <div className="grid lg:grid-cols-3 grid-cols-1 gap-4">
             {["Furnished", "Unfurnished", "Semi-furnished"].map((status) => {
               const isSelected =
                 formData.furnishedStatus === status.toLowerCase();
+              const hasError = touched.furnishedStatus && errors?.furnishedStatus;
               return (
                 <label
                   key={status}
                   className={`flex items-center gap-3 cursor-pointer border rounded-xl p-3 bg-white transition-all ${
-                    isSelected ? "" : "border-lightGray "
+                    hasError 
+                      ? "border-red-500" 
+                      : isSelected 
+                        ? "" 
+                        : "border-lightGray"
                   }`}
                 >
                   <div className="relative flex items-center justify-center">

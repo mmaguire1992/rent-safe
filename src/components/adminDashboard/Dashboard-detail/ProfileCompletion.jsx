@@ -17,12 +17,7 @@ function ProfileCompletion({
             </p>
           </div>
 
-          <div className="w-full bg-[#E6E8EC] rounded-full h-2 overflow-hidden">
-            <div
-              className="bg-[#00893A] h-full rounded-full transition-all duration-300"
-              style={{ width: `${completionPercentage}%` }}
-            />
-          </div>
+
         </div>
         <div className="flex-shrink-0">
           <span className="text-[#00893A] font-bold text-base sm:text-lg md:text-xl">
@@ -30,6 +25,12 @@ function ProfileCompletion({
           </span>
         </div>
       </div>
+      <div className="w-full bg-[#E6E8EC] rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-[#00893A] h-full rounded-full transition-all duration-300"
+              style={{ width: `${completionPercentage}%` }}
+            />
+          </div>
     </div>
   );
 }

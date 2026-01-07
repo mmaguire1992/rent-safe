@@ -350,6 +350,11 @@ function PropertiesList() {
     };
   }, [isFilterOpen]);
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [pagination.page]);
+
   const toggleFavorite = (propertyId) => {
     setFavoritedIds((prev) => {
       const newSet = new Set(prev);

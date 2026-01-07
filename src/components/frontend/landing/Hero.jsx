@@ -30,7 +30,7 @@ function Hero() {
               eiusmod tempor incididunt ut labore et dolore magna aliqua.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <div className="flex sm:flex-row gap-3 sm:gap-4">
               <button className="bg-blueGradient text-white px-4 md:px-7 py-2 md:py-3 rounded-[10px] text-base font-bold font-nunito">
                 I'm Looking to Rent
               </button>
@@ -40,7 +40,7 @@ function Hero() {
             </div>
           </div>
           {/* Right Image */}
-          <div className="flex-1 relative w-full lg:w-auto lg:max-w-4xl mt-10 md:mt-0">
+          <div className="flex-1 relative w-full lg:w-auto lg:max-w-4xl mt-10 lg:mt-0">
             <div className="relative">
               <div className="rounded-tl-full rounded-tr-full">
                 <img src="/images/website/hero-image.png" alt="Modern house" className="w-full" />

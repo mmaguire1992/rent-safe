@@ -48,6 +48,11 @@ function ActiveProperties() {
     dispatch(fetchMyActiveProperties(params));
   }, [dispatch, currentPage, itemsPerPage, sortBy, sortOrder]);
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
   // Sort options
   const sortOptions = [
     { value: 'title', label: 'Title' },
@@ -275,7 +280,7 @@ function ActiveProperties() {
             onClick={handleExportCSV}
             className="bg-white border border-[#4A2FCC] h-[36px] sm:h-[38px] text-[#4A2FCC] px-3 sm:px-4 md:px-6 py-1.5 md:py-2 rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors flex items-center gap-2 md:gap-3 text-xs sm:text-sm md:text-base"
           >
-            <span className="hidden sm:inline whitespace-nowrap">Export</span>
+            <span className="inline whitespace-nowrap">Export</span>
             <FiDownload className="text-sm md:text-base" />
           </button>
         </div>

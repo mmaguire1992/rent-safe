@@ -121,7 +121,7 @@ function RecentRequests() {
         </button>
       </div>
 
-      <div className="recent-requests-slider relative">
+      <div className="recent-requests-slider relative !px-0">
         {loading ? (
           <div className="text-center py-4 text-darkGray">
             Loading recent requests...
