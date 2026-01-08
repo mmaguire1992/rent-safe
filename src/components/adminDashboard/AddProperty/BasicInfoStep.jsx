@@ -154,6 +154,7 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
                 setTouched({ ...touched, propertyType: true });
               }}
               placeholder="Select your property type"
+              error={touched.propertyType && !!errors?.propertyType}
             />
             {touched.propertyType && errors?.propertyType && (
               <p className="mt-1 text-sm text-red-600">{errors.propertyType}</p>

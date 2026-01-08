@@ -57,8 +57,8 @@ function PriceRange({ min, max, onChange, onChangeMin, onChangeMax, minRange = 0
         .price-range-slider {
           -webkit-appearance: none;
           appearance: none;
-          height: 8px;
-          border-radius: 4px;
+          height: 6px;
+          border-radius: 3px;
           outline: none;
           background: #E6E8EC;
         }
@@ -66,35 +66,34 @@ function PriceRange({ min, max, onChange, onChangeMin, onChangeMax, minRange = 0
         .price-range-slider::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
+          width: 16px;
+          height: 16px;
+          border-radius: 20px;
           background: #6B4EFF;
           cursor: pointer;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-          margin-top: -6px;
+          margin-top: -5px;
         }
         
         .price-range-slider::-moz-range-thumb {
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
+          width: 12px;
+          height: 24px;
+          border-radius: 6px;
           background: #6B4EFF;
           cursor: pointer;
           border: none;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-          margin-top: -6px;
         }
         
         .price-range-slider::-webkit-slider-runnable-track {
-          height: 8px;
-          border-radius: 4px;
+          height: 6px;
+          border-radius: 3px;
           background: #E6E8EC;
         }
         
         .price-range-slider::-moz-range-track {
-          height: 8px;
-          border-radius: 4px;
+          height: 6px;
+          border-radius: 3px;
           background: #E6E8EC;
         }
       `}</style>
@@ -114,7 +113,7 @@ function PriceRange({ min, max, onChange, onChangeMin, onChangeMax, minRange = 0
             max={maxRange}
             value={localMax}
             onChange={(e) => handleSliderChange(e.target.value)}
-            className="w-full"
+            className="w-full price-range-slider"
           />
         </div>
 
