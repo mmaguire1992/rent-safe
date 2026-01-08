@@ -1,7 +1,7 @@
 import Badge from "./Badge";
 import Button from "./Button";
 import ShielIcon from "@/svg/websiteSvg/shielIcon";
-import HouseIcon from "@/svg/websiteSvg/houseIcon";
+import HouseIconBlue from "@/svg/websiteSvg/houseIconBlue";
 import StandardPlanIcon from "@/svg/websiteSvg/standardPlanIcon";
 import PremiumPlanIcon from "@/svg/websiteSvg/premiumPlanIcon";
 import AgencySolutionIcon from "@/svg/websiteSvg/agencySolutionIcon";
@@ -14,7 +14,7 @@ function OwnersAgentsSection() {
       id: 1,
       title: "Pay Per Listing",
       description: "Single properties",
-      icon: <HouseIcon />,
+      icon: <HouseIconBlue />,
       iconBg: "bg-white",
       iconColor: "text-[#4A2FCC]",
       isPopular: false,

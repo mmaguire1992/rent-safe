@@ -140,7 +140,11 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
               name="oldPassword"
               value={formData.oldPassword}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+              className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+                fieldErrors.oldPassword
+                  ? "border-errorColor focus:border-errorColor"
+                  : "border-lightGray"
+              }`}
               placeholder="Enter your old password"
             />
             <button
@@ -168,7 +172,11 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
               name="newPassword"
               value={formData.newPassword}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+              className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+                fieldErrors.newPassword
+                  ? "border-errorColor focus:border-errorColor"
+                  : "border-lightGray"
+              }`}
               placeholder="Enter your new password"
             />
             <button
@@ -195,7 +203,11 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleInputChange}
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              fieldErrors.confirmPassword
+                ? "border-errorColor focus:border-errorColor"
+                : "border-lightGray"
+            }`}
             placeholder="Enter your confirm password"
           />
           <button

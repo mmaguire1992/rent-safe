@@ -273,7 +273,11 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
             name="fullName"
             value={formData.fullName}
             onChange={handleInputChange}
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              fieldErrors.fullName
+                ? "border-errorColor focus:border-errorColor"
+                : "border-lightGray"
+            }`}
             placeholder="Enter your full name"
           />
           {fieldErrors.fullName ? (
@@ -315,7 +319,11 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
               name="phoneNumber"
               value={formData.phoneNumber}
               onChange={handleInputChange}
-              className="flex-1 px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+              className={`flex-1 px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+                fieldErrors.phoneNumber
+                  ? "border-errorColor focus:border-errorColor"
+                  : "border-lightGray"
+              }`}
               placeholder="Enter your phone number"
             />
             {isMounted && !profileData?.isPhoneVerified && (
