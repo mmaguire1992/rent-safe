@@ -8,6 +8,7 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, 
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const calendarRef = useRef(null);
+  const error = [];
 
   // Parse value to Date object
   const selectedDate = value ? new Date(value) : null;
