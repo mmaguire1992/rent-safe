@@ -41,33 +41,41 @@ function CustomDropdown({
   };
 
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
-      {/* Dropdown Button */}
-      <button
-        type="button"
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        disabled={disabled}
-        className={`w-full px-4 py-1.5 h-[52px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 flex gap-1 items-center justify-between ${
-          disabled ? "bg-gray-100 cursor-not-allowed opacity-60" : "bg-white"
-        } ${
-          error ? "border-red-500" : value ? "border-lightGray" : "border-lightGray"
-        } ${className}`}
-      >
-        {/* {showFilterIcon && (
-          <FiFilter className="absolute left-3 text-darkGray" />
-        )} */}
-
-        <span className="text-darkGray text-sm md:text-base font-nunito font-medium">
-          {displayText}
-        </span>
-        <div
-          className={`transform transition-transform ${
-            isOpen ? "rotate-180" : ""
-          }`}
+    <>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .custom-dropdown-icon-purple svg path {
+            stroke: #4A2FCC !important;
+          }
+        `
+      }} />
+      <div className={`relative ${className}`} ref={dropdownRef}>
+        {/* Dropdown Button */}
+        <button
+          type="button"
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          disabled={disabled}
+          className={`w-full px-4 py-1.5 h-[52px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 flex gap-1 items-center justify-between ${
+            disabled ? "bg-gray-100 cursor-not-allowed opacity-60" : "bg-white"
+          } ${
+            error ? "border-red-500" : value ? "border-lightGray" : "border-lightGray"
+          } ${className}`}
         >
-          <DownArrowIcon />
-        </div>
-      </button>
+          {/* {showFilterIcon && (
+            <FiFilter className="absolute left-3 text-darkGray" />
+          )} */}
+
+          <span className="text-darkGray text-sm md:text-base font-nunito font-medium">
+            {displayText}
+          </span>
+          <div
+            className={`custom-dropdown-icon-purple transform transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          >
+            <DownArrowIcon />
+          </div>
+        </button>
 
       {/* Dropdown Options */}
       {isOpen && !disabled && (
@@ -88,7 +96,8 @@ function CustomDropdown({
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
