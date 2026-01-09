@@ -22,8 +22,14 @@ function PropertyCard({ property, isFavorited = false, onToggleFavorite }) {
     }
     // Navigate to property detail page with property ID
     // Route is /properties/[id] (plural) not /property/[id] (singular)
+    // Preserve current page parameter from URL so user returns to same page
     if (property?.id) {
-      navigate(`/properties/${property.id}`);
+      const currentSearchParams = new URLSearchParams(window.location.search);
+      const currentPage = currentSearchParams.get("page");
+      const backUrl = currentPage && currentPage !== "1" 
+        ? `/properties/${property.id}?fromPage=${currentPage}` 
+        : `/properties/${property.id}`;
+      navigate(backUrl);
     } else {
       navigate("/properties");
     }

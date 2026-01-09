@@ -10,6 +10,7 @@ import PropertiesTable from "@/components/adminDashboard/MyProperties/Properties
 import PropertiesMobileCards from "@/components/adminDashboard/MyProperties/PropertiesMobileCards";
 import HouseIcon from "@/svg/websiteSvg/houseIcon";
 import { fetchMyProperties } from '@/redux/slices/propertySlice';
+import { getMyProperties } from '@/api/properties';
 import { toast } from 'react-toastify';
 
 function MyProperties() {
@@ -160,13 +161,29 @@ function MyProperties() {
   };
 
   // Export properties to CSV
-  const handleExportCSV = () => {
-    if (!allProperties || allProperties.length === 0) {
-      toast.error('No properties to export');
-      return;
-    }
-
+  const handleExportCSV = async () => {
     try {
+      // Show loading toast
+      toast.info('Preparing export...', { autoClose: 1000 });
+
+      // Fetch ALL properties with current filters (no pagination limit)
+      const exportParams = {
+        page: 1,
+        limit: 10000, // Very high limit to get all properties
+        search: searchQuery && searchQuery.trim() ? searchQuery.trim() : '',
+        status: statusFilter && statusFilter !== 'all' ? statusFilter : '',
+        propertyType: typeFilter && typeFilter !== 'all' ? typeFilter : '',
+        sortBy: sortBy || 'recent',
+      };
+
+      const exportData = await getMyProperties(exportParams);
+      const propertiesToExport = exportData?.properties || [];
+
+      if (!propertiesToExport || propertiesToExport.length === 0) {
+        toast.error('No properties to export');
+        return;
+      }
+
       // Define CSV headers
       const headers = [
         'Title',
@@ -188,7 +205,7 @@ function MyProperties() {
       ];
 
       // Convert properties to CSV rows
-      const csvRows = allProperties.map((property) => {
+      const csvRows = propertiesToExport.map((property) => {
         // Build address parts
         const address = property.address || {};
         const city = address.city || '';

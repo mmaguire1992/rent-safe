@@ -103,21 +103,8 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
     } catch (error) {
       // Error is handled by parent component and toast
       console.error('Password change error:', error);
-      // Extract error message - could be string (from Redux) or object (from axios)
-      let errorMessage = "Failed to change password. Please try again.";
-      
-      if (typeof error === 'string') {
-        errorMessage = error;
-      } else if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-      
-      // Also show inline so user knows exactly what to fix
-      setFieldErrors((prev) => ({ ...prev, newPassword: errorMessage }));
+      // Clear inline errors - only show toast notification
+      setFieldErrors({});
     }
   };
 
@@ -187,9 +174,6 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
               {showPasswords.new ? <BsEye /> : <BsEyeSlash />}
             </button>
           </div>
-          {fieldErrors.newPassword ? (
-            <p className="mt-1 text-sm text-errorColor">{fieldErrors.newPassword}</p>
-          ) : null}
         </div>
       
       {/* Confirm Password */}

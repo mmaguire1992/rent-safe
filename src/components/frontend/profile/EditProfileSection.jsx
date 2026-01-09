@@ -451,12 +451,18 @@ function EditProfileSection() {
       
       // Refresh user data to get updated profile
       const updatedUserData = await getCurrentUser();
+      const newProfileImage = updatedUserData?.userInfo?.profileImage || null;
       if (updatedUserData?.userInfo) {
         setFormData((prev) => ({ 
           ...prev, 
-          profileImage: updatedUserData.userInfo?.profileImage || null 
+          profileImage: newProfileImage 
         }));
       }
+      // Dispatch custom event to notify header/sidebar to refresh profile image
+      // Use a small delay to ensure the server has processed the deletion
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('profileImageUpdated'));
+      }, 100);
     } catch (error) {
       console.error('Error removing profile picture:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to remove profile picture';
@@ -512,6 +518,11 @@ function EditProfileSection() {
         const updatedUserData = await getCurrentUser();
         if (updatedUserData?.userInfo?.profileImage) {
           setFormData((prev) => ({ ...prev, profileImage: updatedUserData.userInfo.profileImage }));
+          // Dispatch custom event to notify header/sidebar to refresh profile image
+          // Use a small delay to ensure the server has processed the upload
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('profileImageUpdated'));
+          }, 100);
         }
       }
       
