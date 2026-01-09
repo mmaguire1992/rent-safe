@@ -7,6 +7,9 @@ import { ToastContainer } from 'react-toastify'
 export const metadata = {
   title: 'RentSafe',
   description: 'RentSafe - Property Rental Platform',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({ children }) {
