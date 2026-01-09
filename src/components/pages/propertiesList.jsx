@@ -33,8 +33,11 @@ function PropertiesList() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Initialize pagination from URL parameter or default to 1
+  const initialPageParam = searchParams.get("page");
+  const initialPage = initialPageParam ? parseInt(initialPageParam, 10) : 1;
   const [pagination, setPagination] = useState({
-    page: 1,
+    page: initialPage > 0 ? initialPage : 1,
     limit: 12,
     total: 0,
     totalPages: 0,
@@ -92,6 +95,81 @@ function PropertiesList() {
   const lastUrlUpdateTimeRef = useRef(0);
   // Track if saved parameter update was user-initiated
   const isUserInitiatedSavedUpdateRef = useRef(false);
+  // Track if page parameter update was user-initiated
+  const isUserInitiatedPageUpdateRef = useRef(false);
+
+  // Track if we've initialized page from URL
+  const initializedPageFromUrlRef = useRef(false);
+
+  // Read page from URL on component mount or when URL changes (but not when user changes page)
+  useEffect(() => {
+    // Skip if this page change was user-initiated
+    if (isUserInitiatedPageUpdateRef.current) {
+      isUserInitiatedPageUpdateRef.current = false;
+      return;
+    }
+
+    // Skip if URL was just updated (within last 500ms) to prevent reading back our own changes
+    const timeSinceLastUpdate = Date.now() - lastUrlUpdateTimeRef.current;
+    if (timeSinceLastUpdate < 500 && initializedPageFromUrlRef.current) {
+      return;
+    }
+
+    const pageParam = searchParams.get("page");
+    const urlPage = pageParam ? parseInt(pageParam, 10) : 1;
+    const validUrlPage = urlPage > 0 ? urlPage : 1;
+
+    // Always sync with URL page parameter (even if it's 1)
+    // This ensures we restore the correct page when navigating back
+    setPagination(prev => {
+      if (prev.page !== validUrlPage) {
+        return { ...prev, page: validUrlPage };
+      }
+      return prev;
+    });
+    
+    initializedPageFromUrlRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Update URL when page changes (user-initiated page change or filter/search change)
+  useEffect(() => {
+    // Skip if we haven't initialized from URL yet
+    if (!initializedPageFromUrlRef.current) {
+      return;
+    }
+
+    const currentPageParam = searchParams.get("page");
+    const urlPage = currentPageParam ? parseInt(currentPageParam, 10) : 1;
+    const newPage = pagination.page;
+
+    // Update URL if page changed and it's different from URL param
+    // This handles both user-initiated page changes and filter/search resets to page 1
+    if (newPage !== urlPage && newPage > 0) {
+      // Mark as user-initiated for non-initial changes
+      isUserInitiatedPageUpdateRef.current = true;
+      lastUrlUpdateTimeRef.current = Date.now();
+
+      setSearchParams((prev) => {
+        const newParams = new URLSearchParams(prev);
+        
+        if (newPage === 1) {
+          // Remove page parameter when on page 1
+          newParams.delete("page");
+        } else {
+          // Update page parameter
+          newParams.set("page", newPage.toString());
+        }
+        
+        return newParams;
+      }, { replace: false }); // Use replace: false to preserve history for back navigation
+
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        isUserInitiatedPageUpdateRef.current = false;
+      }, 100);
+    }
+  }, [pagination.page, searchParams, setSearchParams]);
 
   // Read search query and type from URL on component mount or when URL changes
   useEffect(() => {
@@ -264,9 +342,15 @@ function PropertiesList() {
     }
 
     filterTimeoutRef.current = setTimeout(() => {
+      // Check if filters actually changed compared to current debounced filters
+      const filtersActuallyChanged = JSON.stringify(filters) !== JSON.stringify(debouncedFilters);
       setDebouncedFilters(filters);
-      // Reset to page 1 when filters change
-      setPagination(prev => ({ ...prev, page: 1 }));
+      
+      // Only reset to page 1 if filters actually changed (user action)
+      // Don't reset if we're just syncing from URL or initial mount
+      if (filtersActuallyChanged && initializedFromUrlRef.current) {
+        setPagination(prev => ({ ...prev, page: 1 }));
+      }
     }, 500); // 500ms debounce delay
 
     return () => {
@@ -274,7 +358,7 @@ function PropertiesList() {
         clearTimeout(filterTimeoutRef.current);
       }
     };
-  }, [filters]);
+  }, [filters, debouncedFilters]);
 
   // Track previous search query to prevent unnecessary updates
   const prevSearchQueryRef = useRef(searchQuery);
@@ -315,9 +399,12 @@ function PropertiesList() {
       if (sourceForThisUpdate === 'user') {
         isUserInitiatedSearchRef.current = true;
       }
+      // Only reset to page 1 if search actually changed and it was user-initiated
+      const searchChanged = searchQuery !== debouncedSearchQuery;
+      if (searchChanged && sourceForThisUpdate === 'user') {
+        setPagination(prev => ({ ...prev, page: 1 }));
+      }
       setDebouncedSearchQuery(searchQuery);
-      // Reset to page 1 when search changes
-      setPagination(prev => ({ ...prev, page: 1 }));
     }, 500); // 500ms debounce delay
 
     return () => {

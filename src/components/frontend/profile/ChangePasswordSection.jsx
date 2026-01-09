@@ -230,6 +230,12 @@ function ChangePasswordSection() {
                           error.message || 
                           'Failed to change password. Please try again.';
       toast.error(errorMessage);
+      // Clear inline errors - only show toast notification
+      setErrors({
+        oldPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
     } finally {
       setLoading(false);
     }
@@ -308,9 +314,7 @@ function ChangePasswordSection() {
                 {showPasswords.new ? <BsEye className="w-5 h-5" /> : <BsEyeSlash className="w-5 h-5" />}
               </button>
             </div>
-            {touched.newPassword && errors.newPassword ? (
-              <p className="text-xs text-errorColor mt-1">{errors.newPassword}</p>
-            ) : formData.newPassword && !errors.newPassword ? (
+            {formData.newPassword && !errors.newPassword ? (
               <p className="text-xs text-darkGray mt-1">
                 Must be at least 8 characters with uppercase, lowercase, and number
               </p>

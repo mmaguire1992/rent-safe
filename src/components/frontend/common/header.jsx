@@ -85,6 +85,7 @@ const Navbar = () => {
             setProfileImage(userData.userInfo.profileImage);
           }
         }
+
       } catch (err) {
         console.error('Error fetching user data:', err);
         // Set defaults on error
@@ -98,6 +99,29 @@ const Navbar = () => {
     };
 
     fetchUserData();
+
+    // Listen for profile image updates
+    const handleProfileImageUpdate = async () => {
+      // Re-fetch user data to get the latest profile image
+      try {
+        const userData = await getCurrentUser();
+        if (userData?.userInfo?.profileImage) {
+          // Add cache-busting parameter to force image refresh
+          const imageUrl = userData.userInfo.profileImage + (userData.userInfo.profileImage.includes('?') ? '&' : '?') + '_t=' + Date.now();
+          setProfileImage(imageUrl);
+        } else {
+          setProfileImage(null);
+        }
+      } catch (err) {
+        console.error('Error refreshing profile image:', err);
+      }
+    };
+
+    window.addEventListener('profileImageUpdated', handleProfileImageUpdate);
+
+    return () => {
+      window.removeEventListener('profileImageUpdated', handleProfileImageUpdate);
+    };
   }, [isAuthenticated, userType]);
 
   // Close renter menu when clicking outside

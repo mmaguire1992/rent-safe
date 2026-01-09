@@ -221,7 +221,8 @@ function AddProperty() {
   
   // Validate step 1 (Basic Information)
   const validateStep1 = () => {
-    const errors = {};
+    const errors = { ...stepErrors }; // Preserve existing errors from BasicInfoStep
+    
     if (!formData.propertyTitle || !formData.propertyTitle.trim()) {
       errors.propertyTitle = "Property Title is required";
     }
@@ -231,12 +232,43 @@ function AddProperty() {
     if (!formData.propertyDescription || !formData.propertyDescription.trim()) {
       errors.propertyDescription = "Property Description is required";
     }
-    if (!formData.bedrooms || formData.bedrooms === "" || parseInt(formData.bedrooms) < 0) {
+    
+    // Validate bedrooms - check original input if available, otherwise check cleaned value
+    const bedroomsOriginal = formData.bedroomsOriginal || formData.bedrooms;
+    if (!formData.bedrooms || formData.bedrooms === "") {
       errors.bedrooms = "Bedrooms is required";
+    } else {
+      // Check if original input had invalid characters (before cleaning)
+      const originalValue = bedroomsOriginal.toString().trim();
+      if (originalValue !== "" && !/^\d+$/.test(originalValue)) {
+        errors.bedrooms = "Please enter a valid bedroom number";
+      } else {
+        // Check if cleaned value is valid
+        const isValidNumber = /^\d+$/.test(formData.bedrooms.toString().trim());
+        if (!isValidNumber || parseInt(formData.bedrooms) < 0) {
+          errors.bedrooms = "Please enter a valid bedroom number";
+        }
+      }
     }
-    if (!formData.bathrooms || formData.bathrooms === "" || parseInt(formData.bathrooms) < 0) {
+    
+    // Validate bathrooms - check original input if available, otherwise check cleaned value
+    const bathroomsOriginal = formData.bathroomsOriginal || formData.bathrooms;
+    if (!formData.bathrooms || formData.bathrooms === "") {
       errors.bathrooms = "Bathrooms is required";
+    } else {
+      // Check if original input had invalid characters (before cleaning)
+      const originalValue = bathroomsOriginal.toString().trim();
+      if (originalValue !== "" && !/^\d+$/.test(originalValue)) {
+        errors.bathrooms = "Please enter a valid bathroom number";
+      } else {
+        // Check if cleaned value is valid
+        const isValidNumber = /^\d+$/.test(formData.bathrooms.toString().trim());
+        if (!isValidNumber || parseInt(formData.bathrooms) < 0) {
+          errors.bathrooms = "Please enter a valid bathroom number";
+        }
+      }
     }
+    
     return errors;
   };
 
@@ -615,18 +647,7 @@ function AddProperty() {
         <ProgressIndicator steps={steps} currentStep={currentStep} />
 
         <div className="bg-white rounded-[20px] border border-lightGray p-4">
-          {renderStepContent()}
-
-          {/* Error Display */}
-          {(submitError || propertyError) && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">
-                {submitError || propertyError?.message || "An error occurred. Please try again."}
-              </p>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between mt-6   ">
+          <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => setShowCancelModal(true)}
               className="px-4 md:px-6 py-1.5 font-nunito border border-[#F1F1F1] rounded-[10px] text-base text-secondary font-bold bg-[#F1F1F1] transition-colors"
@@ -660,6 +681,17 @@ function AddProperty() {
               )}
             </div>
           </div>
+
+          {renderStepContent()}
+
+          {/* Error Display */}
+          {(submitError || propertyError) && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">
+                {submitError || propertyError?.message || "An error occurred. Please try again."}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
