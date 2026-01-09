@@ -12,16 +12,18 @@ import { notifications as notificationRoutes } from './routes';
  * @param {number} params.page - Page number (default: 1)
  * @param {number} params.limit - Items per page (default: 20)
  * @param {boolean} params.isRead - Filter by read status (optional)
+ * @param {string} params.type - Filter by notification type (optional)
  * @returns {Promise<Object>} - Notifications data with pagination and unreadCount
  */
 export const getNotifications = async (params = {}) => {
   try {
-    const { page = 1, limit = 20, isRead } = params;
+    const { page = 1, limit = 20, isRead, type } = params;
     const queryParams = new URLSearchParams();
     
     if (page) queryParams.append('page', page);
     if (limit) queryParams.append('limit', limit);
     if (isRead !== undefined) queryParams.append('isRead', isRead);
+    if (type) queryParams.append('type', type);
     
     const responseData = await useGetApi(
       `${notificationRoutes.getNotifications}?${queryParams.toString()}`,

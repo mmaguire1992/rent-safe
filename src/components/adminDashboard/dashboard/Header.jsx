@@ -154,7 +154,8 @@ function Header({ onMenuClick }) {
           <div className="relative" ref={notificationRef}>
             <button
               onClick={() => {
-                setNotificationDropdownOpen(!notificationDropdownOpen);
+                navigate('/dashboard/notifications');
+                setNotificationDropdownOpen(false);
                 setDropdownOpen(false);
               }}
               className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"

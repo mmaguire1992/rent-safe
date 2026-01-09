@@ -1,69 +1,66 @@
 'use client'
 
-import { useState } from "react";
-import { FiCreditCard, FiArrowLeft } from "react-icons/fi";
-import {
-  verificationProgressStep,
-  rejectedDocumentData,
-  verifiedDocumentsData,
-  underReviewDocumentsData,
-  documentTypeOptions,
-  pendingDocumentRequirements,
-} from "@/constant";
-import VerifiedDocumentsSection from "../../frontend/profile/verification/VerifiedDocumentsSection";
-import UnderReviewDocumentsSection from "../../frontend/profile/verification/UnderReviewDocumentsSection";
-import UploadVerificationDocuments from "../../frontend/profile/verification/UploadVerificationDocuments";
-import PendingDocumentsSection from "../../frontend/profile/verification/PendingDocumentsSection";
-function PaymentSection({ onBack }) {
-  const [rejectedDocument, setRejectedDocument] =
-    useState(rejectedDocumentData);
-  const [verifiedDocuments, setVerifiedDocuments] = useState(
-    verifiedDocumentsData
-  );
-  const [underReviewDocuments, setUnderReviewDocuments] = useState(
-    underReviewDocumentsData
-  );
+import { FiArrowLeft } from "react-icons/fi";
 
-  const handleReupload = () => {
-    console.log("Re-uploading document");
-    // Handle re-upload logic
-  };
-
-  const handleDeleteDocument = (id, type) => {
-    if (type === "verified") {
-      setVerifiedDocuments(verifiedDocuments.filter((doc) => doc.id !== id));
-    } else if (type === "underReview") {
-      setUnderReviewDocuments(
-        underReviewDocuments.filter((doc) => doc.id !== id)
-      );
+function PaymentSection({ onBack, onPaymentComplete }) {
+  const handlePaymentSubmit = (e) => {
+    e.preventDefault();
+    // Handle payment submission logic here
+    console.log("Processing payment...");
+    if (onPaymentComplete) {
+      onPaymentComplete({ success: true });
     }
-  };
-
-  const handleSubmitDocuments = (data) => {
-    console.log("Submitting documents:", data);
-    // Handle document submission logic
   };
 
   return (
     <div className="space-y-6">
+      {/* Back Button */}
+      <button
+        onClick={onBack}
+        className="flex items-center gap-2 text-secondary hover:text-primary transition-colors mb-4"
+      >
+        <FiArrowLeft className="text-lg" />
+        <span className="font-medium">Back to Verification</span>
+      </button>
+
       {/* Payment Form */}
-      <div className="bg-white rounded-[20px] md:border md:border-lightGray md:p-6 space-y-4">
-        <VerifiedDocumentsSection
-          documents={verifiedDocuments}
-          onDelete={(id) => handleDeleteDocument(id, "verified")}
-        />
+      <div className="bg-white rounded-[20px] border border-lightGray p-6 space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-secondary mb-2">
+            Complete Payment
+          </h2>
+          <p className="text-darkGray">
+            Complete your payment to proceed with verification
+          </p>
+        </div>
 
-        <UnderReviewDocumentsSection
-          documents={underReviewDocuments}
-          onDelete={(id) => handleDeleteDocument(id, "underReview")}
-        />
+        <form onSubmit={handlePaymentSubmit} className="space-y-4">
+          {/* Payment form fields would go here */}
+          <div className="p-4 bg-gray-50 rounded-lg border border-lightGray">
+            <p className="text-sm text-darkGray">
+              Payment integration will be implemented here
+            </p>
+            <p className="text-lg font-semibold text-secondary mt-2">
+              Amount: £6.99
+            </p>
+          </div>
 
-        <UploadVerificationDocuments
-          onSubmit={handleSubmitDocuments}
-          documentTypes={documentTypeOptions}
-        />
-
-        <PendingDocumentsSection requirements={pendingDocumentRequirements} />
+          <div className="flex gap-4 pt-4">
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-[10px] font-bold hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-6 py-3 bg-blueGradient text-white rounded-[10px] font-bold shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors"
+            >
+              Pay Now
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

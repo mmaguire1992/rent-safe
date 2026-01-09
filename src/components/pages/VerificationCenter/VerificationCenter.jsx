@@ -7,6 +7,7 @@ import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayo
 import Breadcrumb from "@/components/adminDashboard/common/Breadcrumb";
 import VerificationProgressTracker from "@/components/adminDashboard/VerificationCenter/VerificationProgressTracker";
 import DocumentRejectedSection from "@/components/adminDashboard/VerificationCenter/DocumentRejectedSection";
+import RejectedDocumentsSection from "@/components/adminDashboard/VerificationCenter/RejectedDocumentsSection";
 import VerifiedDocumentsSection from "@/components/adminDashboard/VerificationCenter/VerifiedDocumentsSection";
 import UnderReviewDocumentsSection from "@/components/adminDashboard/VerificationCenter/UnderReviewDocumentsSection";
 import UploadVerificationDocuments from "@/components/adminDashboard/VerificationCenter/UploadVerificationDocuments";
@@ -159,17 +160,6 @@ function VerificationCenter() {
     return 2; // Default to under review
   }, [transformedDocuments]);
 
-  // Get rejected document (first one for display)
-  const rejectedDocument = transformedDocuments.rejected.length > 0 
-    ? {
-        id: transformedDocuments.rejected[0].id,
-        name: transformedDocuments.rejected[0].name,
-        docType: transformedDocuments.rejected[0].docType,
-        docTypeLabel: transformedDocuments.rejected[0].docTypeLabel,
-        reason: transformedDocuments.rejected[0].reason || 'Document was rejected. Please re-upload with clearer images.',
-      }
-    : null;
-
   // State for reupload tracking
   const [reuploadingDocumentId, setReuploadingDocumentId] = useState(null);
   const [reuploadingDocType, setReuploadingDocType] = useState(null);
@@ -181,11 +171,11 @@ function VerificationCenter() {
   // Lock body scroll when modal is open
   useBodyScrollLock(deleteModalOpen);
 
-  const handleReupload = () => {
+  const handleReupload = (doc) => {
     // Store the rejected document's ID and docType for reupload
-    if (rejectedDocument) {
-      setReuploadingDocumentId(rejectedDocument.id);
-      setReuploadingDocType(rejectedDocument.docType);
+    if (doc) {
+      setReuploadingDocumentId(doc.id);
+      setReuploadingDocType(doc.docType);
     }
     // Scroll to upload section
     const uploadSection = document.querySelector('[data-upload-section]');
@@ -514,11 +504,12 @@ function VerificationCenter() {
           <>
             <VerificationProgressTracker currentStep={verificationProgressStep} />
 
-            {rejectedDocument && (
-              <DocumentRejectedSection
-                rejectedDocument={rejectedDocument}
+            {transformedDocuments.rejected.length > 0 && (
+              <RejectedDocumentsSection
+                documents={transformedDocuments.rejected}
+                onDelete={(id) => handleDeleteDocument(id, "rejected")}
+                onDownload={handleDownloadDocument}
                 onReupload={handleReupload}
-                onDownload={() => handleDownloadDocument(transformedDocuments.rejected[0])}
               />
             )}
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from '@/lib/react-router-compat';
 import { getNotifications, markNotificationAsRead } from '@/api/notifications';
 import { FiCheck, FiCheckCircle } from 'react-icons/fi';
 
@@ -12,6 +13,7 @@ import { FiCheck, FiCheckCircle } from 'react-icons/fi';
  * @param {Function} onUnreadCountChange - Callback when unread count changes
  */
 function NotificationDropdown({ isOpen, onClose, onUnreadCountChange }) {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -141,7 +143,13 @@ function NotificationDropdown({ isOpen, onClose, onUnreadCountChange }) {
     >
       {/* Header */}
       <div className="p-4 border-b border-lightGray flex items-center justify-between">
-        <h3 className="font-bold text-secondary text-lg font-nunito">
+        <h3 
+          className="font-bold text-secondary text-lg font-nunito cursor-pointer hover:text-primary"
+          onClick={() => {
+            onClose();
+            navigate('/dashboard/notifications');
+          }}
+        >
           Notifications
         </h3>
         {unreadCount > 0 && (
@@ -178,7 +186,10 @@ function NotificationDropdown({ isOpen, onClose, onUnreadCountChange }) {
                   className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
                     !isRead ? 'bg-blue-50/50' : 'bg-white'
                   }`}
-                  onClick={() => !isRead && handleMarkAsRead(notificationId)}
+                  onClick={() => {
+                    onClose();
+                    navigate('/dashboard/notifications');
+                  }}
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex-1">
