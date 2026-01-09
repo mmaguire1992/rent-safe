@@ -148,5 +148,4 @@ function PriceRange({ min, max, onChange, onChangeMin, onChangeMax, minRange = 0
     </>
   );
 }
-
 export default PriceRange;

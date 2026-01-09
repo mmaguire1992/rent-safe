@@ -5,7 +5,7 @@ function DeleteAccountTab({ onDelete }) {
         <h3 className="text-base font-bold font-nunito text-[#D24343] mb-2">
           Delete Account
         </h3>
-        <p className="text-sm font-normal font-nunito text-[#D24343] mb-3">
+        <p className="text-sm font-normal font-nunito text-[#D24343] mb-3 truncate w-[300px] lg:w-auto">
           Permanently delete your account and all associated data. This action
           cannot be undone. All your properties will be removed.
         </p>

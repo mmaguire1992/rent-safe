@@ -16,7 +16,7 @@ function DocumentRejectedSection({ rejectedDocument, onReupload, onDownload }) {
               Document Rejected
             </h3>
             <div className="flex items-center gap-2 mb-0 flex-wrap">
-              <span className="text-sm font-normal font-nunito text-[#D24343]">
+              <span className="text-sm font-normal font-nunito text-[#D24343] truncate w-[300px] lg:w-auto ">
                 {rejectedDocument.name}
               </span>
               {rejectedDocument.docTypeLabel && (

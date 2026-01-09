@@ -8,7 +8,7 @@ import "slick-carousel/slick/slick-theme.css";
 import Badge from "./Badge";
 import Button from "./Button";
 import CityCard from "./CityCard";
-import ShielIcon from "@/svg/websiteSvg/shielIcon";
+// import ShielIcon from "@/svg/websiteSvg/shielIcon";
 import { ukCities } from "@/websitedata/ukCities";
 import BlueTrustedIcon from "../../../svg/websiteSvg/blueTrustedIcon";
 import { getCityPropertyCounts } from "@/api/properties";
