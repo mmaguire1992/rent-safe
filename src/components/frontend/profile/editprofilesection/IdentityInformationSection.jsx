@@ -64,8 +64,10 @@ function IdentityInformationSection({
             name="identityEmail"
             value={formData.identityEmail}
             onChange={handleChange}
-            placeholder="Enter your email address"
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            disabled
+            readOnly
+            placeholder="Email cannot be changed"
+            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary bg-gray-100 cursor-not-allowed opacity-70"
           />
         </div>
 

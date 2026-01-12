@@ -80,7 +80,7 @@ function OtpVerification() {
     const otpString = otp.join("");
 
     if (otpString.length !== 6) {
-      setError("This field is required.");
+      setError("OTP is required.");
       return;
     }
 
@@ -224,10 +224,6 @@ function OtpVerification() {
                 />
               ))}
             </div>
-
-            {error && (
-              <p className="text-sm text-errorColor text-left mt-1">{error}</p>
-            )}
           </div>
           {/* Verify Button */}
           <button

@@ -121,7 +121,10 @@ function BasicInformationSection({
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className="flex-1 px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+                    disabled
+                    readOnly
+                    className="flex-1 px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary bg-gray-100 cursor-not-allowed opacity-70"
+                    placeholder="Email cannot be changed"
                   />
                   <span className="absolute right-3 top-1/2 transform -translate-y-1/2">
                     <GreenCheckedIcon />

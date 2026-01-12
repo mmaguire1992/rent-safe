@@ -61,6 +61,17 @@ export const updateUserInfo = createAsyncThunk(
       const userData = await updateUserProfile(updatedData);
       return userData;
     } catch (error) {
+      // Check for validation errors in different locations
+      const validationErrors = error.validationErrors || error.response?.data?.errors;
+      
+      // Preserve validation errors if present
+      if (validationErrors && Array.isArray(validationErrors) && validationErrors.length > 0) {
+        return rejectWithValue({
+          message: error.response?.data?.error || error.message || 'Validation failed',
+          validationErrors: validationErrors,
+        });
+      }
+      
       // API returns { success: false, error: "message" } or { success: false, message: "message" }
       const errorMessage = error.response?.data?.error || 
                           error.response?.data?.message || 
@@ -97,6 +108,14 @@ export const changeUserPassword = createAsyncThunk(
       const result = await changePassword(passwordData);
       return result;
     } catch (error) {
+      // Preserve validation errors if present
+      if (error.validationErrors) {
+        return rejectWithValue({
+          message: error.response?.data?.error || error.message || 'Validation failed',
+          validationErrors: error.validationErrors,
+        });
+      }
+      
       // API returns { success: false, error: "message" } or { success: false, message: "message" }
       const errorMessage = error.response?.data?.error || 
                           error.response?.data?.message || 
@@ -115,6 +134,17 @@ export const requestUserPhoneUpdate = createAsyncThunk(
       const result = await requestPhoneUpdate(phone);
       return result;
     } catch (error) {
+      // Check for validation errors in different locations
+      const validationErrors = error.validationErrors || error.response?.data?.errors;
+      
+      // Preserve validation errors if present
+      if (validationErrors && Array.isArray(validationErrors) && validationErrors.length > 0) {
+        return rejectWithValue({
+          message: error.response?.data?.error || error.message || 'Validation failed',
+          validationErrors: validationErrors,
+        });
+      }
+      
       // API returns { success: false, error: "message" } or { success: false, message: "message" }
       const errorMessage = error.response?.data?.error || 
                           error.response?.data?.message || 
@@ -133,6 +163,14 @@ export const verifyUserPhoneUpdate = createAsyncThunk(
       const result = await verifyPhoneUpdate(otp);
       return result;
     } catch (error) {
+      // Preserve validation errors if present
+      if (error.validationErrors) {
+        return rejectWithValue({
+          message: error.response?.data?.error || error.message || 'Validation failed',
+          validationErrors: error.validationErrors,
+        });
+      }
+      
       // API returns { success: false, error: "message" } or { success: false, message: "message" }
       const errorMessage = error.response?.data?.error || 
                           error.response?.data?.message || 

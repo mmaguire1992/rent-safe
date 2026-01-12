@@ -74,12 +74,17 @@ export const updateUserProfile = async (profileData) => {
     return updatedData;
   } catch (error) {
     console.error('Error updating user profile:', error);
-    // Provide more specific error messages
-    if (error.response?.data?.errors) {
-      const validationErrors = error.response.data.errors;
-      const errorMessage = validationErrors.map(err => `${err.field}: ${err.message}`).join(', ');
-      throw new Error(errorMessage || 'Validation failed');
+    
+    // Extract validation errors if present
+    if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+      // Create a custom error object with validation details
+      const validationError = new Error(error.response.data.error || 'Validation failed');
+      validationError.validationErrors = error.response.data.errors;
+      validationError.response = error.response; // Preserve original response
+      throw validationError;
     }
+    
+    // For other errors, preserve the original error
     throw error;
   }
 };
@@ -154,6 +159,15 @@ export const changePassword = async (passwordData) => {
     return response.data;
   } catch (error) {
     console.error('Error changing password:', error);
+    
+    // Extract validation errors if present
+    if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+      const validationError = new Error(error.response.data.error || 'Validation failed');
+      validationError.validationErrors = error.response.data.errors;
+      validationError.response = error.response;
+      throw validationError;
+    }
+    
     throw error;
   }
 };
@@ -169,6 +183,15 @@ export const requestPhoneUpdate = async (phone) => {
     return response.data;
   } catch (error) {
     console.error('Error requesting phone update:', error);
+    
+    // Extract validation errors if present
+    if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+      const validationError = new Error(error.response.data.error || 'Validation failed');
+      validationError.validationErrors = error.response.data.errors;
+      validationError.response = error.response;
+      throw validationError;
+    }
+    
     throw error;
   }
 };
@@ -184,6 +207,15 @@ export const verifyPhoneUpdate = async (otp) => {
     return response.data?.data || response.data;
   } catch (error) {
     console.error('Error verifying phone update:', error);
+    
+    // Extract validation errors if present
+    if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+      const validationError = new Error(error.response.data.error || 'Validation failed');
+      validationError.validationErrors = error.response.data.errors;
+      validationError.response = error.response;
+      throw validationError;
+    }
+    
     throw error;
   }
 };

@@ -1,26 +1,38 @@
 'use client'
 
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from '@/lib/react-router-compat';
+import { Link, useNavigate, useLocation } from '@/lib/react-router-compat';
 import { toast } from 'react-toastify';
 import AuthLayout from "@/components/AuthLayout";
 import { maskEmail } from "@/utils/emailUtils";
-import { forgotPassword, resetPassword } from "@/api/auth";
+import { forgotPassword, verifyPasswordResetOTP } from "@/api/auth";
 
 function ForgotPassword() {
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Get email and error from location state if coming back from CreatePassword
+  const { email: stateEmail, error: stateError } = location.state || {};
+  
+  const [email, setEmail] = useState(stateEmail || "");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [error, setError] = useState("");
-  const [showOtp, setShowOtp] = useState(false);
+  const [error, setError] = useState(stateError || "");
+  const [showOtp, setShowOtp] = useState(!!stateEmail); // Show OTP form if we have email from state (coming back from CreatePassword)
   const [timer, setTimer] = useState(30); // 30 seconds timer
-  const [canResend, setCanResend] = useState(false);
+  const [canResend, setCanResend] = useState(!!stateError); // Enable resend if coming back with error (OTP invalid/expired)
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const inputRefs = useRef([]);
-  const navigate = useNavigate();
 
   const maskedEmail = maskEmail(email);
+
+  // Show error toast if coming back with error from CreatePassword
+  useEffect(() => {
+    if (stateError) {
+      toast.error(stateError);
+    }
+  }, [stateError]);
 
   useEffect(() => {
     if (showOtp && timer > 0) {
@@ -39,7 +51,9 @@ function ForgotPassword() {
   };
 
   const handleOtpChange = (index, value) => {
+    // Only allow single digit (0-9)
     if (value.length > 1) return;
+    if (value && !/^\d$/.test(value)) return;
 
     const newOtp = [...otp];
     newOtp[index] = value;
@@ -62,16 +76,20 @@ function ForgotPassword() {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text").slice(0, 6);
     const newOtp = [...otp];
+    let filledCount = 0;
+    
     pastedData.split("").forEach((char, index) => {
       if (index < 6 && /^\d$/.test(char)) {
         newOtp[index] = char;
+        filledCount++;
       }
     });
+    
     setOtp(newOtp);
     setError("");
 
     // Focus last filled input or next empty one
-    const nextIndex = Math.min(pastedData.length, 5);
+    const nextIndex = Math.min(filledCount, 5);
     inputRefs.current[nextIndex]?.focus();
   };
 
@@ -118,8 +136,9 @@ function ForgotPassword() {
 
     const otpString = otp.join("");
 
+    // Validate OTP field
     if (otpString.length !== 6) {
-      setError("This field is required.");
+      setError("OTP is required. Please enter all 6 digits.");
       return;
     }
 
@@ -132,9 +151,16 @@ function ForgotPassword() {
     setError("");
 
     try {
-      // Verify OTP by attempting to reset password with a temporary password
-      // We'll navigate to create password page with email and OTP
-      // The actual password reset will happen on the create password page
+      // Verify OTP with backend before navigating
+      await verifyPasswordResetOTP(email, otpString);
+      
+      // Store email and OTP in sessionStorage as backup (in case state is lost)
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('resetPasswordEmail', email);
+        sessionStorage.setItem('resetPasswordOtp', otpString);
+      }
+      
+      // OTP verified successfully - navigate to create password page
       navigate("/create-password", { 
         state: { 
           email, 
@@ -144,7 +170,7 @@ function ForgotPassword() {
       });
     } catch (error) {
       console.error('OTP verification error:', error);
-      const errorMessage = error.message || 'OTP verification failed. Please try again.';
+      const errorMessage = error.message || error.data?.message || 'Invalid OTP. Please try again.';
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -273,10 +299,6 @@ function ForgotPassword() {
                     />
                   ))}
                 </div>
-
-                {error && (
-                  <p className="text-sm text-errorColor text-left mt-1">{error}</p>
-                )}
               </div>
               
               {/* Verify Button */}

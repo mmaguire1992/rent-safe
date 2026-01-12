@@ -247,7 +247,16 @@ function EditProfileSection() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+      // Keep designation and jobTitle in sync
+      if (name === 'designation') {
+        updated.jobTitle = value;
+      } else if (name === 'jobTitle') {
+        updated.designation = value;
+      }
+      return updated;
+    });
   };
 
   const handleDateChange = (name, value) => {
@@ -330,7 +339,7 @@ function EditProfileSection() {
             county: address.county || "",
             country: address.country || "",
             postcode: address.postcode || "",
-            designation: "",
+            designation: employment.jobTitle || "",
             monthlyIncome: employment.monthlyIncome || "",
             
             // Credit Check
@@ -443,26 +452,43 @@ function EditProfileSection() {
 
   const handleRemoveProfilePicture = async () => {
     try {
-      await deleteProfilePicture();
-      toast.success('Profile picture removed successfully');
+      // Check if the image is from backend (URL string) or frontend preview (File or blob URL)
+      const isBackendImage = formData.profileImage && 
+                            typeof formData.profileImage === 'string' && 
+                            !formData.profileImage.startsWith('blob:') &&
+                            (formData.profileImage.startsWith('http://') || formData.profileImage.startsWith('https://'));
       
-      // Clear profile image from form data
-      setFormData((prev) => ({ ...prev, profileImage: null }));
+      const isFileObject = formData.profileImage instanceof File;
+      const isBlobPreview = typeof formData.profileImage === 'string' && formData.profileImage.startsWith('blob:');
       
-      // Refresh user data to get updated profile
-      const updatedUserData = await getCurrentUser();
-      const newProfileImage = updatedUserData?.userInfo?.profileImage || null;
-      if (updatedUserData?.userInfo) {
-        setFormData((prev) => ({ 
-          ...prev, 
-          profileImage: newProfileImage 
-        }));
+      // Only call API if it's a backend image (uploaded to S3)
+      if (isBackendImage) {
+        // Image is from backend - call API to delete from S3
+        await deleteProfilePicture();
+        toast.success('Profile picture removed successfully');
+        
+        // Refresh user data to get updated profile
+        const updatedUserData = await getCurrentUser();
+        const newProfileImage = updatedUserData?.userInfo?.profileImage || null;
+        if (updatedUserData?.userInfo) {
+          setFormData((prev) => ({ 
+            ...prev, 
+            profileImage: newProfileImage 
+          }));
+        }
+        
+        // Dispatch custom event to notify header/sidebar to refresh profile image
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('profileImageUpdated'));
+        }, 100);
+      } else if (isFileObject || isBlobPreview) {
+        // Image is just a frontend preview - just remove from state
+        setFormData((prev) => ({ ...prev, profileImage: null }));
+        toast.success('Profile picture preview removed');
+      } else {
+        // No image to remove
+        setFormData((prev) => ({ ...prev, profileImage: null }));
       }
-      // Dispatch custom event to notify header/sidebar to refresh profile image
-      // Use a small delay to ensure the server has processed the deletion
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('profileImageUpdated'));
-      }, 100);
     } catch (error) {
       console.error('Error removing profile picture:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to remove profile picture';
@@ -552,7 +578,7 @@ function EditProfileSection() {
             livingPeriod: formData.residencyLength || "",
           },
           employment: {
-            jobTitle: formData.jobTitle || "",
+            jobTitle: formData.designation || formData.jobTitle || "",
             company: formData.company || "",
             employmentType: formData.employmentType || undefined,
             annualSalary: formData.annualSalary ? parseFloat(formData.annualSalary) : undefined,
@@ -581,8 +607,25 @@ function EditProfileSection() {
       
     } catch (error) {
       console.error('Error saving profile:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to save profile';
-      toast.error(errorMessage);
+      
+      // Extract validation errors from different possible locations
+      const validationErrors = error.validationErrors || 
+                              error.response?.data?.errors || 
+                              (Array.isArray(error.response?.data?.errors) ? error.response.data.errors : null);
+      
+      // Display only the first validation error (one toast at a time)
+      if (validationErrors && Array.isArray(validationErrors) && validationErrors.length > 0) {
+        const firstError = validationErrors[0];
+        // Show just the error message, not the field name for cleaner UX
+        toast.error(firstError.message || 'Validation failed');
+      } else {
+        // Display generic error message
+        const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.message || 
+                           error.message || 
+                           'Failed to save profile';
+        toast.error(errorMessage);
+      }
     } finally {
       setSaving(false);
     }

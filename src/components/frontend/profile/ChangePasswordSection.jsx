@@ -225,17 +225,38 @@ function ChangePasswordSection() {
 
     } catch (error) {
       console.error('Error changing password:', error);
-      const errorMessage = error.response?.data?.error || 
-                          error.response?.data?.message || 
-                          error.message || 
-                          'Failed to change password. Please try again.';
-      toast.error(errorMessage);
-      // Clear inline errors - only show toast notification
-      setErrors({
-        oldPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
+      
+      // Extract validation errors from different possible locations
+      let validationErrors = null;
+      if (error?.validationErrors && Array.isArray(error.validationErrors)) {
+        validationErrors = error.validationErrors;
+      } else if (error?.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        validationErrors = error.response.data.errors;
+      }
+      
+      // Display only the first validation error (one toast at a time)
+      if (validationErrors && validationErrors.length > 0) {
+        const firstError = validationErrors[0];
+        // Show just the error message
+        toast.error(firstError.message || 'Validation failed');
+        
+        // Set field-specific error in form for the first error only
+        if (firstError.field === 'oldPassword' || firstError.field === 'email') {
+          setErrors({ oldPassword: firstError.message, newPassword: "", confirmPassword: "" });
+        } else if (firstError.field === 'newPassword' || firstError.field === 'password') {
+          setErrors({ oldPassword: "", newPassword: firstError.message, confirmPassword: "" });
+        } else {
+          setErrors({ oldPassword: "", newPassword: "", confirmPassword: "" });
+        }
+      } else {
+        // Display generic error message
+        const errorMessage = error.response?.data?.error || 
+                            error.response?.data?.message || 
+                            error.message || 
+                            'Failed to change password. Please try again.';
+        toast.error(errorMessage);
+        setErrors({ oldPassword: "", newPassword: "", confirmPassword: "" });
+      }
     } finally {
       setLoading(false);
     }

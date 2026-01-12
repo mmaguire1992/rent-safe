@@ -151,18 +151,49 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
 
   const handleRemoveProfilePicture = async () => {
     try {
-      await deleteProfilePicture();
-      toast.success('Profile picture removed successfully');
+      // Check if the image is from backend (URL string) or frontend preview (File or blob URL)
+      const isBackendImage = imagePreview && 
+                            typeof imagePreview === 'string' && 
+                            !imagePreview.startsWith('blob:') &&
+                            (imagePreview.startsWith('http://') || imagePreview.startsWith('https://'));
       
-      // Clear profile image from state
-      setProfileImage(null);
-      setImagePreview(null);
+      const isFileObject = profileImage instanceof File;
+      const isBlobPreview = imagePreview && typeof imagePreview === 'string' && imagePreview.startsWith('blob:');
       
-      // Refresh user data to get updated profile
-      const updatedUserData = await getCurrentUser();
-      if (updatedUserData?.userInfo) {
-        // Update profileData if parent component provides a callback
-        // For now, just clear the local state
+      // Only call API if it's a backend image (uploaded to S3)
+      if (isBackendImage) {
+        // Image is from backend - call API to delete from S3
+        await deleteProfilePicture();
+        toast.success('Profile picture removed successfully');
+        
+        // Clear profile image from state
+        setProfileImage(null);
+        setImagePreview(null);
+        
+        // Refresh user data to get updated profile
+        const updatedUserData = await getCurrentUser();
+        if (updatedUserData?.userInfo) {
+          // Update with latest data from backend
+          const newProfileImage = updatedUserData.userInfo.profileImage || null;
+          if (typeof newProfileImage === 'string') {
+            setProfileImage(null);
+            setImagePreview(newProfileImage);
+          } else {
+            setProfileImage(null);
+            setImagePreview(null);
+          }
+        }
+      } else if (isFileObject || isBlobPreview) {
+        // Image is just a frontend preview - just remove from state (don't call API)
+        setProfileImage(null);
+        // Revoke blob URL to free memory
+        if (isBlobPreview && imagePreview) {
+          URL.revokeObjectURL(imagePreview);
+        }
+        setImagePreview(null);
+        toast.success('Profile picture preview removed');
+      } else {
+        // No image to remove
         setProfileImage(null);
         setImagePreview(null);
       }

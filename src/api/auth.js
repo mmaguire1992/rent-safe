@@ -140,19 +140,34 @@ export const signupUser = async (userData) => {
   }
 
   try {
+    // Build request body with all fields
+    const requestBody = {
+      firstName: userData.firstName.trim(),
+      lastName: userData.lastName.trim(),
+      email: userData.email.trim().toLowerCase(),
+      password: userData.password,
+      userType: userData.userType,
+    };
+    
+    // Add optional fields only if they exist and have values
+    if (userData.phone) requestBody.phone = userData.phone;
+    if (userData.address) requestBody.address = userData.address;
+    if (userData.city) requestBody.city = userData.city;
+    if (userData.state) requestBody.state = userData.state;
+    if (userData.country) requestBody.country = userData.country;
+    if (userData.postalCode) requestBody.postalCode = userData.postalCode;
+    if (userData.occupation) requestBody.occupation = userData.occupation;
+    if (userData.monthlyIncome !== undefined && userData.monthlyIncome !== null && userData.monthlyIncome !== '') {
+      requestBody.monthlyIncome = userData.monthlyIncome;
+    }
+    if (userData.description) requestBody.description = userData.description;
+    
     const response = await fetch(`${API_BASE_URL}/auth/signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        firstName: userData.firstName.trim(),
-        lastName: userData.lastName.trim(),
-        email: userData.email.trim().toLowerCase(),
-        password: userData.password,
-        userType: userData.userType,
-        phone: userData.phone || undefined,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const data = await handleApiResponse(response);
@@ -175,8 +190,12 @@ export const signupUser = async (userData) => {
       message: data.message || 'User registered successfully. Please verify your email with the OTP sent.',
     };
   } catch (error) {
-    if (error.message) {
-      throw error;
+    // Extract validation errors if present
+    if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+      const validationError = new Error(error.response.data.error || 'Validation failed');
+      validationError.validationErrors = error.response.data.errors;
+      validationError.response = error.response;
+      throw validationError;
     }
     
     if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -184,7 +203,7 @@ export const signupUser = async (userData) => {
     }
     
     console.error('Signup API error:', error);
-    throw new Error(error.message || 'Signup failed. Please try again.');
+    throw error;
   }
 };
 
@@ -342,6 +361,56 @@ export const forgotPassword = async (email) => {
  * 
  * @throws {Error} - If reset fails
  */
+/**
+ * Verify Password Reset OTP - Verify password reset OTP before allowing password reset
+ * 
+ * @param {string} email - User email address
+ * @param {string} otp - 6-digit OTP code
+ * @returns {Promise<Object>} - Verification response
+ * 
+ * @throws {Error} - If verification fails
+ */
+export const verifyPasswordResetOTP = async (email, otp) => {
+  if (!email || !otp) {
+    throw new Error('Email and OTP are required');
+  }
+
+  if (!/^\d{6}$/.test(otp)) {
+    throw new Error('OTP must be a 6-digit number');
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-password-reset-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+        otp: otp,
+      }),
+    });
+
+    const data = await handleApiResponse(response);
+
+    return {
+      success: true,
+      message: data.message || 'OTP verified successfully',
+    };
+  } catch (error) {
+    if (error.message) {
+      throw error;
+    }
+    
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Network error. Please check your connection and try again.');
+    }
+    
+    console.error('Verify password reset OTP API error:', error);
+    throw new Error(error.message || 'Failed to verify OTP. Please try again.');
+  }
+};
+
 export const resetPassword = async (email, otp, password) => {
   if (!email || !otp || !password) {
     throw new Error('Email, OTP, and password are required');

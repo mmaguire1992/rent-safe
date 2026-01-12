@@ -93,7 +93,7 @@ function RenterBasicInformation() {
       const firstName = nameParts[0];
       const lastName = nameParts.slice(1).join(' ') || nameParts[0]; // If only one name, use it for both
 
-      // Call signup API
+      // Call signup API with all form data
       const result = await signupUser({
         firstName,
         lastName,
@@ -101,6 +101,15 @@ function RenterBasicInformation() {
         password: formData.password,
         userType: 'renter',
         phone: formData.phoneNumber || undefined,
+        // Additional fields for UserInfo
+        address: formData.address || undefined,
+        city: formData.city || undefined,
+        state: formData.state || undefined,
+        country: formData.country || undefined,
+        postalCode: formData.postalCode || undefined,
+        occupation: formData.occupation || undefined,
+        monthlyIncome: formData.monthlyIncome ? parseFloat(formData.monthlyIncome) : undefined,
+        description: formData.description || undefined,
       });
 
       // Store user data and token (will be activated after OTP verification)
@@ -125,17 +134,32 @@ function RenterBasicInformation() {
       });
     } catch (error) {
       console.error('Signup error:', error);
-      const errorMessage = error.message || 'Failed to create account. Please try again.';
-      toast.error(errorMessage);
       
-      // Set specific field errors if available
-      if (error.data && error.data.errors) {
+      // Check for validation errors array
+      const validationErrors = error.validationErrors || error.response?.data?.errors;
+      
+      if (validationErrors && Array.isArray(validationErrors) && validationErrors.length > 0) {
+        // Display specific field validation errors
         const fieldErrors = {};
-        error.data.errors.forEach(err => {
+        validationErrors.forEach((err) => {
+          const fieldName = err.field ? err.field.charAt(0).toUpperCase() + err.field.slice(1).replace(/([A-Z])/g, ' $1') : 'Field';
+          toast.error(`${fieldName}: ${err.message}`);
+          
+          // Map backend field names to form field names
           if (err.field === 'email') fieldErrors.email = err.message;
           if (err.field === 'password') fieldErrors.password = err.message;
+          if (err.field === 'firstName' || err.field === 'fullName') fieldErrors.fullName = err.message;
+          if (err.field === 'lastName') fieldErrors.fullName = err.message;
+          if (err.field === 'phone' || err.field === 'phoneNumber') fieldErrors.phoneNumber = err.message;
         });
         setErrors(fieldErrors);
+      } else {
+        // Display generic error message
+        const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.message || 
+                           error.message || 
+                           'Failed to create account. Please try again.';
+        toast.error(errorMessage);
       }
     } finally {
       setLoading(false);

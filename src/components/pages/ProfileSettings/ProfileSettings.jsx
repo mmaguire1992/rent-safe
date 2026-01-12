@@ -157,20 +157,53 @@ function ProfileSettings() {
       toast.success('Profile updated successfully!');
     } catch (error) {
       console.error('Error saving profile:', error);
-      // Extract error message - could be string (from Redux) or object (from axios)
-      let errorMessage = "Failed to update profile. Please try again.";
       
-      if (typeof error === 'string') {
-        errorMessage = error;
-      } else if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
+      // When using Redux Toolkit's .unwrap(), the rejected value is the error itself
+      // Extract validation errors from different possible locations
+      let validationErrors = null;
+      
+      // Check if error itself has validationErrors (when rejected with object)
+      if (error && typeof error === 'object' && error.validationErrors && Array.isArray(error.validationErrors)) {
+        validationErrors = error.validationErrors;
+      }
+      // Check if it's nested in payload
+      else if (error?.payload?.validationErrors && Array.isArray(error.payload.validationErrors)) {
+        validationErrors = error.payload.validationErrors;
+      }
+      // Check direct axios response
+      else if (error?.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        validationErrors = error.response.data.errors;
       }
       
-      toast.error(errorMessage);
+      // Display only the first validation error (one toast at a time)
+      if (validationErrors && validationErrors.length > 0) {
+        const firstError = validationErrors[0];
+        // Show just the error message, not the field name for cleaner UX
+        toast.error(firstError.message || 'Validation failed');
+      } else {
+        // Extract error message - could be string (from Redux) or object (from axios)
+        let errorMessage = "Failed to update profile. Please try again.";
+        
+        if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error && typeof error === 'object') {
+          // When Redux rejects with object, check message property
+          if (error.message && typeof error.message === 'string') {
+            errorMessage = error.message;
+          } else if (error?.payload) {
+            errorMessage = typeof error.payload === 'string' ? error.payload : (error.payload.message || error.payload.error || errorMessage);
+          } else if (error?.response?.data?.error) {
+            errorMessage = error.response.data.error;
+          } else if (error?.response?.data?.message) {
+            errorMessage = error.response.data.message;
+          } else if (error?.message) {
+            errorMessage = error.message;
+          }
+        }
+        
+        toast.error(errorMessage);
+      }
+      
       throw error; // Re-throw to let component handle it
     }
   };
@@ -199,20 +232,43 @@ function ProfileSettings() {
       setIsProfileOtpOpen(false);
     } catch (error) {
       console.error('Error verifying OTP:', error);
-      // Extract error message - could be string (from Redux) or object (from axios)
-      let errorMessage = "Failed to verify OTP. Please try again.";
       
-      if (typeof error === 'string') {
-        errorMessage = error;
-      } else if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
+      // Extract validation errors from different possible locations
+      let validationErrors = null;
+      if (error?.validationErrors && Array.isArray(error.validationErrors)) {
+        validationErrors = error.validationErrors;
+      } else if (error?.payload?.validationErrors && Array.isArray(error.payload.validationErrors)) {
+        validationErrors = error.payload.validationErrors;
+      } else if (error?.payload && typeof error.payload === 'object' && Array.isArray(error.payload)) {
+        validationErrors = error.payload;
+      } else if (error?.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        validationErrors = error.response.data.errors;
       }
       
-      toast.error(errorMessage);
+      // Display only the first validation error (one toast at a time)
+      if (validationErrors && validationErrors.length > 0) {
+        const firstError = validationErrors[0];
+        // Show just the error message
+        toast.error(firstError.message || 'Validation failed');
+      } else {
+        // Extract error message - could be string (from Redux) or object (from axios)
+        let errorMessage = "Failed to verify OTP. Please try again.";
+        
+        if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error?.payload) {
+          errorMessage = typeof error.payload === 'string' ? error.payload : (error.payload.message || error.payload.error || errorMessage);
+        } else if (error?.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        } else if (error?.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error?.message) {
+          errorMessage = error.message;
+        }
+        
+        toast.error(errorMessage);
+      }
+      
       throw error; // Let the modal handle the error display
     }
   };
