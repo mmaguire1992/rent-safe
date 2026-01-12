@@ -190,11 +190,11 @@ export const signupUser = async (userData) => {
       message: data.message || 'User registered successfully. Please verify your email with the OTP sent.',
     };
   } catch (error) {
-    // Extract validation errors if present
-    if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
-      const validationError = new Error(error.response.data.error || 'Validation failed');
-      validationError.validationErrors = error.response.data.errors;
-      validationError.response = error.response;
+    // Extract validation errors if present (for fetch API, errors are in error.data)
+    if (error.data?.errors && Array.isArray(error.data.errors)) {
+      const validationError = new Error(error.data.error || error.message || 'Validation failed');
+      validationError.validationErrors = error.data.errors;
+      validationError.data = error.data;
       throw validationError;
     }
     

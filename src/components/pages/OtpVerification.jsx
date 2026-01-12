@@ -224,6 +224,10 @@ function OtpVerification() {
                 />
               ))}
             </div>
+
+            {error && (
+              <p className="text-sm text-errorColor text-left mt-1">{error}</p>
+            )}
           </div>
           {/* Verify Button */}
           <button

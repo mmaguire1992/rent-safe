@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { useNavigate } from '@/lib/react-router-compat';
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { BsEye, BsEyeSlash } from "react-icons/bs";
 import { toast } from 'react-toastify';
 
 import AuthLayout from "@/components/AuthLayout";
 import ProgressIndicator from "@/components/adminDashboard/common/ProgressIndicator";
-import { BsEyeSlash } from "react-icons/bs";
 import { signupUser } from "@/api/auth";
 import { storeAuthData } from "@/utils/auth";
 
@@ -116,17 +115,32 @@ function BasicInformation() {
       });
     } catch (error) {
       console.error('Signup error:', error);
-      const errorMessage = error.message || 'Failed to create account. Please try again.';
-      toast.error(errorMessage);
       
-      // Set specific field errors if available
-      if (error.data && error.data.errors) {
+      // Check for validation errors array
+      const validationErrors = error.validationErrors || error.data?.errors;
+      
+      if (validationErrors && Array.isArray(validationErrors) && validationErrors.length > 0) {
+        // Get the first validation error message
+        const firstError = validationErrors[0];
+        const errorMessage = firstError.message || 'Validation failed';
+        
+        // Display only the first specific error message
+        toast.error(errorMessage);
+        
+        // Map backend field names to form field names and set errors
         const fieldErrors = {};
-        error.data.errors.forEach(err => {
+        validationErrors.forEach((err) => {
           if (err.field === 'email') fieldErrors.email = err.message;
           if (err.field === 'password') fieldErrors.password = err.message;
+          if (err.field === 'firstName' || err.field === 'fullName') fieldErrors.fullName = err.message;
+          if (err.field === 'lastName') fieldErrors.fullName = err.message;
+          if (err.field === 'phone' || err.field === 'phoneNumber') fieldErrors.phoneNumber = err.message;
         });
         setErrors(fieldErrors);
+      } else {
+        // Display generic error message if no validation errors
+        const errorMessage = error.data?.error || error.data?.message || error.message || 'Failed to create account. Please try again.';
+        toast.error(errorMessage);
       }
     } finally {
       setLoading(false);
