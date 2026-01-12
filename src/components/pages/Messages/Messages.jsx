@@ -13,6 +13,8 @@ import { getChatrooms, getChatroomMessages, uploadChatMedia, updateChatroom } fr
 import { getCurrentUser, getUserById } from "@/api/users";
 import { useSocket, SOCKET_EVENTS } from "@/hooks/useSocket";
 import { toast } from "react-toastify";
+import { useSelector } from 'react-redux';
+import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtils';
 
 function Messages() {
   const [chatrooms, setChatrooms] = useState([]);
@@ -28,6 +30,7 @@ function Messages() {
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const user = useSelector((state) => state.auth?.user);
   // Initialize activeTab from localStorage or default to "all"
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -59,7 +62,7 @@ function Messages() {
     on,
   } = useSocket();
 
-  // Fetch current user
+  // Fetch current user (fresh data for verification check)
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -546,6 +549,17 @@ function Messages() {
   const handleFileSelect = async (file) => {
     if (!selectedConversation || !isConnected) return;
 
+    // Check user verification status - use currentUser (fresh data) if available, otherwise use user from Redux
+    const userForVerification = currentUser || user;
+    if (!userForVerification) {
+      toast.error('User data not available. Please refresh the page.');
+      return;
+    }
+    if (!isUserVerified(userForVerification)) {
+      toast.error(getVerificationMessage('chat with other users'));
+      return;
+    }
+
     const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
     if (!chatroomId || chatroomId === 'undefined' || chatroomId === 'null') return;
 
@@ -563,6 +577,32 @@ function Messages() {
 
       // Upload file to S3
       const uploadResult = await uploadChatMedia(chatroomId, file, messageType);
+
+      // Check if the same file (same fileName and fileSize) already exists in chat messages
+      // Compare with existing messages to detect if old and new screenshots are the same
+      const currentUserId = String(currentUser?._id || currentUser?.id || '');
+      const existingSameImage = chatMessages.find(msg => {
+        // Only check messages from current user (owner)
+        if (msg.sender !== "you") {
+          return false;
+        }
+        
+        // Check if message has the same file name and size, and same message type
+        // This detects when old and new screenshots are the same
+        const sameFileName = msg.fileName && uploadResult.fileName && 
+                            msg.fileName.toLowerCase() === uploadResult.fileName.toLowerCase();
+        const sameFileSize = msg.fileSize && uploadResult.fileSize && 
+                            msg.fileSize === uploadResult.fileSize;
+        const sameType = (msg.type === messageType || (msg.type === 'image' && messageType === 'image'));
+        
+        return sameType && sameFileName && sameFileSize;
+      });
+
+      // If old and new screenshots are the same, only show toast and don't add message to chat
+      if (existingSameImage) {
+        toast.info('Same image already sent. No changes made.');
+        return;
+      }
 
       // Add temporary message for instant feedback
       const uniqueId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -603,6 +643,17 @@ function Messages() {
 
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedConversation || !isConnected) return;
+    
+    // Check user verification status - use currentUser (fresh data) if available, otherwise use user from Redux
+    const userForVerification = currentUser || user;
+    if (!userForVerification) {
+      toast.error('User data not available. Please refresh the page.');
+      return;
+    }
+    if (!isUserVerified(userForVerification)) {
+      toast.error(getVerificationMessage('chat with other users'));
+      return;
+    }
     
     // Don't allow sending if blocked
     if (selectedConversation.isBlockedByCurrentUser || selectedConversation.isCurrentUserBlocked) {
@@ -1064,11 +1115,57 @@ function Messages() {
   const allMessagesCount = chatrooms.length;
   const messageRequestsCount = chatrooms.filter(c => c.unreadCount && c.unreadCount > 0).length;
 
+  // Check verification status - use currentUser (fresh data) if available, otherwise use user from Redux
+  const userForVerification = currentUser || user;
+  const isVerified = isUserVerified(userForVerification);
+  
+  // Check if user has chat history
+  const hasChatHistory = chatrooms && chatrooms.length > 0;
+  
+  // Show verification page only if: not verified AND no chat history
+  // If not verified BUT has chat history, allow viewing but sending is blocked in handleSendMessage
+  const showVerificationPage = !isVerified && !hasChatHistory;
+
   return (
     <DashboardLayout>
-      <div className="block">
-        {/* Mobile: Show back button when conversation is selected */}
-        {selectedConversation && (
+      {showVerificationPage ? (
+        <div className="block">
+          <div className="flex items-center justify-center min-h-[60vh] bg-white rounded-[20px] border border-lightGray">
+            <div className="text-center px-4 py-8">
+              <div className="mb-4 flex justify-center">
+                <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center">
+                  <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="text-red-500"
+                  >
+                    <path
+                      d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <h2 className="text-xl md:text-2xl font-bold text-secondary mb-3 font-nunito">
+                Profile Verification Required
+              </h2>
+              <p className="text-base md:text-lg text-darkGray max-w-md mx-auto font-nunito">
+                {getVerificationMessage('chat with other users')}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="block">
+            {/* Mobile: Show back button when conversation is selected */}
+            {selectedConversation && (
           <button
             onClick={handleBackToMessageList}
             className="md:hidden flex items-center gap-2 mb-4 text-secondary hover:text-primary transition-colors"
@@ -1381,60 +1478,61 @@ function Messages() {
           </div>
         </div>
       </div>
+          {/* Send Offer Modal */}
+          <SendOfferModal
+            isOpen={isOfferModalOpen}
+            onClose={() => setIsOfferModalOpen(false)}
+            formData={offerFormData}
+            setFormData={setOfferFormData}
+            onSend={handleOfferSubmit}
+          />
 
-      {/* Send Offer Modal */}
-      <SendOfferModal
-        isOpen={isOfferModalOpen}
-        onClose={() => setIsOfferModalOpen(false)}
-        formData={offerFormData}
-        setFormData={setOfferFormData}
-        onSend={handleOfferSubmit}
-      />
+          {/* Confirmation Modal */}
+          {showConfirmModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-[20px] p-6 max-w-[500px] w-full mx-4 relative">
+                <button
+                  onClick={handleCloseModal}
+                  className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  disabled={isProcessing}
+                >
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
 
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-[20px] p-6 max-w-[500px] w-full mx-4 relative">
-            <button
-              onClick={handleCloseModal}
-              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              disabled={isProcessing}
-            >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+                <h2 className="text-xl font-bold font-nunito text-secondary text-left mb-4">
+                  {confirmAction === 'delete' ? 'Delete Chatroom' : confirmAction === 'block' ? 'Block User' : ''}
+                </h2>
 
-            <h2 className="text-xl font-bold font-nunito text-secondary text-left mb-4">
-              {confirmAction === 'delete' ? 'Delete Chatroom' : confirmAction === 'block' ? 'Block User' : ''}
-            </h2>
+                <p className="text-base font-normal font-nunito text-darkGray text-left mb-6">
+                  {confirmAction === 'delete' 
+                    ? 'Are you sure you want to delete this chatroom? This action cannot be undone.'
+                    : confirmAction === 'block'
+                    ? 'Are you sure you want to block this user? You will not be able to send messages to them.'
+                    : ''}
+                </p>
 
-            <p className="text-base font-normal font-nunito text-darkGray text-left mb-6">
-              {confirmAction === 'delete' 
-                ? 'Are you sure you want to delete this chatroom? This action cannot be undone.'
-                : confirmAction === 'block'
-                ? 'Are you sure you want to block this user? You will not be able to send messages to them.'
-                : ''}
-            </p>
-
-            <div className="flex gap-3">
-              <button
-                onClick={handleCloseModal}
-                disabled={isProcessing}
-                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-[10px] font-bold hover:bg-gray-300 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmAction}
-                disabled={isProcessing}
-                className="flex-1 px-6 py-3 bg-blueGradient text-white rounded-[10px] font-bold shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors disabled:opacity-50"
-              >
-                {isProcessing ? 'Processing...' : (confirmAction === 'delete' ? 'Delete' : confirmAction === 'block' ? 'Block' : 'Confirm')}
-              </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleCloseModal}
+                    disabled={isProcessing}
+                    className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-[10px] font-bold hover:bg-gray-300 transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmAction}
+                    disabled={isProcessing}
+                    className="flex-1 px-6 py-3 bg-blueGradient text-white rounded-[10px] font-bold shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors disabled:opacity-50"
+                  >
+                    {isProcessing ? 'Processing...' : (confirmAction === 'delete' ? 'Delete' : confirmAction === 'block' ? 'Block' : 'Confirm')}
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
     </DashboardLayout>
   );

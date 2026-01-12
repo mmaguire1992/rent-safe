@@ -13,6 +13,7 @@ import { getChatrooms, getChatroomMessages, uploadChatMedia, deleteChatroom, blo
 import { getCurrentUser } from "@/api/users";
 import { useSocket, SOCKET_EVENTS } from "@/hooks/useSocket";
 import { toast } from "react-toastify";
+import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtils';
 
 function ChatMessage() {
   const [searchParams] = useSearchParams();
@@ -470,6 +471,12 @@ function ChatMessage() {
   const handleFileSelect = async (file) => {
     if (!selectedConversation || !isConnected) return;
 
+    // Check user verification status before allowing file upload
+    if (currentUser && !isUserVerified(currentUser)) {
+      toast.error(getVerificationMessage('chat with other users'));
+      return;
+    }
+
     const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
     if (!chatroomId || chatroomId === 'undefined' || chatroomId === 'null') return;
 
@@ -527,6 +534,12 @@ function ChatMessage() {
 
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedConversation || !isConnected) return;
+    
+    // Check user verification status before allowing message send
+    if (currentUser && !isUserVerified(currentUser)) {
+      toast.error(getVerificationMessage('chat with other users'));
+      return;
+    }
     
     // Don't allow sending if blocked
     if (selectedConversation.isBlockedByCurrentUser || selectedConversation.isCurrentUserBlocked) {
