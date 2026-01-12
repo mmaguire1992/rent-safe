@@ -19,7 +19,7 @@ function HeaderIcons({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, userType } = useAuth();
+  const { user, userType, isAuthenticated } = useAuth();
   
   // Determine fill state based on current route
   const isHouseFilled = location.pathname === "/properties";
@@ -88,26 +88,30 @@ function HeaderIcons({
         <HouseIcon isFilled={isHouseFilled} />
       </button>
 
-      <button
-        onClick={handleHeartClick}
-        className={`relative transition-colors ${
-          isSavedView ? "text-red-500" : "text-gray-600 hover:text-primary flex items-center gap-1"
-        }`}
-      >
-        <HeartIcon isFilled={isSavedView || favoriteCount > 0} />
-        {favoriteCount > 0 && (
-          <span className=" text-[#000000] text-sm flex items-center justify-center font-semibold">
-            {favoriteCount}
-          </span>
-        )}
-      </button>
+      {isAuthenticated && (
+        <button
+          onClick={handleHeartClick}
+          className={`relative transition-colors ${
+            isSavedView ? "text-red-500" : "text-gray-600 hover:text-primary flex items-center gap-1"
+          }`}
+        >
+          <HeartIcon isFilled={isSavedView || favoriteCount > 0} />
+          {favoriteCount > 0 && (
+            <span className=" text-[#000000] text-sm flex items-center justify-center font-semibold">
+              {favoriteCount}
+            </span>
+          )}
+        </button>
+      )}
 
-      <button
-        onClick={handleChatClick}
-        className="relative text-primary hover:opacity-80 transition-opacity"
-      >
-        <ChatIcon isFilled={isChatFilled} />
-      </button>
+      {isAuthenticated && (
+        <button
+          onClick={handleChatClick}
+          className="relative text-primary hover:opacity-80 transition-opacity"
+        >
+          <ChatIcon isFilled={isChatFilled} />
+        </button>
+      )}
     </div>
   );
 }

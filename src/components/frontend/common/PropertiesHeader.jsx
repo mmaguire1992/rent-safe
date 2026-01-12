@@ -89,7 +89,8 @@ function PropertiesHeader({
                 isSavedView={isSavedView}
                 onHomeClick={onHomeClick}
               />
-              <ProfileMenu />
+              {/* <ProfileMenu /> */}
+               {isAuthenticated && <ProfileMenu />}
             </div>
 
             {/* Mobile menu toggle */}
