@@ -64,24 +64,48 @@ function PropertyDetailPage() {
   }, [id]);
 
   // Fetch current user's remaining contacts
-  useEffect(() => {
-    const fetchUserContacts = async () => {
-      try {
-        const userData = await getCurrentUser();
-        setFreshUserData(userData); // Store fresh user data for verification check
-        if (userData && userData.remainingContacts !== undefined) {
-          setRemainingContacts(userData.remainingContacts);
-        }
-      } catch (err) {
-        console.error('Error fetching user contacts:', err);
-        // Don't show error to user, just use default
-        setRemainingContacts(5);
+  // useEffect(() => {
+  //   const fetchUserContacts = async () => {
+  //     try {
+  //       const userData = await getCurrentUser();
+  //       setFreshUserData(userData); // Store fresh user data for verification check
+  //       if (userData && userData.remainingContacts !== undefined) {
+  //         setRemainingContacts(userData.remainingContacts);
+  //       }
+  //     } catch (err) {
+  //       console.error('Error fetching user contacts:', err);
+  //       // Don't show error to user, just use default
+  //       setRemainingContacts(5);
+  //     }
+  //   };
+
+  //   fetchUserContacts();
+  // }, []);
+
+
+  // Fetch current user's remaining contacts
+useEffect(() => {
+  const fetchUserContacts = async () => {
+    // Only fetch if user is authenticated (has token)
+    if (!isAuthenticated()) {
+      return;
+    }
+
+    try {
+      const userData = await getCurrentUser();
+      setFreshUserData(userData); // Store fresh user data for verification check
+      if (userData && userData.remainingContacts !== undefined) {
+        setRemainingContacts(userData.remainingContacts);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching user contacts:', err);
+      // Don't show error to user, just use default
+      setRemainingContacts(5);
+    }
+  };
 
-    fetchUserContacts();
-  }, []);
-
+  fetchUserContacts();
+}, []);
   // Handle contact owner click
   const handleContactOwner = async () => {
     // Check user verification status - use fresh user data if available, otherwise use user from context
@@ -123,13 +147,15 @@ function PropertyDetailPage() {
         }
         
         // Refresh user data to get updated remaining contacts
-        try {
-          const userData = await getCurrentUser();
-          if (userData && userData.remainingContacts !== undefined) {
-            setRemainingContacts(userData.remainingContacts);
+        if (isAuthenticated()) {
+          try {
+            const userData = await getCurrentUser();
+            if (userData && userData.remainingContacts !== undefined) {
+              setRemainingContacts(userData.remainingContacts);
+            }
+          } catch (err) {
+            console.error('Error refreshing user contacts:', err);
           }
-        } catch (err) {
-          console.error('Error refreshing user contacts:', err);
         }
         
         // Redirect to chat page with chatroom ID
