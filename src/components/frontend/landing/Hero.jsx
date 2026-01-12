@@ -9,17 +9,43 @@ import ImageBadge from "./ImageBadge";
 
 import ShielIcon from "@/svg/websiteSvg/shielIcon";
 import UsersIcon from "@/svg/websiteSvg/usersIcon";
+import { toast } from "react-toastify";
+import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtils';
+import { getCurrentUser } from "@/api/users";
 
 function Hero() {
   const navigate = useNavigate();
-  const { userType, isAuthenticated, loading } = useAuth();
+  const { userType, isAuthenticated, loading, user } = useAuth();
 
   const handleRentClick = () => {
     navigate('/properties');
   };
 
-  const handlePropertyClick = () => {
+  const handlePropertyClick = async () => {
     if (userType === 'owner') {
+      // Check user verification status
+      if (isAuthenticated && user) {
+        try {
+          // Fetch fresh user data to get latest verification status
+          const freshUserData = await getCurrentUser();
+          const userForVerification = freshUserData || user;
+          
+          // Only block if user exists and is explicitly not verified
+          if (userForVerification && !isUserVerified(userForVerification)) {
+            toast.error(getVerificationMessage('add property'));
+            return;
+          }
+        } catch (error) {
+          console.error('Error checking user verification:', error);
+          // If error fetching user, use context user as fallback
+          if (user && !isUserVerified(user)) {
+            toast.error(getVerificationMessage('add property'));
+            return;
+          }
+        }
+      }
+      
+      // If verified or user data not available, proceed
       navigate('/dashboard/properties/add');
     } else {
       // If not owner, redirect to signup or login

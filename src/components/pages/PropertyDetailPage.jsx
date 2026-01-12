@@ -22,6 +22,7 @@ import { isAuthenticated } from "@/utils/auth";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { toast } from "react-toastify";
 import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
+import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtils';
 
 function PropertyDetailPage() {
   const { id } = useParams();
@@ -35,6 +36,7 @@ function PropertyDetailPage() {
   const [error, setError] = useState(null);
   const [remainingContacts, setRemainingContacts] = useState(null);
   const [isContacting, setIsContacting] = useState(false);
+  const [freshUserData, setFreshUserData] = useState(null);
 
   // Fetch property data from API
   useEffect(() => {
@@ -66,6 +68,7 @@ function PropertyDetailPage() {
     const fetchUserContacts = async () => {
       try {
         const userData = await getCurrentUser();
+        setFreshUserData(userData); // Store fresh user data for verification check
         if (userData && userData.remainingContacts !== undefined) {
           setRemainingContacts(userData.remainingContacts);
         }
@@ -81,6 +84,13 @@ function PropertyDetailPage() {
 
   // Handle contact owner click
   const handleContactOwner = async () => {
+    // Check user verification status - use fresh user data if available, otherwise use user from context
+    const userForVerification = freshUserData || user;
+    if (userForVerification && !isUserVerified(userForVerification)) {
+      toast.error(getVerificationMessage('chat with other users'));
+      return;
+    }
+
     if (!property?.owner?._id && !property?.ownerId) {
       toast.error('Owner information not available');
       return;
