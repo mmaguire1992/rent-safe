@@ -28,16 +28,6 @@ export const getCurrentUser = async () => {
       throw new Error('No user data received from server');
     }
     
-    // Log in development to help debug
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ User profile fetched:', {
-        id: userData.id,
-        email: userData.email,
-        hasUserInfo: !!userData.userInfo,
-        userInfoKeys: userData.userInfo ? Object.keys(userData.userInfo) : [],
-      });
-    }
-    
     return userData;
   } catch (error) {
     console.error('Error fetching user profile:', error);

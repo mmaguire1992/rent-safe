@@ -14,7 +14,7 @@ import ProfileMenu from "./ProfileMenu";
 import MobileSidebar from "./MobileSidebar";
 import { useAuth } from "@/context/AuthContext";
 import { getCurrentUser } from "@/api/users";
-import { getUserVerificationPayment } from "@/api/subscriptions";
+import { usePaymentStatus } from "@/hooks/usePaymentStatus";
 import { getChatrooms } from "@/api/chat";
 import { getWishlistPropertyIds } from "@/api/wishlists";
 import { toast } from "react-toastify";
@@ -29,13 +29,17 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, userName, userType, user, logout } = useAuth();
-  const [remainingContacts, setRemainingContacts] = useState(null);
-  const [contactLimit, setContactLimit] = useState(5);
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
-  const [hasPaidVerification, setHasPaidVerification] = useState(false);
-  const [paymentCheckLoading, setPaymentCheckLoading] = useState(true);
   const [favoriteCount, setFavoriteCount] = useState(0);
+  
+  // Use shared payment status hook
+  const { 
+    hasPaidVerification, 
+    loading: paymentCheckLoading, 
+    remainingContacts, 
+    contactLimit 
+  } = usePaymentStatus();
 
   const handleScrollToSection = (e, sectionId) => {
     e.preventDefault();
@@ -116,66 +120,37 @@ const Navbar = () => {
     setIsOpen(false);
   };
 
-  // Fetch user contacts, profile image, and payment status
+  // Fetch profile image and wishlist count
+  // Payment status is now handled by usePaymentStatus hook
   useEffect(() => {
     const fetchUserData = async () => {
       if (!isAuthenticated) {
         setLoading(false);
+        // Try to get profile image from context user as fallback
+        if (user?.userInfo?.profileImage) {
+          setProfileImage(user.userInfo.profileImage);
+        }
         return;
       }
 
       try {
         const userData = await getCurrentUser();
         if (userData) {
-          // Set contacts for renters
-          if (userType === 'renter') {
-            setRemainingContacts(userData.remainingContacts ?? null);
-            setContactLimit(userData.chatContactLimit ?? 5);
-            
-            // Check if user has paid verification fee
-            // Prevent duplicate checks in the same render cycle
-            if (paymentCheckRef.current) {
-              return;
-            }
-            paymentCheckRef.current = true;
-            
-            // First check userInfo.verificationStatus (faster, no API call needed)
-            const isVerified = userData.userInfo?.verificationStatus === 'verified';
-            if (isVerified) {
-              console.log('✅ User is verified (from userInfo) - showing premium badge');
-              setHasPaidVerification(true);
-              setPaymentCheckLoading(false);
-            } else {
-              // Only make API call if not verified in userInfo
-              setPaymentCheckLoading(true);
-              try {
-                const payment = await getUserVerificationPayment();
-                console.log('Payment check result (header):', payment);
-                if (payment && payment.status === 'succeeded') {
-                  console.log('✅ User has paid verification (payment record found) - showing premium badge');
-                  setHasPaidVerification(true);
-                } else {
-                  console.log('❌ User has not paid verification - showing free contacts');
-                  setHasPaidVerification(false);
-                }
-              } catch (error) {
-                // If 404, user hasn't paid - that's okay
-                if (error.response?.status === 404) {
-                  console.log('ℹ️ No verification payment found (404)');
-                } else {
-                  console.error('Error checking verification payment:', error);
-                }
-                setHasPaidVerification(false);
-              } finally {
-                setPaymentCheckLoading(false);
-              }
-            }
-          } else {
-            setPaymentCheckLoading(false);
-          }
           // Set profile image from userInfo
           if (userData.userInfo?.profileImage) {
             setProfileImage(userData.userInfo.profileImage);
+          } else {
+            // Fallback to context user
+            if (user?.userInfo?.profileImage) {
+              setProfileImage(user.userInfo.profileImage);
+            } else {
+              setProfileImage(null);
+            }
+          }
+        } else {
+          // Fallback to context user
+          if (user?.userInfo?.profileImage) {
+            setProfileImage(user.userInfo.profileImage);
           }
         }
 
@@ -185,26 +160,13 @@ const Navbar = () => {
             const wishlistIds = await getWishlistPropertyIds();
             setFavoriteCount(wishlistIds?.length || 0);
           } catch (wishlistErr) {
-            console.error('Error fetching wishlist:', wishlistErr);
             setFavoriteCount(0);
           }
         }
 
       } catch (err) {
-        console.error('Error fetching user data:', err);
-        // Set defaults on error
-        if (userType === 'renter') {
-          setRemainingContacts(null);
-          setContactLimit(5);
-          setHasPaidVerification(false);
-        }
-        setPaymentCheckLoading(false);
       } finally {
         setLoading(false);
-        // Ensure payment check loading is set to false even if there was an error
-        if (userType !== 'renter') {
-          setPaymentCheckLoading(false);
-        }
       }
     };
 
@@ -232,7 +194,7 @@ const Navbar = () => {
     return () => {
       window.removeEventListener('profileImageUpdated', handleProfileImageUpdate);
     };
-  }, [isAuthenticated, userType]);
+  }, [isAuthenticated, userType, user?.id]);
 
   // Close renter menu when clicking outside
   useEffect(() => {

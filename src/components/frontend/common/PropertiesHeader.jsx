@@ -6,9 +6,9 @@ import { HiBars3 } from "react-icons/hi2";
 import HeaderIcons from "./HeaderIcons";
 import ProfileMenu from "./ProfileMenu";
 import MobileSidebar from "./MobileSidebar";
-import { getCurrentUser } from "@/api/users";
 import { useAuth } from "@/context/AuthContext";
-import { getUserVerificationPayment } from "@/api/subscriptions";
+import { usePaymentStatus } from "@/hooks/usePaymentStatus";
+import { getCurrentUser } from "@/api/users";
 
 
 function PropertiesHeader({
@@ -18,101 +18,76 @@ function PropertiesHeader({
   onHomeClick,
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [remainingContacts, setRemainingContacts] = useState(null);
-  const [contactLimit, setContactLimit] = useState(5);
-  const [loading, setLoading] = useState(true);
-  const [hasPaidVerification, setHasPaidVerification] = useState(false);
-  const [paymentCheckLoading, setPaymentCheckLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
-  const paymentCheckRef = useRef(false); // Prevent duplicate payment checks
-  const { isAuthenticated, userType } = useAuth();
-
+  const { isAuthenticated, userType, user } = useAuth();
+  
+  // Use shared payment status hook
+  const { 
+    hasPaidVerification, 
+    loading: paymentCheckLoading, 
+    remainingContacts, 
+    contactLimit 
+  } = usePaymentStatus();
+  
+  const loading = paymentCheckLoading;
+  
+  // Fetch profile image
   useEffect(() => {
-    const fetchUserContacts = async () => {
-      // Only fetch for authenticated users
+    const fetchProfileImage = async () => {
       if (!isAuthenticated) {
-        setLoading(false);
+        // Try to get profile image from context user as fallback
+        if (user?.userInfo?.profileImage) {
+          setProfileImage(user.userInfo.profileImage);
+        }
         return;
       }
 
       try {
         const userData = await getCurrentUser();
         if (userData) {
-          // Set contacts for renters
-          if (userType === 'renter') {
-            setRemainingContacts(userData.remainingContacts ?? null);
-            setContactLimit(userData.chatContactLimit ?? 5);
-            
-            // Check if user has paid verification fee
-            // Prevent duplicate checks in the same render cycle
-            if (paymentCheckRef.current) {
-              return;
-            }
-            paymentCheckRef.current = true;
-            
-            // First check userInfo.verificationStatus (faster, no API call needed)
-            const isVerified = userData.userInfo?.verificationStatus === 'verified';
-            if (isVerified) {
-              console.log('✅ User is verified (from userInfo) - showing premium badge');
-              setHasPaidVerification(true);
-              setPaymentCheckLoading(false);
-            } else {
-              // Only make API call if not verified in userInfo
-              setPaymentCheckLoading(true);
-              try {
-                const payment = await getUserVerificationPayment();
-                console.log('Payment check result (PropertiesHeader):', payment);
-                if (payment && payment.status === 'succeeded') {
-                  console.log('✅ User has paid verification (payment record found) - showing premium badge');
-                  setHasPaidVerification(true);
-                } else {
-                  console.log('❌ User has not paid verification - showing free contacts');
-                  setHasPaidVerification(false);
-                }
-              } catch (error) {
-                // If 404, user hasn't paid - that's okay
-                if (error.response?.status === 404) {
-                  console.log('ℹ️ No verification payment found (404)');
-                } else {
-                  console.error('Error checking verification payment:', error);
-                }
-                setHasPaidVerification(false);
-              } finally {
-                setPaymentCheckLoading(false);
-              }
-            }
+          // Set profile image from userInfo
+          if (userData.userInfo?.profileImage) {
+            setProfileImage(userData.userInfo.profileImage);
           } else {
-            setPaymentCheckLoading(false);
+            // Fallback to context user
+            if (user?.userInfo?.profileImage) {
+              setProfileImage(user.userInfo.profileImage);
+            } else {
+              setProfileImage(null);
+            }
+          }
+        } else {
+          // Fallback to context user
+          if (user?.userInfo?.profileImage) {
+            setProfileImage(user.userInfo.profileImage);
           }
         }
       } catch (err) {
-        console.error('Error fetching user contacts:', err);
-        // Set defaults on error
-        if (userType === 'renter') {
-          setRemainingContacts(null);
-          setContactLimit(5);
-          setHasPaidVerification(false);
+        // On error, try context user
+        if (user?.userInfo?.profileImage) {
+          setProfileImage(user.userInfo.profileImage);
         }
-      } finally {
-        setLoading(false);
       }
     };
 
-    fetchUserContacts();
+    fetchProfileImage();
 
     // Listen for profile image updates
     const handleProfileImageUpdate = async () => {
-      if (!isAuthenticated) return;
       try {
         const userData = await getCurrentUser();
         if (userData?.userInfo?.profileImage) {
+          // Add cache-busting parameter to force image refresh
           const imageUrl = userData.userInfo.profileImage + (userData.userInfo.profileImage.includes('?') ? '&' : '?') + '_t=' + Date.now();
           setProfileImage(imageUrl);
         } else {
           setProfileImage(null);
         }
       } catch (err) {
-        console.error('Error refreshing profile image:', err);
+        // On error, try context user
+        if (user?.userInfo?.profileImage) {
+          setProfileImage(user.userInfo.profileImage);
+        }
       }
     };
 
@@ -121,7 +96,7 @@ function PropertiesHeader({
     return () => {
       window.removeEventListener('profileImageUpdated', handleProfileImageUpdate);
     };
-  }, [isAuthenticated, userType]);
+  }, [isAuthenticated, user?.id, user?.userInfo?.profileImage]);
 
   return (
     <>

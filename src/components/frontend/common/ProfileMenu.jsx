@@ -12,6 +12,11 @@ function ProfileMenu({ profileImage }) {
   const menuRef = useRef(null);
   const navigate = useNavigate();
   const { logout, userName, user } = useAuth();
+  
+  // Debug: Log profileImage prop
+  useEffect(() => {
+    console.log('ProfileMenu - profileImage prop:', profileImage);
+  }, [profileImage]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
