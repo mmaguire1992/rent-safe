@@ -17,11 +17,42 @@ import { FaPlus } from "react-icons/fa";
 import { GoPlus } from "react-icons/go";
 import ThreeDotsIcon from "@/svg/threeDotsIcon";
 import { fetchMyActiveProperties } from '@/redux/slices/propertySlice';
+import { useAuth } from "@/context/AuthContext";
+import { getCurrentUser } from "@/api/users";
+import { toast } from "react-toastify";
+import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtils';
 
 function ActiveProperties() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { myActiveProperties: allProperties, loading, error, pagination } = useSelector((state) => state.property);
+  const { user } = useAuth();
+
+  const handleAddProperty = async () => {
+    try {
+      // Fetch fresh user data to get latest verification status
+      const freshUserData = await getCurrentUser();
+      const userForVerification = freshUserData || user;
+      
+      // Only block if user exists and is explicitly not verified
+      if (userForVerification && !isUserVerified(userForVerification)) {
+        toast.error(getVerificationMessage('add property'));
+        return;
+      }
+      
+      // If verified or user data not available, proceed
+      navigate("/dashboard/properties/add");
+    } catch (error) {
+      console.error('Error checking user verification:', error);
+      // If error fetching user, use context user as fallback
+      if (user && !isUserVerified(user)) {
+        toast.error(getVerificationMessage('add property'));
+        return;
+      }
+      // If can't verify, allow (to avoid blocking legitimate users)
+      navigate("/dashboard/properties/add");
+    }
+  };
   
   const [currentPage, setCurrentPage] = useState(1);
   const [openDropdownId, setOpenDropdownId] = useState(null);
@@ -268,7 +299,7 @@ function ActiveProperties() {
             )}
           </div>
           <button
-            onClick={() => navigate("/dashboard/properties/add")}
+            onClick={handleAddProperty}
             className="bg-blueGradient text-white px-3 sm:px-3.5 md:px-4 h-[36px] sm:h-[38px] py-1.5 md:py-2 rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors flex items-center gap-1 sm:gap-1.5 md:gap-2 text-xs sm:text-sm md:text-base"
           >
             <span className="whitespace-nowrap">Add Property</span>

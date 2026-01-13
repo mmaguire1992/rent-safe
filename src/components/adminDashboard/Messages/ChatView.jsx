@@ -36,6 +36,7 @@ function ChatView({
   isBlocked = false,
   isBlockedByCurrentUser = false,
   isCurrentUserBlocked = false,
+  isVerified = true,
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
@@ -335,6 +336,12 @@ function ChatView({
               {selectedConversation?.name || 'This user'} has blocked you
             </p>
           </div>
+        ) : !isVerified ? (
+          <div className="text-center py-4">
+            <p className="text-gray-600 text-sm mb-2">
+              Your profile is not approved yet. Please wait for admin verification to chat with other users.
+            </p>
+          </div>
         ) : isBlockedByCurrentUser ? (
           <div className="space-y-3">
             <div className="text-center py-2">
@@ -343,10 +350,9 @@ function ChatView({
               </p>
               <button
                 onClick={handleUnblockFromInput}
-                disabled={isProcessing}
-                className="text-[#6B4EFF] hover:text-[#4A2FCC] font-semibold text-sm underline disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-[#6B4EFF] hover:text-[#4A2FCC] font-semibold text-sm underline"
               >
-                {isProcessing ? 'Unblocking...' : 'Unblock'}
+                Unblock
               </button>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 opacity-50 pointer-events-none">

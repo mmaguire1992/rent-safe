@@ -11,9 +11,11 @@ import HouseIcon from "@/svg/websiteSvg/houseIcon";
 import LocationTwo from "@/svg/websiteSvg/locationTwo";
 import ApartmentIcon from "../../../svg/apartmentIcon";
 import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
+import { useAuth } from "@/context/AuthContext";
 
 function PropertyCard({ property, isFavorited = false, onToggleFavorite }) {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   const handleCardClick = (e) => {
     // Don't navigate if clicking on action buttons (share, heart)
@@ -124,21 +126,23 @@ function PropertyCard({ property, isFavorited = false, onToggleFavorite }) {
               >
                 <ShareIcon />
               </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onToggleFavorite) {
-                    onToggleFavorite();
-                  }
-                }}
-                className={`transition-colors ${
-                  isFavorited
-                    ? "text-red-400"
-                    : "text-[#9FA3AA] hover:text-[#000000]"
-                }`}
-              >
-                <HeartIcon isFilled={isFavorited} />
-              </button>
+              {isAuthenticated && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onToggleFavorite) {
+                      onToggleFavorite();
+                    }
+                  }}
+                  className={`transition-colors ${
+                    isFavorited
+                      ? "text-red-400"
+                      : "text-[#9FA3AA] hover:text-[#000000]"
+                  }`}
+                >
+                  <HeartIcon isFilled={isFavorited} />
+                </button>
+              )}
             </div>
           </div>
 

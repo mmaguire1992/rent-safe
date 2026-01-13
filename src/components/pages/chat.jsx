@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from '@/lib/react-router-compat';
+import { useSearchParams, useNavigate } from '@/lib/react-router-compat';
 import PropertiesHeader from "@/components/frontend/common/PropertiesHeader";
 import Footer from "@/components/frontend/common/footer";
 import { FiSearch } from "react-icons/fi";
@@ -11,11 +11,15 @@ import MediumCheckedIcon from "@/svg/mediumCheckedIcon";
 import ChatBlueStartIcon from "@/svg/chatBlueStartIcon";
 import { getChatrooms, getChatroomMessages, uploadChatMedia, deleteChatroom, blockUnblockChatroom } from "@/api/chat";
 import { getCurrentUser } from "@/api/users";
+import { getWishlistPropertyIds } from "@/api/wishlists";
 import { useSocket, SOCKET_EVENTS } from "@/hooks/useSocket";
 import { toast } from "react-toastify";
+import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtils';
+import { isAuthenticated } from "@/utils/auth";
 
 function ChatMessage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const chatroomIdFromUrl = searchParams?.get('chatroomId');
   
   const [chatrooms, setChatrooms] = useState([]);
@@ -29,6 +33,7 @@ function ChatMessage() {
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [favoriteCount, setFavoriteCount] = useState(0);
   const messagesEndRef = useRef(null);
   const messagesTopRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -56,6 +61,23 @@ function ChatMessage() {
       }
     };
     fetchUser();
+  }, []);
+
+  // Fetch wishlist count
+  useEffect(() => {
+    const fetchWishlistCount = async () => {
+      if (!isAuthenticated()) {
+        return;
+      }
+      try {
+        const wishlistIds = await getWishlistPropertyIds();
+        setFavoriteCount(wishlistIds?.length || 0);
+      } catch (error) {
+        console.error('Error fetching wishlist:', error);
+        setFavoriteCount(0);
+      }
+    };
+    fetchWishlistCount();
   }, []);
 
   // Fetch chatrooms
@@ -470,6 +492,12 @@ function ChatMessage() {
   const handleFileSelect = async (file) => {
     if (!selectedConversation || !isConnected) return;
 
+    // Check user verification status before allowing file upload
+    if (currentUser && !isUserVerified(currentUser)) {
+      toast.error(getVerificationMessage('chat with other users'));
+      return;
+    }
+
     const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
     if (!chatroomId || chatroomId === 'undefined' || chatroomId === 'null') return;
 
@@ -527,6 +555,12 @@ function ChatMessage() {
 
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedConversation || !isConnected) return;
+    
+    // Check user verification status before allowing message send
+    if (currentUser && !isUserVerified(currentUser)) {
+      toast.error(getVerificationMessage('chat with other users'));
+      return;
+    }
     
     // Don't allow sending if blocked
     if (selectedConversation.isBlockedByCurrentUser || selectedConversation.isCurrentUserBlocked) {
@@ -779,7 +813,11 @@ function ChatMessage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary">
-      <PropertiesHeader />
+      <PropertiesHeader 
+        favoriteCount={favoriteCount}
+        onHeartClick={() => navigate('/properties?saved=true')}
+        isSavedView={false}
+      />
       <main className="container mx-auto py-4 sm:py-6 lg:py-10 px-4 sm:px-6 lg:px-8">
         <div className="block">
           {/* Mobile: Show back button when conversation is selected */}

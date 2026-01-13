@@ -11,6 +11,9 @@ import WhitePropertiesIcon from "../../../svg/whitePropertiesIcon";
 import WhiteMessageIcon from "../../../svg/whiteMessageIcon";
 import { useAuth } from "@/context/AuthContext";
 import { getCurrentUser } from "@/api/users";
+import { getChatrooms } from "@/api/chat";
+import { toast } from "react-toastify";
+import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtils';
 
 function MobileSidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
@@ -72,7 +75,48 @@ function MobileSidebar({ isOpen, onClose }) {
     };
   }, [isAuthenticated]);
 
-  const handleNavigation = (path) => {
+  const handleNavigation = async (path) => {
+    // Check verification for chat navigation (only for renters)
+    if (path === "/chat" && isAuthenticated && userType === 'renter' && user) {
+      try {
+        // Fetch fresh user data to get latest verification status
+        const freshUserData = await getCurrentUser();
+        const userForVerification = freshUserData || user;
+        
+        // Check if user is verified
+        if (userForVerification && !isUserVerified(userForVerification)) {
+          // If not verified, check if user has chat history
+          try {
+            const chatrooms = await getChatrooms();
+            const hasChatHistory = chatrooms && chatrooms.length > 0;
+            
+            if (!hasChatHistory) {
+              // No chat history and not verified - show error and don't navigate
+              toast.error(getVerificationMessage('chat with other users'));
+              onClose();
+              return;
+            }
+            // Has chat history but not verified - allow navigation (sending is blocked in chat component)
+          } catch (chatError) {
+            console.error('Error checking chat history:', chatError);
+            // If error checking chat history, show error and don't navigate
+            toast.error(getVerificationMessage('chat with other users'));
+            onClose();
+            return;
+          }
+        }
+        // If verified, proceed normally
+      } catch (error) {
+        console.error('Error checking user verification:', error);
+        // If error, use context user as fallback
+        if (user && !isUserVerified(user)) {
+          toast.error(getVerificationMessage('chat with other users'));
+          onClose();
+          return;
+        }
+      }
+    }
+    
     navigate(path);
     onClose();
   };

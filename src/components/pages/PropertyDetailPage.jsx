@@ -23,6 +23,7 @@ import { isAuthenticated } from "@/utils/auth";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { toast } from "react-toastify";
 import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
+import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtils';
 
 function PropertyDetailPage() {
   const { id } = useParams();
@@ -37,6 +38,7 @@ function PropertyDetailPage() {
   const [remainingContacts, setRemainingContacts] = useState(null);
   const [isContacting, setIsContacting] = useState(false);
   const [hasPaidVerification, setHasPaidVerification] = useState(false);
+  const [freshUserData, setFreshUserData] = useState(null);
 
   // Fetch property data from API
   useEffect(() => {
@@ -66,8 +68,14 @@ function PropertyDetailPage() {
   // Fetch current user's remaining contacts and payment status
   useEffect(() => {
     const fetchUserContacts = async () => {
+      // Only fetch if user is authenticated (has token)
+      if (!isAuthenticated()) {
+        return;
+      }
+
       try {
         const userData = await getCurrentUser();
+        setFreshUserData(userData); // Store fresh user data for verification check
         if (userData && userData.remainingContacts !== undefined) {
           setRemainingContacts(userData.remainingContacts);
         }
@@ -103,9 +111,15 @@ function PropertyDetailPage() {
 
     fetchUserContacts();
   }, [user?.userType]);
-
   // Handle contact owner click
   const handleContactOwner = async () => {
+    // Check user verification status - use fresh user data if available, otherwise use user from context
+    const userForVerification = freshUserData || user;
+    if (userForVerification && !isUserVerified(userForVerification)) {
+      toast.error(getVerificationMessage('chat with other users'));
+      return;
+    }
+
     if (!property?.owner?._id && !property?.ownerId) {
       toast.error('Owner information not available');
       return;
@@ -138,13 +152,15 @@ function PropertyDetailPage() {
         }
         
         // Refresh user data to get updated remaining contacts
-        try {
-          const userData = await getCurrentUser();
-          if (userData && userData.remainingContacts !== undefined) {
-            setRemainingContacts(userData.remainingContacts);
+        if (isAuthenticated()) {
+          try {
+            const userData = await getCurrentUser();
+            if (userData && userData.remainingContacts !== undefined) {
+              setRemainingContacts(userData.remainingContacts);
+            }
+          } catch (err) {
+            console.error('Error refreshing user contacts:', err);
           }
-        } catch (err) {
-          console.error('Error refreshing user contacts:', err);
         }
         
         // Redirect to chat page with chatroom ID
@@ -474,13 +490,15 @@ function PropertyDetailPage() {
             </h1>
           </div>
           <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
-            <button
-              onClick={toggleFavorite}
-              className="flex items-center gap-2 text-[#2B2F38] text-sm sm:text-base font-normal font-nunito transition-colors"
-            >
-              <HeartIcon isFilled={isFavorited} />
-              <span className="hidden sm:inline">Save</span>
-            </button>
+            {isAuthenticated() && (
+              <button
+                onClick={toggleFavorite}
+                className="flex items-center gap-2 text-[#2B2F38] text-sm sm:text-base font-normal font-nunito transition-colors"
+              >
+                <HeartIcon isFilled={isFavorited} />
+                <span className="hidden sm:inline">Save</span>
+              </button>
+            )}
             <button 
               onClick={handleShare}
               className="flex items-center gap-2 text-[#2B2F38] text-sm sm:text-base font-normal font-nunito transition-colors hover:text-[#6B4EFF]"

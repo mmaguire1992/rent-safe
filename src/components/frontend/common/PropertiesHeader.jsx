@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from '@/lib/react-router-compat';
 import { HiBars3 } from "react-icons/hi2";
 import HeaderIcons from "./HeaderIcons";
@@ -22,12 +22,15 @@ function PropertiesHeader({
   const [contactLimit, setContactLimit] = useState(5);
   const [loading, setLoading] = useState(true);
   const [hasPaidVerification, setHasPaidVerification] = useState(false);
+  const [paymentCheckLoading, setPaymentCheckLoading] = useState(true);
+  const [profileImage, setProfileImage] = useState(null);
+  const paymentCheckRef = useRef(false); // Prevent duplicate payment checks
   const { isAuthenticated, userType } = useAuth();
 
   useEffect(() => {
     const fetchUserContacts = async () => {
-      // Only fetch for authenticated renters
-      if (!isAuthenticated || userType !== 'renter') {
+      // Only fetch for authenticated users
+      if (!isAuthenticated) {
         setLoading(false);
         return;
       }
@@ -35,57 +38,89 @@ function PropertiesHeader({
       try {
         const userData = await getCurrentUser();
         if (userData) {
-          setRemainingContacts(userData.remainingContacts ?? null);
-          setContactLimit(userData.chatContactLimit ?? 5);
-          
-          // Check if user has paid verification fee
-          // Method 1: Check payment record
-          let paymentFound = false;
-          try {
-            const payment = await getUserVerificationPayment();
-            console.log('Payment check result (PropertiesHeader):', payment);
-            if (payment && payment.status === 'succeeded') {
-              console.log('✅ User has paid verification (payment record found) - showing premium badge');
-              paymentFound = true;
-              setHasPaidVerification(true);
+          // Set contacts for renters
+          if (userType === 'renter') {
+            setRemainingContacts(userData.remainingContacts ?? null);
+            setContactLimit(userData.chatContactLimit ?? 5);
+            
+            // Check if user has paid verification fee
+            // Prevent duplicate checks in the same render cycle
+            if (paymentCheckRef.current) {
+              return;
             }
-          } catch (error) {
-            // If 404, user hasn't paid - that's okay
-            if (error.response?.status === 404) {
-              console.log('ℹ️ No verification payment found (404)');
-            } else {
-              console.error('Error checking verification payment:', error);
-            }
-          }
-          
-          // Method 2: Fallback - Check userInfo.verificationStatus
-          if (!paymentFound) {
+            paymentCheckRef.current = true;
+            
+            // First check userInfo.verificationStatus (faster, no API call needed)
             const isVerified = userData.userInfo?.verificationStatus === 'verified';
-            console.log('Verification status check:', {
-              verificationStatus: userData.userInfo?.verificationStatus,
-              isVerified
-            });
             if (isVerified) {
               console.log('✅ User is verified (from userInfo) - showing premium badge');
               setHasPaidVerification(true);
+              setPaymentCheckLoading(false);
             } else {
-              console.log('❌ User has not paid verification - showing free contacts');
-              setHasPaidVerification(false);
+              // Only make API call if not verified in userInfo
+              setPaymentCheckLoading(true);
+              try {
+                const payment = await getUserVerificationPayment();
+                console.log('Payment check result (PropertiesHeader):', payment);
+                if (payment && payment.status === 'succeeded') {
+                  console.log('✅ User has paid verification (payment record found) - showing premium badge');
+                  setHasPaidVerification(true);
+                } else {
+                  console.log('❌ User has not paid verification - showing free contacts');
+                  setHasPaidVerification(false);
+                }
+              } catch (error) {
+                // If 404, user hasn't paid - that's okay
+                if (error.response?.status === 404) {
+                  console.log('ℹ️ No verification payment found (404)');
+                } else {
+                  console.error('Error checking verification payment:', error);
+                }
+                setHasPaidVerification(false);
+              } finally {
+                setPaymentCheckLoading(false);
+              }
             }
+          } else {
+            setPaymentCheckLoading(false);
           }
         }
       } catch (err) {
         console.error('Error fetching user contacts:', err);
         // Set defaults on error
-        setRemainingContacts(null);
-        setContactLimit(5);
-        setHasPaidVerification(false);
+        if (userType === 'renter') {
+          setRemainingContacts(null);
+          setContactLimit(5);
+          setHasPaidVerification(false);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchUserContacts();
+
+    // Listen for profile image updates
+    const handleProfileImageUpdate = async () => {
+      if (!isAuthenticated) return;
+      try {
+        const userData = await getCurrentUser();
+        if (userData?.userInfo?.profileImage) {
+          const imageUrl = userData.userInfo.profileImage + (userData.userInfo.profileImage.includes('?') ? '&' : '?') + '_t=' + Date.now();
+          setProfileImage(imageUrl);
+        } else {
+          setProfileImage(null);
+        }
+      } catch (err) {
+        console.error('Error refreshing profile image:', err);
+      }
+    };
+
+    window.addEventListener('profileImageUpdated', handleProfileImageUpdate);
+
+    return () => {
+      window.removeEventListener('profileImageUpdated', handleProfileImageUpdate);
+    };
   }, [isAuthenticated, userType]);
 
   return (
@@ -102,7 +137,14 @@ function PropertiesHeader({
 
           {isAuthenticated && userType === 'renter' && (
             <div className="hidden lg:flex items-center gap-2 rounded-xl px-1 py-1 h-[48px] border border-lightGray">
-              {hasPaidVerification ? (
+              {paymentCheckLoading ? (
+                <>
+                  {/* Loading State - Show minimal loading indicator */}
+                  <div className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium text-midGray">
+                    <span className="text-gray-400">Loading...</span>
+                  </div>
+                </>
+              ) : hasPaidVerification ? (
                 <>
                   {/* Premium User Badge */}
                   <button className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition shadow-sm">
@@ -140,7 +182,7 @@ function PropertiesHeader({
                 isSavedView={isSavedView}
                 onHomeClick={onHomeClick}
               />
-              <ProfileMenu />
+              {isAuthenticated && <ProfileMenu profileImage={profileImage} />}
             </div>
 
             {/* Mobile menu toggle */}
