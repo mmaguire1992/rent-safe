@@ -13,6 +13,7 @@ import ProfileMenu from "./ProfileMenu";
 import MobileSidebar from "./MobileSidebar";
 import { useAuth } from "@/context/AuthContext";
 import { getCurrentUser } from "@/api/users";
+import { getUserVerificationPayment } from "@/api/subscriptions";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,6 +27,7 @@ const Navbar = () => {
   const [contactLimit, setContactLimit] = useState(5);
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
+  const [hasPaidVerification, setHasPaidVerification] = useState(false);
 
   const handleScrollToSection = (e, sectionId) => {
     e.preventDefault();
@@ -64,7 +66,7 @@ const Navbar = () => {
     setIsOpen(false);
   };
 
-  // Fetch user contacts and profile image
+  // Fetch user contacts, profile image, and payment status
   useEffect(() => {
     const fetchUserData = async () => {
       if (!isAuthenticated) {
@@ -79,6 +81,42 @@ const Navbar = () => {
           if (userType === 'renter') {
             setRemainingContacts(userData.remainingContacts ?? null);
             setContactLimit(userData.chatContactLimit ?? 5);
+            
+            // Check if user has paid verification fee
+            // Method 1: Check payment record
+            let paymentFound = false;
+            try {
+              const payment = await getUserVerificationPayment();
+              console.log('Payment check result (header):', payment);
+              if (payment && payment.status === 'succeeded') {
+                console.log('✅ User has paid verification (payment record found) - showing premium badge');
+                paymentFound = true;
+                setHasPaidVerification(true);
+              }
+            } catch (error) {
+              // If 404, user hasn't paid - that's okay
+              if (error.response?.status === 404) {
+                console.log('ℹ️ No verification payment found (404)');
+              } else {
+                console.error('Error checking verification payment:', error);
+              }
+            }
+            
+            // Method 2: Fallback - Check userInfo.verificationStatus
+            if (!paymentFound) {
+              const isVerified = userData.userInfo?.verificationStatus === 'verified';
+              console.log('Verification status check (header):', {
+                verificationStatus: userData.userInfo?.verificationStatus,
+                isVerified
+              });
+              if (isVerified) {
+                console.log('✅ User is verified (from userInfo) - showing premium badge');
+                setHasPaidVerification(true);
+              } else {
+                console.log('❌ User has not paid verification - showing free contacts');
+                setHasPaidVerification(false);
+              }
+            }
           }
           // Set profile image from userInfo
           if (userData.userInfo?.profileImage) {
@@ -92,6 +130,7 @@ const Navbar = () => {
         if (userType === 'renter') {
           setRemainingContacts(null);
           setContactLimit(5);
+          setHasPaidVerification(false);
         }
       } finally {
         setLoading(false);
@@ -299,19 +338,33 @@ const Navbar = () => {
           {/* Desktop Right Side - Conditional based on profile page */}
           {isProfilePage ? (
             <div className="hidden lg:flex items-center gap-4">
-              {/* Pricing Buttons */}
-              <div className="flex items-center gap-2">
-                <button className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium text-text-primary hover:bg-gray-200 transition">
-                  Free Contacts: {!loading && remainingContacts !== null ? (
-                    <span className="text-red-500">{remainingContacts}/{contactLimit}</span>
+              {/* Pricing Buttons - Show Premium User if paid, otherwise show Free Contacts */}
+              {userType === 'renter' && (
+                <div className="flex items-center gap-2">
+                  {hasPaidVerification ? (
+                    <>
+                      {/* Premium User Badge */}
+                      <button className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition shadow-sm">
+                        Premium User
+                      </button>
+                    </>
                   ) : (
-                    <span className="text-gray-400">-/{contactLimit}</span>
+                    <>
+                      {/* Free User - Show Free Contacts */}
+                      <button className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium text-text-primary hover:bg-gray-200 transition">
+                        Free Contacts: {!loading && remainingContacts !== null ? (
+                          <span className="text-red-500">{remainingContacts}/{contactLimit}</span>
+                        ) : (
+                          <span className="text-gray-400">-/{contactLimit}</span>
+                        )}
+                      </button>
+                      <button className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition shadow-sm">
+                        use one connect per listing
+                      </button>
+                    </>
                   )}
-                </button>
-                <button className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition shadow-sm">
-                  use one connect per listing
-                </button>
-              </div>
+                </div>
+              )}
 
               {/* Icons */}
               <div className="flex items-center gap-4 ml-4 pl-4 border-l border-gray-200">

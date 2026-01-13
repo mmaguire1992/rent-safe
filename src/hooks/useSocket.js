@@ -105,8 +105,35 @@ export const useSocket = () => {
       // - Browser tab is closed
       // Socket will automatically reconnect when user returns (if reconnection is enabled)
       if (reason === 'transport close') {
-        console.log('ℹ️ Transport close is normal - socket will reconnect automatically');
+        console.log('ℹ️ Transport close is normal - socket will reconnect automatically when page loads');
+        console.log('ℹ️ This happens when redirecting to Stripe Checkout - it\'s expected behavior');
+      } else if (reason === 'io server disconnect') {
+        console.log('ℹ️ Server disconnected - socket will reconnect automatically');
+      } else if (reason === 'io client disconnect') {
+        console.log('ℹ️ Client disconnected - manual disconnect');
       }
+    });
+
+    // Reconnection events - these show the socket IS working
+    socket.on('reconnect_attempt', (attemptNumber) => {
+      console.log(`🔄 Socket reconnection attempt ${attemptNumber}/5...`);
+    });
+
+    socket.on('reconnect', (attemptNumber) => {
+      console.log(`✅ Socket reconnected successfully after ${attemptNumber} attempt(s)`);
+      setIsConnected(true);
+      setConnectionError(null);
+    });
+
+    socket.on('reconnect_error', (error) => {
+      console.warn('⚠️ Socket reconnection error:', error.message);
+      console.log('🔄 Will continue trying to reconnect...');
+    });
+
+    socket.on('reconnect_failed', () => {
+      console.error('❌ Socket reconnection failed after all attempts');
+      setConnectionError('Failed to reconnect to server');
+      setIsConnected(false);
     });
 
     socket.on('connect_error', (error) => {

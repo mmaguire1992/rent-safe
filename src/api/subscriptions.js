@@ -98,3 +98,21 @@ export const getPaymentStatus = async (sessionId) => {
     throw error;
   }
 };
+
+/**
+ * Get user's verification payment (one-time payment for renter verification)
+ * @returns {Promise<Object|null>} Verification payment or null if not found
+ */
+export const getUserVerificationPayment = async () => {
+  try {
+    const response = await apiClient.get('/stripe/subscriptions/verification-payment');
+    const payment = response.data?.data || response.data;
+    return payment || null;
+  } catch (error) {
+    // If 404, user hasn't paid yet - return null
+    if (error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+};

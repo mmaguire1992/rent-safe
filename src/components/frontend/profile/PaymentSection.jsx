@@ -25,8 +25,8 @@ function PaymentSection({ onBack, onPaymentComplete, renterPlan }) {
 
       // Get current URL for redirects
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-      const successUrl = `${baseUrl}/profile-management?tab=verification&payment=success`;
-      const cancelUrl = `${baseUrl}/profile-management?tab=verification&payment=cancelled`;
+      const successUrl = `${baseUrl}/payment-success`;
+      const cancelUrl = `${baseUrl}/payment-failure`;
 
       // Create Stripe checkout session
       const result = await createCheckoutSession(
@@ -36,12 +36,21 @@ function PaymentSection({ onBack, onPaymentComplete, renterPlan }) {
         cancelUrl
       );
 
-      // Store session ID for status checking
+      // Store session ID for status checking (in both state and localStorage)
+      // This ensures we can check payment status when user returns from Stripe
+      // even if the socket hasn't reconnected yet
       if (result?.sessionId) {
         setSessionId(result.sessionId);
+        // Store in localStorage so we can check payment status when user returns
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('pending_payment_session_id', result.sessionId);
+          localStorage.setItem('pending_payment_timestamp', Date.now().toString());
+        }
       }
 
       // Redirect to Stripe Checkout
+      // NOTE: This will cause the socket to disconnect (transport close) - this is NORMAL
+      // The socket will automatically reconnect when the user returns from Stripe
       if (result?.url) {
         window.location.href = result.url;
       } else if (result?.sessionId) {
@@ -88,6 +97,31 @@ function PaymentSection({ onBack, onPaymentComplete, renterPlan }) {
     };
   }, [isConnected, socketOn, socketOff, onPaymentComplete]);
 
+  // Check for pending payment session when component mounts (user returns from Stripe)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Check if there's a pending payment session from localStorage
+    const pendingSessionId = localStorage.getItem('pending_payment_session_id');
+    const pendingTimestamp = localStorage.getItem('pending_payment_timestamp');
+    
+    if (pendingSessionId) {
+      // Check if it's been less than 10 minutes (payment sessions expire)
+      const timestamp = parseInt(pendingTimestamp || '0', 10);
+      const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
+      
+      if (timestamp > tenMinutesAgo) {
+        // Set session ID to trigger payment status checking
+        setSessionId(pendingSessionId);
+        console.log('Found pending payment session, checking status...');
+      } else {
+        // Session is too old, remove it
+        localStorage.removeItem('pending_payment_session_id');
+        localStorage.removeItem('pending_payment_timestamp');
+      }
+    }
+  }, []);
+
   // Poll for payment status as fallback (when user returns from Stripe)
   useEffect(() => {
     if (!sessionId) return;
@@ -116,11 +150,23 @@ function PaymentSection({ onBack, onPaymentComplete, renterPlan }) {
           clearInterval(paymentCheckIntervalRef.current);
           paymentCheckIntervalRef.current = null;
           setSessionId(null);
-        } else if (payment?.status === 'failed') {
-          toast.error('Payment failed. Please try again.');
+          // Clear localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('pending_payment_session_id');
+            localStorage.removeItem('pending_payment_timestamp');
+          }
+        } else if (payment?.status === 'failed' || payment?.status === 'cancelled') {
+          toast.error(payment?.status === 'cancelled' 
+            ? 'Payment was cancelled. You can try again anytime.'
+            : 'Payment failed. Please try again.');
           clearInterval(paymentCheckIntervalRef.current);
           paymentCheckIntervalRef.current = null;
           setSessionId(null);
+          // Clear localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('pending_payment_session_id');
+            localStorage.removeItem('pending_payment_timestamp');
+          }
         }
       } catch (error) {
         // Silently fail - payment might not be processed yet

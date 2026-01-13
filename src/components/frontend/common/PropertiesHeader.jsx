@@ -8,6 +8,7 @@ import ProfileMenu from "./ProfileMenu";
 import MobileSidebar from "./MobileSidebar";
 import { getCurrentUser } from "@/api/users";
 import { useAuth } from "@/context/AuthContext";
+import { getUserVerificationPayment } from "@/api/subscriptions";
 
 
 function PropertiesHeader({
@@ -20,6 +21,7 @@ function PropertiesHeader({
   const [remainingContacts, setRemainingContacts] = useState(null);
   const [contactLimit, setContactLimit] = useState(5);
   const [loading, setLoading] = useState(true);
+  const [hasPaidVerification, setHasPaidVerification] = useState(false);
   const { isAuthenticated, userType } = useAuth();
 
   useEffect(() => {
@@ -35,12 +37,49 @@ function PropertiesHeader({
         if (userData) {
           setRemainingContacts(userData.remainingContacts ?? null);
           setContactLimit(userData.chatContactLimit ?? 5);
+          
+          // Check if user has paid verification fee
+          // Method 1: Check payment record
+          let paymentFound = false;
+          try {
+            const payment = await getUserVerificationPayment();
+            console.log('Payment check result (PropertiesHeader):', payment);
+            if (payment && payment.status === 'succeeded') {
+              console.log('✅ User has paid verification (payment record found) - showing premium badge');
+              paymentFound = true;
+              setHasPaidVerification(true);
+            }
+          } catch (error) {
+            // If 404, user hasn't paid - that's okay
+            if (error.response?.status === 404) {
+              console.log('ℹ️ No verification payment found (404)');
+            } else {
+              console.error('Error checking verification payment:', error);
+            }
+          }
+          
+          // Method 2: Fallback - Check userInfo.verificationStatus
+          if (!paymentFound) {
+            const isVerified = userData.userInfo?.verificationStatus === 'verified';
+            console.log('Verification status check:', {
+              verificationStatus: userData.userInfo?.verificationStatus,
+              isVerified
+            });
+            if (isVerified) {
+              console.log('✅ User is verified (from userInfo) - showing premium badge');
+              setHasPaidVerification(true);
+            } else {
+              console.log('❌ User has not paid verification - showing free contacts');
+              setHasPaidVerification(false);
+            }
+          }
         }
       } catch (err) {
         console.error('Error fetching user contacts:', err);
         // Set defaults on error
         setRemainingContacts(null);
         setContactLimit(5);
+        setHasPaidVerification(false);
       } finally {
         setLoading(false);
       }
@@ -63,21 +102,33 @@ function PropertiesHeader({
 
           {isAuthenticated && userType === 'renter' && (
             <div className="hidden lg:flex items-center gap-2 rounded-xl px-1 py-1 h-[48px] border border-lightGray">
-              <span className="text-sm pl-4  whitespace-nowrap sm:text-base font-bold text-midGray">
-                Free Contacts:
-              </span>
-              {!loading && remainingContacts !== null ? (
-                <span className="text-sm sm:text-base pr-2 font-bold text-errorColor">
-                  {remainingContacts}<span className="text-midGray">/{contactLimit}</span>
-                </span>
+              {hasPaidVerification ? (
+                <>
+                  {/* Premium User Badge */}
+                  <button className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition shadow-sm">
+                    Premium User
+                  </button>
+                </>
               ) : (
-                <span className="text-sm sm:text-base pr-2 font-bold text-midGray">
-                  <span className="text-midGray">-/{contactLimit}</span>
-                </span>
+                <>
+                  {/* Free User - Show Free Contacts */}
+                  <span className="text-sm pl-4  whitespace-nowrap sm:text-base font-bold text-midGray">
+                    Free Contacts:
+                  </span>
+                  {!loading && remainingContacts !== null ? (
+                    <span className="text-sm sm:text-base pr-2 font-bold text-errorColor">
+                      {remainingContacts}<span className="text-midGray">/{contactLimit}</span>
+                    </span>
+                  ) : (
+                    <span className="text-sm sm:text-base pr-2 font-bold text-midGray">
+                      <span className="text-midGray">-/{contactLimit}</span>
+                    </span>
+                  )}
+                  <button className="w-full shadow-[0px_2px_10px_0px_rgba(0,0,0,0.2),inset_0px_2px_4px_0px_rgba(255,255,255,0.2)] px-4 py-2 bg-orangeGradient rounded-lg text-base font-bold text-white">
+                    use one connect per listing
+                  </button>
+                </>
               )}
-              <button className="w-full shadow-[0px_2px_10px_0px_rgba(0,0,0,0.2),inset_0px_2px_4px_0px_rgba(255,255,255,0.2)] px-4 py-2 bg-orangeGradient rounded-lg text-base font-bold text-white">
-                use one connect per listing
-              </button>
             </div>
           )}
 

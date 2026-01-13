@@ -3,10 +3,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
 import { getMyDocuments, downloadDocument, deleteDocument } from "@/api/verification";
-import { getRenterPlan } from "@/api/subscriptions";
+import { getRenterPlan, getUserVerificationPayment } from "@/api/subscriptions";
+import { useAuth } from "@/context/AuthContext";
 import PaymentSection from "./PaymentSection";
 import GreenRoundCheckIcon from "../../../svg/websiteSvg/greenRoundCheckIcon";
 import WhiteCardIcon from "../../../svg/websiteSvg/whiteCardIcon";
+import SuccessfullyCheck from "@/svg/successfullyCheck";
 import VerifiedDocumentsSection from "@/components/adminDashboard/VerificationCenter/VerifiedDocumentsSection";
 import UnderReviewDocumentsSection from "@/components/adminDashboard/VerificationCenter/UnderReviewDocumentsSection";
 import RejectedDocumentsSection from "@/components/adminDashboard/VerificationCenter/RejectedDocumentsSection";
@@ -32,6 +34,7 @@ const formatDocumentType = (docType) => {
 };
 
 function VerificationSection() {
+  const { user, updateUser } = useAuth();
   const [showPayment, setShowPayment] = useState(false);
   const [documents, setDocuments] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +42,9 @@ function VerificationSection() {
   const [documentToDelete, setDocumentToDelete] = useState(null);
   const [renterPlan, setRenterPlan] = useState(null);
   const [planLoading, setPlanLoading] = useState(true);
+  const [verificationPayment, setVerificationPayment] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null); // Store fresh user data
 
   // Fetch documents on mount and when payment is successful
   const fetchDocuments = async () => {
@@ -54,15 +60,64 @@ function VerificationSection() {
     }
   };
 
+  // Fetch fresh user data on mount to get latest verification status
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const { getCurrentUser } = await import('@/api/users');
+        const freshUser = await getCurrentUser();
+        setCurrentUser(freshUser);
+        // Update AuthContext with fresh data
+        if (freshUser && updateUser) {
+          updateUser(freshUser);
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+        // Fallback to user from context
+        setCurrentUser(user);
+      }
+    };
+    fetchCurrentUser();
+  }, []);
+
+  // Refresh user data when user object changes (e.g., after login/update)
+  useEffect(() => {
+    if (user && !currentUser) {
+      setCurrentUser(user);
+    }
+  }, [user]);
+
   useEffect(() => {
     fetchDocuments();
   }, []);
 
-  // Check for payment success in URL and refresh documents
+  // Refresh user data function
+  const refreshUserData = async () => {
+    try {
+      const { getCurrentUser } = await import('@/api/users');
+      const freshUser = await getCurrentUser();
+      setCurrentUser(freshUser);
+      // Update AuthContext with fresh data
+      if (freshUser && updateUser) {
+        updateUser(freshUser);
+      }
+      return freshUser;
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+      return null;
+    }
+  };
+
+  // Check for payment success in URL and refresh everything
+  // Note: New payment flow redirects to dedicated payment-success page
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const urlParams = new URLSearchParams(window.location.search);
     const paymentStatus = urlParams.get('payment');
     if (paymentStatus === 'success') {
+      // Refresh user data to get updated verification status
+      refreshUserData();
       // Refresh documents to show updated verification status
       fetchDocuments();
       // Also refresh the plan in case it changed
@@ -94,6 +149,45 @@ function VerificationSection() {
     };
     fetchRenterPlan();
   }, []);
+
+  // Fetch verification payment status - always try to fetch to check if payment exists
+  useEffect(() => {
+    const fetchVerificationPayment = async () => {
+      try {
+        setPaymentLoading(true);
+        // Always try to fetch payment - if it exists, user has paid
+        const payment = await getUserVerificationPayment();
+        if (payment && payment.status === 'succeeded') {
+          setVerificationPayment(payment);
+          console.log('✅ Verification payment found:', payment);
+          // If payment exists but userInfo doesn't show verified, refresh user data
+          const userToCheck = currentUser || user;
+          if (userToCheck?.userInfo?.verificationStatus !== 'verified') {
+            console.log('⚠️ Payment exists but verificationStatus not updated, refreshing user data...');
+            // Refresh user data to get updated status
+            await refreshUserData();
+          }
+        } else {
+          console.log('ℹ️ No verification payment found or payment not succeeded');
+          setVerificationPayment(null);
+        }
+      } catch (error) {
+        // If 404, user hasn't paid yet - that's okay
+        if (error.response?.status === 404) {
+          console.log('ℹ️ No verification payment found (404) - user hasn\'t paid yet');
+        } else {
+          console.error('Error fetching verification payment:', error);
+        }
+        setVerificationPayment(null);
+      } finally {
+        setPaymentLoading(false);
+      }
+    };
+    // Only fetch if we have user data
+    if (currentUser || user) {
+      fetchVerificationPayment();
+    }
+  }, [currentUser, user]);
 
   // Transform and categorize documents
   const transformedDocuments = useMemo(() => {
@@ -149,6 +243,12 @@ function VerificationSection() {
     console.log("Payment completed:", paymentData);
     setShowPayment(false);
     
+    // Refresh user data to get updated verification status
+    const updatedUser = await refreshUserData();
+    if (updatedUser) {
+      setCurrentUser(updatedUser);
+    }
+    
     // Refresh documents to show updated verification status
     await fetchDocuments();
     
@@ -160,6 +260,14 @@ function VerificationSection() {
       console.error('Error refreshing plan:', error);
     }
     
+    // Fetch verification payment details
+    try {
+      const payment = await getUserVerificationPayment();
+      setVerificationPayment(payment);
+    } catch (error) {
+      console.error('Error fetching verification payment:', error);
+    }
+    
     toast.success('Payment successful! Your verification status has been updated.');
   };
 
@@ -168,10 +276,10 @@ function VerificationSection() {
     const hasRejectedDocs = transformedDocuments.rejected.length > 0;
     const hasUnderReviewDocs = transformedDocuments.underReview.length > 0;
 
-    // if (hasRejectedDocs || hasUnderReviewDocs) {
-    //   toast.warning('Please wait for verification then only proceed with payment');
-    //   return;
-    // }
+    if (hasRejectedDocs || hasUnderReviewDocs) {
+      toast.warning('Please wait for verification then only proceed with payment');
+      return;
+    }
 
     // If all documents are verified (or no documents), proceed with payment
     setShowPayment(true);
@@ -286,55 +394,184 @@ function VerificationSection() {
           </div>
         </section>
       ) : renterPlan ? (
-        <section className="bg-white rounded-2xl border border-border p-4">
-          <div className="block">
-            <div>
-              <p className="text-base font-normal font-nunito text-midGray mb-1">
-                <span className="text-xl font-bold text-mainBlue">
-                  £{renterPlan.monthlyPrice?.toFixed(2) || '0.00'}
-                </span>
-                {renterPlan.userType === 'renter' ? ' / listing' : ' / month'}
+        // Check if user has already paid (one-time payment)
+        // Check: 1) userInfo.verificationStatus === 'verified' OR 2) verificationPayment exists
+        // Use currentUser (fresh data) or fallback to user from context
+        (() => {
+          const userToCheck = currentUser || user;
+          const isVerifiedByStatus = userToCheck?.userInfo?.verificationStatus === 'verified';
+          const hasPayment = verificationPayment && verificationPayment.status === 'succeeded';
+          const hasPaid = isVerifiedByStatus || hasPayment;
+          
+          // Debug log
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Payment button visibility check:', {
+              verificationStatus: userToCheck?.userInfo?.verificationStatus,
+              isVerifiedByStatus,
+              hasPayment,
+              hasPaid,
+              paymentStatus: verificationPayment?.status
+            });
+          }
+          
+          return hasPaid;
+        })() ? (
+          // Payment Confirmation Section (User has already paid)
+          <section className="bg-white rounded-2xl border border-border p-6">
+            <div className="block">
+              {/* Success Icon */}
+              <div className="mb-4 flex justify-start">
+                <SuccessfullyCheck />
+              </div>
+
+              {/* Payment Confirmation Header */}
+              <h3 className="text-xl font-bold font-nunito text-secondary mb-2">
+                Payment Completed
+              </h3>
+              <p className="text-base font-nunito font-normal text-[#45556C] mb-4">
+                You have successfully completed your verification payment. Your account is now verified and you can enjoy all the premium features.
               </p>
-              <p className="text-base font-nunito font-normal text-[#45556C] mb-3">
-                {renterPlan.userType === 'renter' ? 'One-time payment' : 'Monthly subscription'}{" "}
-                <span className="relative ml-3 before:content-[''] before:absolute before:left-[-11px] before:rounded-full before:w-[6px] before:bottom-2 before:h-[6px] before:bg-midGray  text-base font-nunito font-normal text-[#45556C]">
-                  {renterPlan.userType === 'renter' ? 'Lifetime verification' : 'Recurring billing'}
-                </span>
-              </p>
-              {renterPlan.description && (
-                <p className="text-sm font-nunito font-normal text-[#45556C] mb-3">
-                  {renterPlan.description}
-                </p>
+
+              {/* Payment Details */}
+              {paymentLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#6B4EFF]"></div>
+                  <p className="ml-2 text-sm text-darkGray">Loading payment details...</p>
+                </div>
+              ) : verificationPayment ? (
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2 border border-lightGray">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm font-medium text-darkGray">Plan:</p>
+                    <p className="text-base font-semibold text-secondary">
+                      {renterPlan.name || 'Verification Plan'}
+                    </p>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm font-medium text-darkGray">Amount Paid:</p>
+                    <p className="text-lg font-bold text-mainBlue">
+                      £{verificationPayment.amount?.toFixed(2) || renterPlan.monthlyPrice?.toFixed(2) || '0.00'}
+                    </p>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm font-medium text-darkGray">Payment Date:</p>
+                    <p className="text-sm font-normal text-darkGray">
+                      {verificationPayment.paidAt 
+                        ? new Date(verificationPayment.paidAt).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                          })
+                        : 'N/A'}
+                    </p>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm font-medium text-darkGray">Status:</p>
+                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                      Verified
+                    </span>
+                  </div>
+                  {verificationPayment.paymentMethod?.card?.last4 && (
+                    <div className="flex justify-between items-center pt-2 border-t border-lightGray">
+                      <p className="text-sm font-medium text-darkGray">Payment Method:</p>
+                      <p className="text-sm font-normal text-darkGray">
+                        •••• •••• •••• {verificationPayment.paymentMethod.card.last4}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-lg p-4 border border-lightGray">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm font-medium text-darkGray">Amount Paid:</p>
+                    <p className="text-lg font-bold text-mainBlue">
+                      £{renterPlan.monthlyPrice?.toFixed(2) || '0.00'}
+                    </p>
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <p className="text-sm font-medium text-darkGray">Status:</p>
+                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                      Verified
+                    </span>
+                  </div>
+                </div>
               )}
-              <ul className="space-y-1 text-sm text-text-secondary">
-                <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
-                  <GreenRoundCheckIcon />
-                  Unlimited owner contacts
-                </li>
-                <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
-                  <GreenRoundCheckIcon />
-                  Verified badge on profile
-                </li>
-                <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
-                  <GreenRoundCheckIcon />
-                  3x more responses from owners
-                </li>
-                <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
-                  <GreenRoundCheckIcon />
-                  Priority support
-                </li>
-              </ul>
+
+              {/* Benefits List */}
+              <div className="mt-4 pt-4 border-t border-lightGray">
+                <p className="text-sm font-semibold text-secondary mb-2">Your Benefits:</p>
+                <ul className="space-y-1 text-sm text-text-secondary">
+                  <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
+                    <GreenRoundCheckIcon />
+                    Unlimited owner contacts
+                  </li>
+                  <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
+                    <GreenRoundCheckIcon />
+                    Verified badge on profile
+                  </li>
+                  <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
+                    <GreenRoundCheckIcon />
+                    3x more responses from owners
+                  </li>
+                  <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
+                    <GreenRoundCheckIcon />
+                    Priority support
+                  </li>
+                </ul>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={handlePaymentClick}
-              className="self-start mt-6 sm:self-auto px-6 py-2 rounded-[10px] bg-blueGradient text-white text-base font-bold shadow-[0px_2px_10px_0px_#00000033]  transition-opacity font-nunito flex items-center gap-2"
-            >
-              <WhiteCardIcon />
-              Continue to Payment
-            </button>
-          </div>
-        </section>
+          </section>
+        ) : (
+          // Payment Section (User hasn't paid yet)
+          <section className="bg-white rounded-2xl border border-border p-4">
+            <div className="block">
+              <div>
+                <p className="text-base font-normal font-nunito text-midGray mb-1">
+                  <span className="text-xl font-bold text-mainBlue">
+                    £{renterPlan.monthlyPrice?.toFixed(2) || '0.00'}
+                  </span>
+                  {renterPlan.userType === 'renter' ? ' / listing' : ' / month'}
+                </p>
+                <p className="text-base font-nunito font-normal text-[#45556C] mb-3">
+                  {renterPlan.userType === 'renter' ? 'One-time payment' : 'Monthly subscription'}{" "}
+                  <span className="relative ml-3 before:content-[''] before:absolute before:left-[-11px] before:rounded-full before:w-[6px] before:bottom-2 before:h-[6px] before:bg-midGray  text-base font-nunito font-normal text-[#45556C]">
+                    {renterPlan.userType === 'renter' ? 'Lifetime verification' : 'Recurring billing'}
+                  </span>
+                </p>
+                {renterPlan.description && (
+                  <p className="text-sm font-nunito font-normal text-[#45556C] mb-3">
+                    {renterPlan.description}
+                  </p>
+                )}
+                <ul className="space-y-1 text-sm text-text-secondary">
+                  <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
+                    <GreenRoundCheckIcon />
+                    Unlimited owner contacts
+                  </li>
+                  <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
+                    <GreenRoundCheckIcon />
+                    Verified badge on profile
+                  </li>
+                  <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
+                    <GreenRoundCheckIcon />
+                    3x more responses from owners
+                  </li>
+                  <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
+                    <GreenRoundCheckIcon />
+                    Priority support
+                  </li>
+                </ul>
+              </div>
+              <button
+                type="button"
+                onClick={handlePaymentClick}
+                className="self-start mt-6 sm:self-auto px-6 py-2 rounded-[10px] bg-blueGradient text-white text-base font-bold shadow-[0px_2px_10px_0px_#00000033]  transition-opacity font-nunito flex items-center gap-2"
+              >
+                <WhiteCardIcon />
+                Continue to Payment
+              </button>
+            </div>
+          </section>
+        )
       ) : (
         <section className="bg-white rounded-2xl border border-border p-4">
           <div className="block">

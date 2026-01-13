@@ -18,6 +18,7 @@ import { getCurrentUser } from "@/api/users";
 import { createOrGetChatroom } from "@/api/chat";
 import { addToWishlist, removeFromWishlist, checkWishlist, getWishlistPropertyIds } from "@/api/wishlists";
 import { useAuth } from "@/context/AuthContext";
+import { getUserVerificationPayment } from "@/api/subscriptions";
 import { isAuthenticated } from "@/utils/auth";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { toast } from "react-toastify";
@@ -35,6 +36,7 @@ function PropertyDetailPage() {
   const [error, setError] = useState(null);
   const [remainingContacts, setRemainingContacts] = useState(null);
   const [isContacting, setIsContacting] = useState(false);
+  const [hasPaidVerification, setHasPaidVerification] = useState(false);
 
   // Fetch property data from API
   useEffect(() => {
@@ -61,13 +63,36 @@ function PropertyDetailPage() {
     fetchProperty();
   }, [id]);
 
-  // Fetch current user's remaining contacts
+  // Fetch current user's remaining contacts and payment status
   useEffect(() => {
     const fetchUserContacts = async () => {
       try {
         const userData = await getCurrentUser();
         if (userData && userData.remainingContacts !== undefined) {
           setRemainingContacts(userData.remainingContacts);
+        }
+        
+        // Check if user has paid verification fee (for renters)
+        if (user?.userType === 'renter') {
+          try {
+            const payment = await getUserVerificationPayment();
+            if (payment && payment.status === 'succeeded') {
+              setHasPaidVerification(true);
+            } else {
+              // Fallback: Check userInfo.verificationStatus
+              const isVerified = userData.userInfo?.verificationStatus === 'verified';
+              setHasPaidVerification(isVerified);
+            }
+          } catch (error) {
+            // If 404, user hasn't paid - check verification status
+            if (error.response?.status === 404) {
+              const isVerified = userData.userInfo?.verificationStatus === 'verified';
+              setHasPaidVerification(isVerified);
+            } else {
+              console.error('Error checking verification payment:', error);
+              setHasPaidVerification(false);
+            }
+          }
         }
       } catch (err) {
         console.error('Error fetching user contacts:', err);
@@ -77,7 +102,7 @@ function PropertyDetailPage() {
     };
 
     fetchUserContacts();
-  }, []);
+  }, [user?.userType]);
 
   // Handle contact owner click
   const handleContactOwner = async () => {
@@ -480,7 +505,7 @@ function PropertyDetailPage() {
               owner={property.owner}
               ownerName={property.owner ? `${property.owner.firstName || ''} ${property.owner.lastName || ''}`.trim() : undefined}
               propertiesCount={property.owner?.propertiesCount}
-              remainingContacts={remainingContacts}
+              remainingContacts={hasPaidVerification ? null : remainingContacts}
               isContacting={isContacting}
             />
 
