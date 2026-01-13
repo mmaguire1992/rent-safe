@@ -14,8 +14,9 @@ import { getCurrentUser } from "@/api/users";
 import { getWishlistPropertyIds } from "@/api/wishlists";
 import { useSocket, SOCKET_EVENTS } from "@/hooks/useSocket";
 import { toast } from "react-toastify";
-import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtils';
 import { isAuthenticated } from "@/utils/auth";
+import MediumCheckedIcon from "@/svg/mediumCheckedIcon";
+import RedCrossIcon from "@/svg/redCrossIcon";
 
 function ChatMessage() {
   const [searchParams] = useSearchParams();
@@ -405,6 +406,23 @@ function ChatMessage() {
     const messageUserId = String(msg.userId?._id || msg.userId?.id || msg.userId || '');
     const isCurrentUser = currentUserId && messageUserId && currentUserId === messageUserId;
     
+    // Get verification status from message user (for renters - show cross icon if not verified)
+    const messageUser = msg.userId;
+    // Check verification status - handle populated userInfoId
+    let isVerified = false;
+    if (messageUser) {
+      if (messageUser.userType === 'owner') {
+        // Owners are always considered verified for display
+        isVerified = true;
+      } else if (messageUser.userType === 'renter') {
+        // For renters, check verification status from userInfoId
+        isVerified = messageUser?.userInfoId?.verificationStatus === 'verified' || false;
+      } else {
+        // If no userType or unknown type, assume verified (backward compatibility)
+        isVerified = true;
+      }
+    }
+    
     return {
       id: msg._id || msg.id,
       message: msg.textDecrypted || msg.textEncrypted || msg.text || '',
@@ -420,6 +438,9 @@ function ChatMessage() {
       type: msg.type || 'text',
       isRead: msg.isRead,
       isDelivered: msg.isDelivered,
+      // Verification status for renter messages (to show cross icon if not verified)
+      isVerified: isVerified,
+      senderUserType: messageUser?.userType || null,
       // Media fields
       fileUrl: msg.fileUrl || null,
       fileName: msg.fileName || null,
@@ -492,11 +513,7 @@ function ChatMessage() {
   const handleFileSelect = async (file) => {
     if (!selectedConversation || !isConnected) return;
 
-    // Check user verification status before allowing file upload
-    if (currentUser && !isUserVerified(currentUser)) {
-      toast.error(getVerificationMessage('chat with other users'));
-      return;
-    }
+    // Removed verification check for renters - renters can send files regardless of verification status
 
     const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
     if (!chatroomId || chatroomId === 'undefined' || chatroomId === 'null') return;
@@ -556,11 +573,7 @@ function ChatMessage() {
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedConversation || !isConnected) return;
     
-    // Check user verification status before allowing message send
-    if (currentUser && !isUserVerified(currentUser)) {
-      toast.error(getVerificationMessage('chat with other users'));
-      return;
-    }
+    // Removed verification check for renters - renters can send messages regardless of verification status
     
     // Don't allow sending if blocked
     if (selectedConversation.isBlockedByCurrentUser || selectedConversation.isCurrentUserBlocked) {
@@ -909,6 +922,14 @@ function ChatMessage() {
                       ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase()
                       : 'U';
                     
+                    // Check verification status for renters
+                    const otherUserType = otherUser?.userType || null;
+                    const isOtherUserVerified = otherUser?.userInfoId?.verificationStatus === 'verified' || 
+                                                 otherUser?.userInfo?.verificationStatus === 'verified' ||
+                                                 false;
+                    const showVerificationIcon = otherUserType === 'renter';
+                    const isVerified = isOtherUserVerified;
+                    
                     const chatroomId = chatroom._id || chatroom.id;
                     const isSelected = selectedConversation?.id === chatroomId;
 
@@ -925,6 +946,16 @@ function ChatMessage() {
                             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white flex items-center justify-center text-[#6B4EFF] font-bold text-sm sm:text-base border border-lightGray">
                               {initials}
                             </div>
+                            {/* Show verification icon for renters: cross if not verified, checkmark if verified */}
+                            {showVerificationIcon && (
+                              <span className="absolute -bottom-0 -right-1 bg-white rounded-full">
+                                {isVerified ? (
+                                  <MediumCheckedIcon />
+                                ) : (
+                                  <RedCrossIcon />
+                                )}
+                              </span>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">

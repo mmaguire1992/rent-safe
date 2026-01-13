@@ -9,6 +9,7 @@ import SendOfferModal from "@/components/adminDashboard/TenantProfile/SendOfferM
 import BlueSearchIcon from "@/svg/blueSearchIcon";
 import MediumCheckedIcon from "@/svg/mediumCheckedIcon";
 import ChatBlueStartIcon from "@/svg/chatBlueStartIcon";
+import RedCrossIcon from "@/svg/redCrossIcon";
 import { getChatrooms, getChatroomMessages, uploadChatMedia, updateChatroom } from "@/api/chat";
 import { getCurrentUser, getUserById } from "@/api/users";
 import { useSocket, SOCKET_EVENTS } from "@/hooks/useSocket";
@@ -465,6 +466,23 @@ function Messages() {
     const messageUserId = String(msg.userId?._id || msg.userId?.id || msg.userId || '');
     const isCurrentUser = currentUserId && messageUserId && currentUserId === messageUserId;
 
+    // Get verification status from message user (for renters - show cross icon if not verified)
+    const messageUser = msg.userId;
+    // Check verification status - handle populated userInfoId
+    let isVerified = false;
+    if (messageUser) {
+      if (messageUser.userType === 'owner') {
+        // Owners are always considered verified for display
+        isVerified = true;
+      } else if (messageUser.userType === 'renter') {
+        // For renters, check verification status from userInfoId
+        isVerified = messageUser?.userInfoId?.verificationStatus === 'verified' || false;
+      } else {
+        // If no userType or unknown type, assume verified (backward compatibility)
+        isVerified = true;
+      }
+    }
+
     return {
       id: msg._id || msg.id,
       message: msg.textDecrypted || msg.textEncrypted || msg.text || '',
@@ -480,6 +498,9 @@ function Messages() {
       type: msg.type || 'text',
       isRead: msg.isRead,
       isDelivered: msg.isDelivered,
+      // Verification status for renter messages (to show cross icon if not verified)
+      isVerified: isVerified,
+      senderUserType: messageUser?.userType || null,
       // Media fields
       fileUrl: msg.fileUrl || null,
       fileName: msg.fileName || null,
@@ -1303,6 +1324,14 @@ function Messages() {
                       ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase()
                       : 'U';
 
+                    // Check verification status for renters
+                    const otherUserType = otherUser?.userType || null;
+                    const isOtherUserVerified = otherUser?.userInfoId?.verificationStatus === 'verified' || 
+                                                 otherUser?.userInfo?.verificationStatus === 'verified' ||
+                                                 false;
+                    const showVerificationIcon = otherUserType === 'renter';
+                    const isVerified = isOtherUserVerified;
+
                     const chatroomId = chatroom._id || chatroom.id;
                     const isSelected = selectedConversation?.id === chatroomId;
                     const unreadCount = chatroom.unreadCount || 0;
@@ -1319,9 +1348,14 @@ function Messages() {
                             <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#6B4EFF] font-bold border border-lightGray">
                               {initials}
                             </div>
-                            {unreadCount > 0 && (
-                              <span className="absolute -bottom-0 -right-1 text-green-600 bg-white rounded-full">
-                                <MediumCheckedIcon />
+                            {/* Show verification icon for renters: cross if not verified, checkmark if verified */}
+                            {showVerificationIcon && (
+                              <span className="absolute -bottom-0 -right-1 bg-white rounded-full">
+                                {isVerified ? (
+                                  <MediumCheckedIcon />
+                                ) : (
+                                  <RedCrossIcon />
+                                )}
                               </span>
                             )}
                           </div>
