@@ -45,3 +45,56 @@ export const getRenterPlan = async () => {
     throw error;
   }
 };
+
+/**
+ * Create Stripe checkout session
+ * @param {string} planKey - Plan key (basic, standard, premium)
+ * @param {string} userType - User type (owner/renter)
+ * @param {string} successUrl - URL to redirect after successful payment
+ * @param {string} cancelUrl - URL to redirect if user cancels
+ * @returns {Promise<Object>} Checkout session with sessionId and url
+ */
+export const createCheckoutSession = async (planKey, userType, successUrl, cancelUrl) => {
+  try {
+    const response = await apiClient.post('/stripe/subscriptions/checkout', {
+      planKey,
+      userType,
+      successUrl,
+      cancelUrl,
+    });
+    
+    // Handle different response structures
+    // Backend returns: { success: true, message: { url, sessionId, customerId }, data: "..." }
+    let result = null;
+    if (response.data?.message && typeof response.data.message === 'object') {
+      result = response.data.message;
+    } else if (response.data?.data && typeof response.data.data === 'object') {
+      result = response.data.data;
+    } else if (response.data?.url || response.data?.sessionId) {
+      result = response.data;
+    } else {
+      result = response.data;
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get payment status by checkout session ID
+ * @param {string} sessionId - Stripe checkout session ID
+ * @returns {Promise<Object>} Payment status
+ */
+export const getPaymentStatus = async (sessionId) => {
+  try {
+    const response = await apiClient.get(`/stripe/subscriptions/payment-status/${sessionId}`);
+    const payment = response.data?.data || response.data;
+    return payment;
+  } catch (error) {
+    console.error('Error fetching payment status:', error);
+    throw error;
+  }
+};

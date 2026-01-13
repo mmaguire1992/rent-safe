@@ -98,6 +98,15 @@ export const useSocket = () => {
     socket.on('disconnect', (reason) => {
       console.log('❌ Socket disconnected:', reason);
       setIsConnected(false);
+      
+      // "transport close" is normal when:
+      // - User navigates away (e.g., redirected to Stripe)
+      // - Page is refreshed
+      // - Browser tab is closed
+      // Socket will automatically reconnect when user returns (if reconnection is enabled)
+      if (reason === 'transport close') {
+        console.log('ℹ️ Transport close is normal - socket will reconnect automatically');
+      }
     });
 
     socket.on('connect_error', (error) => {

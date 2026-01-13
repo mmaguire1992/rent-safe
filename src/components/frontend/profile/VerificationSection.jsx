@@ -40,21 +40,42 @@ function VerificationSection() {
   const [renterPlan, setRenterPlan] = useState(null);
   const [planLoading, setPlanLoading] = useState(true);
 
-  // Fetch documents on mount
+  // Fetch documents on mount and when payment is successful
+  const fetchDocuments = async () => {
+    try {
+      setLoading(true);
+      const data = await getMyDocuments();
+      setDocuments(data);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      toast.error('Failed to load documents');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchDocuments = async () => {
-      try {
-        setLoading(true);
-        const data = await getMyDocuments();
-        setDocuments(data);
-      } catch (error) {
-        console.error('Error fetching documents:', error);
-        toast.error('Failed to load documents');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchDocuments();
+  }, []);
+
+  // Check for payment success in URL and refresh documents
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    if (paymentStatus === 'success') {
+      // Refresh documents to show updated verification status
+      fetchDocuments();
+      // Also refresh the plan in case it changed
+      const refreshPlan = async () => {
+        try {
+          const plan = await getRenterPlan();
+          setRenterPlan(plan);
+        } catch (error) {
+          console.error('Error refreshing plan:', error);
+        }
+      };
+      refreshPlan();
+    }
   }, []);
 
   // Fetch renter subscription plan on mount
@@ -124,9 +145,22 @@ function VerificationSection() {
     return { verified, underReview, rejected };
   }, [documents]);
 
-  const handlePaymentComplete = (paymentData) => {
+  const handlePaymentComplete = async (paymentData) => {
     console.log("Payment completed:", paymentData);
     setShowPayment(false);
+    
+    // Refresh documents to show updated verification status
+    await fetchDocuments();
+    
+    // Refresh plan if needed
+    try {
+      const plan = await getRenterPlan();
+      setRenterPlan(plan);
+    } catch (error) {
+      console.error('Error refreshing plan:', error);
+    }
+    
+    toast.success('Payment successful! Your verification status has been updated.');
   };
 
   const handlePaymentClick = () => {
@@ -134,10 +168,10 @@ function VerificationSection() {
     const hasRejectedDocs = transformedDocuments.rejected.length > 0;
     const hasUnderReviewDocs = transformedDocuments.underReview.length > 0;
 
-    if (hasRejectedDocs || hasUnderReviewDocs) {
-      toast.warning('Please wait for verification then only proceed with payment');
-      return;
-    }
+    // if (hasRejectedDocs || hasUnderReviewDocs) {
+    //   toast.warning('Please wait for verification then only proceed with payment');
+    //   return;
+    // }
 
     // If all documents are verified (or no documents), proceed with payment
     setShowPayment(true);
@@ -202,6 +236,7 @@ function VerificationSection() {
       <PaymentSection
         onBack={() => setShowPayment(false)}
         onPaymentComplete={handlePaymentComplete}
+        renterPlan={renterPlan}
       />
     );
   }
