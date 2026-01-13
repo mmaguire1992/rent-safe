@@ -15,7 +15,6 @@ import { getWishlistPropertyIds } from "@/api/wishlists";
 import { useSocket, SOCKET_EVENTS } from "@/hooks/useSocket";
 import { toast } from "react-toastify";
 import { isAuthenticated } from "@/utils/auth";
-import MediumCheckedIcon from "@/svg/mediumCheckedIcon";
 import RedCrossIcon from "@/svg/redCrossIcon";
 
 function ChatMessage() {
