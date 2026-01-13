@@ -12,6 +12,7 @@ function ProofOfIncomeSection({
   incomeTypeOptions,
   existingDocuments = [],
   onDocumentsUpdated,
+  errors = {},
 }) {
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
@@ -51,8 +52,15 @@ function ProofOfIncomeSection({
             value={formData.grossMonthly}
             onChange={handleChange}
             placeholder="Enter your gross monthly"
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            inputMode="numeric"
+            pattern="[0-9.]*"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              errors.grossMonthly ? 'border-errorColor' : 'border-lightGray'
+            }`}
           />
+          {errors.grossMonthly && (
+            <p className="mt-1 text-sm text-errorColor">{errors.grossMonthly}</p>
+          )}
         </div>
 
         <div>
@@ -65,8 +73,15 @@ function ProofOfIncomeSection({
             value={formData.netMonthly}
             onChange={handleChange}
             placeholder="Enter your net monthly"
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            inputMode="numeric"
+            pattern="[0-9.]*"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              errors.netMonthly ? 'border-errorColor' : 'border-lightGray'
+            }`}
           />
+          {errors.netMonthly && (
+            <p className="mt-1 text-sm text-errorColor">{errors.netMonthly}</p>
+          )}
         </div>
       </div>
 

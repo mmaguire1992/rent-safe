@@ -45,6 +45,12 @@ function RenterBasicInformation() {
       processedValue = value.replace(/^\s+/, '');
     }
     
+    // For phoneNumber field, only allow numbers and common phone formatting characters
+    if (name === 'phoneNumber') {
+      // Allow only numbers, +, -, spaces, parentheses, and dots
+      processedValue = value.replace(/[^0-9+\-().\s]/g, '');
+    }
+    
     setFormData((prev) => ({
       ...prev,
       [name]: processedValue,
@@ -163,18 +169,30 @@ function RenterBasicInformation() {
       const validationErrors = error.validationErrors || error.response?.data?.errors;
       
       if (validationErrors && Array.isArray(validationErrors) && validationErrors.length > 0) {
-        // Display specific field validation errors
+        // Get the first validation error message
+        const firstError = validationErrors[0];
+        let errorMessage = firstError.message || 'Validation failed';
+        
+        // Replace "phone" with "phone number" in error messages if it's a phone-related error
+        if (firstError.field === 'phone' || firstError.field === 'phoneNumber') {
+          errorMessage = errorMessage.replace(/\bphone\b/gi, 'phone number');
+        }
+        
+        // Display only the first specific error message
+        toast.error(errorMessage);
+        
+        // Map backend field names to form field names and set errors
         const fieldErrors = {};
         validationErrors.forEach((err) => {
-          const fieldName = err.field ? err.field.charAt(0).toUpperCase() + err.field.slice(1).replace(/([A-Z])/g, ' $1') : 'Field';
-          toast.error(`${fieldName}: ${err.message}`);
-          
-          // Map backend field names to form field names
           if (err.field === 'email') fieldErrors.email = err.message;
           if (err.field === 'password') fieldErrors.password = err.message;
           if (err.field === 'firstName' || err.field === 'fullName') fieldErrors.fullName = err.message;
           if (err.field === 'lastName') fieldErrors.fullName = err.message;
-          if (err.field === 'phone' || err.field === 'phoneNumber') fieldErrors.phoneNumber = err.message;
+          if (err.field === 'phone' || err.field === 'phoneNumber') {
+            // Replace "phone" with "phone number" in error messages
+            const message = err.message ? err.message.replace(/\bphone\b/gi, 'phone number') : err.message;
+            fieldErrors.phoneNumber = message;
+          }
         });
         setErrors(fieldErrors);
       } else {
@@ -336,30 +354,6 @@ function RenterBasicInformation() {
             )}
           </div>
 
-          {/* Country */}
-          <div>
-            <label
-              htmlFor="country"
-              className="block text-base font-medium text-secondary mb-1"
-            >
-              Country
-            </label>
-            <input
-              type="text"
-              id="country"
-              name="country"
-              value={formData.country}
-              onChange={handleChange}
-              placeholder="Enter your country"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
-                errors.country ? "border-errorColor" : "border-lightGray"
-              }`}
-            />
-            {errors.country && (
-              <p className="mt-1 text-sm text-errorColor">{errors.country}</p>
-            )}
-          </div>
-
           {/* State */}
           <div>
             <label
@@ -381,6 +375,30 @@ function RenterBasicInformation() {
             />
             {errors.state && (
               <p className="mt-1 text-sm text-errorColor">{errors.state}</p>
+            )}
+          </div>
+
+          {/* Country */}
+          <div>
+            <label
+              htmlFor="country"
+              className="block text-base font-medium text-secondary mb-1"
+            >
+              Country
+            </label>
+            <input
+              type="text"
+              id="country"
+              name="country"
+              value={formData.country}
+              onChange={handleChange}
+              placeholder="Enter your country"
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
+                errors.country ? "border-errorColor" : "border-lightGray"
+              }`}
+            />
+            {errors.country && (
+              <p className="mt-1 text-sm text-errorColor">{errors.country}</p>
             )}
           </div>
 
@@ -442,7 +460,7 @@ function RenterBasicInformation() {
               htmlFor="monthlyIncome"
               className="block text-base font-medium text-secondary mb-1"
             >
-              Monthly Income ($)
+              Monthly Income (£)
             </label>
             <input
               type="number"

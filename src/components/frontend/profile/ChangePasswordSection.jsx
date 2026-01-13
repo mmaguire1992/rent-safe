@@ -335,11 +335,9 @@ function ChangePasswordSection() {
                 {showPasswords.new ? <BsEye className="w-5 h-5" /> : <BsEyeSlash className="w-5 h-5" />}
               </button>
             </div>
-            {formData.newPassword && !errors.newPassword ? (
-              <p className="text-xs text-darkGray mt-1">
-                Must be at least 8 characters with uppercase, lowercase, and number
-              </p>
-            ) : null}
+            {touched.newPassword && errors.newPassword && (
+              <p className="text-xs text-errorColor mt-1">{errors.newPassword}</p>
+            )}
           </div>
         </div>
 

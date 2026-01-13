@@ -1,5 +1,6 @@
 import { useState } from "react";
 import BlueUserIcon from "@/svg/blueUserIcon";
+import GrayUserIcon from "@/svg/grayUserIcon";
 import BlueUploadIcon from "@/svg/blueUploadIcon";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
 import SectionHeader from "./SectionHeader";
@@ -11,6 +12,7 @@ function BasicInformationSection({
   handleChange,
   handleImageUpload,
   onRemoveProfilePicture,
+  errors = {},
 }) {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -49,7 +51,9 @@ function BasicInformationSection({
                   )}
                 </>
               ) : (
-                <div className="text-6xl text-gray-400">🏔️</div>
+                <div className="w-full h-full flex items-center justify-center">
+                  <GrayUserIcon />
+                </div>
               )}
             </div>
             <div className="flex-1 flex flex-col justify-center items-center sm:items-start">
@@ -142,7 +146,9 @@ function BasicInformationSection({
                     name="phoneNumber"
                     value={formData.phoneNumber}
                     onChange={handleChange}
-                    className="flex-1 px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+                    className={`flex-1 px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+                      errors.phoneNumber ? 'border-errorColor' : 'border-lightGray'
+                    }`}
                   />
                   <button
                     type="button"
@@ -151,6 +157,9 @@ function BasicInformationSection({
                     Verify
                   </button>
                 </div>
+                {errors.phoneNumber && (
+                  <p className="mt-1 text-sm text-errorColor">{errors.phoneNumber}</p>
+                )}
               </div>
 
               <div>
@@ -205,8 +214,15 @@ function BasicInformationSection({
                   value={formData.postcode}
                   onChange={handleChange}
                   placeholder="Enter your postcode"
-                  className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+                    errors.postcode ? 'border-errorColor' : 'border-lightGray'
+                  }`}
                 />
+                {errors.postcode && (
+                  <p className="mt-1 text-sm text-errorColor">{errors.postcode}</p>
+                )}
               </div>
 
               <div>
@@ -233,8 +249,15 @@ function BasicInformationSection({
                   value={formData.monthlyIncome}
                   onChange={handleChange}
                   placeholder="Enter your monthly income"
-                  className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+                  inputMode="numeric"
+                  pattern="[0-9.]*"
+                  className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+                    errors.monthlyIncome ? 'border-errorColor' : 'border-lightGray'
+                  }`}
                 />
+                {errors.monthlyIncome && (
+                  <p className="mt-1 text-sm text-errorColor">{errors.monthlyIncome}</p>
+                )}
               </div>
             </div>
           </div>

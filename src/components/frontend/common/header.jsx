@@ -368,7 +368,7 @@ const Navbar = () => {
                         )}
                       </button>
                       <button className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition shadow-sm">
-                        use one connect per listing
+                        Use one connect per listing
                       </button>
                     </>
                   )}

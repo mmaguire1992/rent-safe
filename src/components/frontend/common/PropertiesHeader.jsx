@@ -142,7 +142,7 @@ function PropertiesHeader({
                     </span>
                   )}
                   <button className="w-full shadow-[0px_2px_10px_0px_rgba(0,0,0,0.2),inset_0px_2px_4px_0px_rgba(255,255,255,0.2)] px-4 py-2 bg-orangeGradient rounded-lg text-base font-bold text-white">
-                    use one connect per listing
+                    Use one connect per listing
                   </button>
                 </>
               )}

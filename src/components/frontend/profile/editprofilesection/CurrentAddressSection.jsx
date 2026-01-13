@@ -2,7 +2,7 @@ import BlueLocationIcon from "@/svg/blueLocationIcon";
 import SectionHeader from "./SectionHeader";
 import DocumentUpload from "./DocumentUpload";
 
-function CurrentAddressSection({ formData, handleChange, existingDocuments = [], onDocumentsUpdated }) {
+function CurrentAddressSection({ formData, handleChange, existingDocuments = [], onDocumentsUpdated, errors = {} }) {
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
       <SectionHeader icon={BlueLocationIcon} title="Current Address" />
@@ -60,8 +60,15 @@ function CurrentAddressSection({ formData, handleChange, existingDocuments = [],
             value={formData.currentPostcode}
             onChange={handleChange}
             placeholder="Enter your postcode"
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              errors.currentPostcode ? 'border-errorColor' : 'border-lightGray'
+            }`}
           />
+          {errors.currentPostcode && (
+            <p className="mt-1 text-sm text-errorColor">{errors.currentPostcode}</p>
+          )}
         </div>
 
         <div>

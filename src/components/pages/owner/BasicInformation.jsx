@@ -15,6 +15,8 @@ function BasicInformation() {
     fullName: "",
     email: "",
     phoneNumber: "",
+    state: "",
+    country: "",
     companyName: "",
     password: "",
     confirmPassword: "",
@@ -33,6 +35,12 @@ function BasicInformation() {
     if (name === 'fullName') {
       // Remove leading spaces
       processedValue = value.replace(/^\s+/, '');
+    }
+    
+    // For phoneNumber field, only allow numbers and common phone formatting characters
+    if (name === 'phoneNumber') {
+      // Allow only numbers, +, -, spaces, parentheses, and dots
+      processedValue = value.replace(/[^0-9+\-().\s]/g, '');
     }
     
     setFormData((prev) => ({
@@ -115,6 +123,8 @@ function BasicInformation() {
         password: formData.password,
         userType: 'owner',
         phone: formData.phoneNumber || undefined,
+        state: formData.state || undefined,
+        country: formData.country || undefined,
       });
 
       // Store user data and token (will be activated after OTP verification)
@@ -146,7 +156,12 @@ function BasicInformation() {
       if (validationErrors && Array.isArray(validationErrors) && validationErrors.length > 0) {
         // Get the first validation error message
         const firstError = validationErrors[0];
-        const errorMessage = firstError.message || 'Validation failed';
+        let errorMessage = firstError.message || 'Validation failed';
+        
+        // Replace "phone" with "phone number" in error messages if it's a phone-related error
+        if (firstError.field === 'phone' || firstError.field === 'phoneNumber') {
+          errorMessage = errorMessage.replace(/\bphone\b/gi, 'phone number');
+        }
         
         // Display only the first specific error message
       toast.error(errorMessage);
@@ -158,7 +173,11 @@ function BasicInformation() {
           if (err.field === 'password') fieldErrors.password = err.message;
           if (err.field === 'firstName' || err.field === 'fullName') fieldErrors.fullName = err.message;
           if (err.field === 'lastName') fieldErrors.fullName = err.message;
-          if (err.field === 'phone' || err.field === 'phoneNumber') fieldErrors.phoneNumber = err.message;
+          if (err.field === 'phone' || err.field === 'phoneNumber') {
+            // Replace "phone" with "phone number" in error messages
+            const message = err.message ? err.message.replace(/\bphone\b/gi, 'phone number') : err.message;
+            fieldErrors.phoneNumber = message;
+          }
         });
         setErrors(fieldErrors);
       } else {
@@ -266,6 +285,54 @@ function BasicInformation() {
               <p className="mt-1 text-sm text-errorColor">
                 {errors.phoneNumber}
               </p>
+            )}
+          </div>
+
+          {/* State */}
+          <div>
+            <label
+              htmlFor="state"
+              className="block text-base font-medium text-secondary mb-1"
+            >
+              State
+            </label>
+            <input
+              type="text"
+              id="state"
+              name="state"
+              value={formData.state || ""}
+              onChange={handleChange}
+              placeholder="Enter your state"
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
+                errors.state ? "border-errorColor" : "border-lightGray"
+              }`}
+            />
+            {errors.state && (
+              <p className="mt-1 text-sm text-errorColor">{errors.state}</p>
+            )}
+          </div>
+
+          {/* Country */}
+          <div>
+            <label
+              htmlFor="country"
+              className="block text-base font-medium text-secondary mb-1"
+            >
+              Country
+            </label>
+            <input
+              type="text"
+              id="country"
+              name="country"
+              value={formData.country || ""}
+              onChange={handleChange}
+              placeholder="Enter your country"
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
+                errors.country ? "border-errorColor" : "border-lightGray"
+              }`}
+            />
+            {errors.country && (
+              <p className="mt-1 text-sm text-errorColor">{errors.country}</p>
             )}
           </div>
 
