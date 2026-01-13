@@ -40,6 +40,46 @@ export const getCurrentUser = async () => {
 };
 
 /**
+ * Get profile completion status (Owner only)
+ * Fetches profile completion percentage and missing fields
+ * @returns {Promise<Object>} - Profile completion data
+ * @returns {Promise<Object.completionPercentage>} - Completion percentage (0-100)
+ * @returns {Promise<Object.pendingTask>} - First missing field (e.g., "profile image")
+ * @returns {Promise<Object.missingFields>} - Array of missing field labels
+ * @returns {Promise<Object.isComplete>} - Whether profile is 100% complete
+ */
+export const getProfileCompletion = async () => {
+  try {
+    const response = await apiClient.get('/users/me/profile-completion');
+    const completionData = response.data?.data || response.data;
+    
+    if (!completionData) {
+      throw new Error('No completion data received from server');
+    }
+    
+    return completionData;
+  } catch (error) {
+    console.error('Error fetching profile completion:', error);
+    
+    if (error.response?.status === 401) {
+      throw new Error('Unauthorized. Please login again.');
+    }
+    
+    if (error.response?.status === 400) {
+      // Not an owner, return default values
+      return {
+        completionPercentage: 0,
+        pendingTask: null,
+        missingFields: [],
+        isComplete: false,
+      };
+    }
+    
+    throw error;
+  }
+};
+
+/**
  * Update user profile
  * @param {Object} profileData - Profile data to update
  * @param {string} profileData.firstName - First name

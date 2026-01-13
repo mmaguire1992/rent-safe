@@ -116,3 +116,22 @@ export const getUserVerificationPayment = async () => {
     throw error;
   }
 };
+
+/**
+ * Get user's current subscription (for owners)
+ * @returns {Promise<Object|null>} Current subscription or null if not found
+ */
+export const getCurrentSubscription = async () => {
+  try {
+    const response = await apiClient.get('/stripe/subscriptions/current');
+    const subscription = response.data?.data || response.data;
+    return subscription || null;
+  } catch (error) {
+    // If 404, user has no subscription - return null
+    if (error.response?.status === 404) {
+      return null;
+    }
+    console.error('Error fetching current subscription:', error);
+    throw error;
+  }
+};

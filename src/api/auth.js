@@ -161,6 +161,10 @@ export const signupUser = async (userData) => {
       requestBody.monthlyIncome = userData.monthlyIncome;
     }
     if (userData.description) requestBody.description = userData.description;
+    // Add companyName if provided (for owners)
+    if (userData.companyName && userData.companyName.trim()) {
+      requestBody.companyName = userData.companyName.trim();
+    }
     
     const response = await fetch(`${API_BASE_URL}/auth/signup`, {
       method: 'POST',

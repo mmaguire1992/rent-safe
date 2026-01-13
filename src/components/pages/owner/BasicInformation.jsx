@@ -91,6 +91,7 @@ function BasicInformation() {
         password: formData.password,
         userType: 'owner',
         phone: formData.phoneNumber || undefined,
+        companyName: formData.companyName?.trim() || undefined, // Send company name (will be saved as businessName in backend)
       });
 
       // Store user data and token (will be activated after OTP verification)

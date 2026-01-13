@@ -171,7 +171,7 @@ function PaymentSection({ onBack, onPaymentComplete, renterPlan }) {
       } catch (error) {
         // Silently fail - payment might not be processed yet
         console.debug('Payment status check:', error.message);
-      }
+    }
     }, 3000);
 
     return () => {

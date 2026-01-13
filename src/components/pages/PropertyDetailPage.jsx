@@ -153,13 +153,13 @@ function PropertyDetailPage() {
         
         // Refresh user data to get updated remaining contacts
         if (isAuthenticated()) {
-          try {
-            const userData = await getCurrentUser();
-            if (userData && userData.remainingContacts !== undefined) {
-              setRemainingContacts(userData.remainingContacts);
-            }
-          } catch (err) {
-            console.error('Error refreshing user contacts:', err);
+        try {
+          const userData = await getCurrentUser();
+          if (userData && userData.remainingContacts !== undefined) {
+            setRemainingContacts(userData.remainingContacts);
+          }
+        } catch (err) {
+          console.error('Error refreshing user contacts:', err);
           }
         }
         
@@ -491,13 +491,13 @@ function PropertyDetailPage() {
           </div>
           <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
             {isAuthenticated() && (
-              <button
-                onClick={toggleFavorite}
-                className="flex items-center gap-2 text-[#2B2F38] text-sm sm:text-base font-normal font-nunito transition-colors"
-              >
-                <HeartIcon isFilled={isFavorited} />
-                <span className="hidden sm:inline">Save</span>
-              </button>
+            <button
+              onClick={toggleFavorite}
+              className="flex items-center gap-2 text-[#2B2F38] text-sm sm:text-base font-normal font-nunito transition-colors"
+            >
+              <HeartIcon isFilled={isFavorited} />
+              <span className="hidden sm:inline">Save</span>
+            </button>
             )}
             <button 
               onClick={handleShare}

@@ -129,21 +129,21 @@ function PropertiesHeader({
               ) : (
                 <>
                   {/* Free User - Show Free Contacts */}
-                  <span className="text-sm pl-4  whitespace-nowrap sm:text-base font-bold text-midGray">
-                    Free Contacts:
-                  </span>
-                  {!loading && remainingContacts !== null ? (
-                    <span className="text-sm sm:text-base pr-2 font-bold text-errorColor">
-                      {remainingContacts}<span className="text-midGray">/{contactLimit}</span>
-                    </span>
-                  ) : (
-                    <span className="text-sm sm:text-base pr-2 font-bold text-midGray">
-                      <span className="text-midGray">-/{contactLimit}</span>
-                    </span>
-                  )}
-                  <button className="w-full shadow-[0px_2px_10px_0px_rgba(0,0,0,0.2),inset_0px_2px_4px_0px_rgba(255,255,255,0.2)] px-4 py-2 bg-orangeGradient rounded-lg text-base font-bold text-white">
-                    use one connect per listing
-                  </button>
+              <span className="text-sm pl-4  whitespace-nowrap sm:text-base font-bold text-midGray">
+                Free Contacts:
+              </span>
+              {!loading && remainingContacts !== null ? (
+                <span className="text-sm sm:text-base pr-2 font-bold text-errorColor">
+                  {remainingContacts}<span className="text-midGray">/{contactLimit}</span>
+                </span>
+              ) : (
+                <span className="text-sm sm:text-base pr-2 font-bold text-midGray">
+                  <span className="text-midGray">-/{contactLimit}</span>
+                </span>
+              )}
+              <button className="w-full shadow-[0px_2px_10px_0px_rgba(0,0,0,0.2),inset_0px_2px_4px_0px_rgba(255,255,255,0.2)] px-4 py-2 bg-orangeGradient rounded-lg text-base font-bold text-white">
+                use one connect per listing
+              </button>
                 </>
               )}
             </div>

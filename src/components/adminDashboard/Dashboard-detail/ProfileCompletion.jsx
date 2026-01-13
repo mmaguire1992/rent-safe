@@ -1,9 +1,14 @@
 import { FiX } from "react-icons/fi";
 
 function ProfileCompletion({
-  completionPercentage = 95,
-  pendingTask = "upload image",
+  completionPercentage = 0,
+  pendingTask = null,
 }) {
+  // Don't render if no pending task (profile is complete)
+  if (!pendingTask) {
+    return null;
+  }
+
   return (
     <div className="bg-[#EDFFF4] rounded-[20px] p-3 sm:p-4 my-3 sm:my-4">
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 sm:gap-4">

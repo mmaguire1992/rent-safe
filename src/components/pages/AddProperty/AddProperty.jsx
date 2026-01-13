@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from '@/lib/react-router-compat';
 import { useDispatch, useSelector } from 'react-redux';
 import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
@@ -15,20 +15,29 @@ import AmenitiesUtilitiesStep from "@/components/adminDashboard/AddProperty/Amen
 import UploadImagesStep from "@/components/adminDashboard/AddProperty/UploadImagesStep";
 import RenterDescriptionStep from "@/components/adminDashboard/AddProperty/RenterDescriptionStep";
 import ReviewStep from "@/components/adminDashboard/AddProperty/ReviewStep";
+import VerificationSubscriptionModal from "@/components/common/VerificationSubscriptionModal";
 import { addPropertySteps, amenitiesList } from "@/constant";
 import { createNewProperty } from '@/redux/slices/propertySlice';
 import { uploadMultiplePropertyMedia } from '@/api/properties';
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { useAuth } from "@/context/AuthContext";
+import { getCurrentUser } from "@/api/users";
+import { getCurrentSubscription } from "@/api/subscriptions";
 
 function AddProperty() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { creating, error: propertyError } = useSelector((state) => state.property);
+  const { user, userType } = useAuth();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [showAIModal, setShowAIModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [needsSubscription, setNeedsSubscription] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
   const [aiDescription, setAiDescription] = useState("");
   const [createdPropertyId, setCreatedPropertyId] = useState(null);
   const [submitError, setSubmitError] = useState(null);
@@ -59,6 +68,53 @@ function AddProperty() {
     additionalRequirements: "",
     coordinates: [], // [longitude, latitude]
   });
+
+  // Check verification and subscription status on mount
+  useEffect(() => {
+    const checkAccess = async () => {
+      // Only check for owners
+      if (userType !== 'owner') {
+        setCheckingAccess(false);
+        return;
+      }
+
+      try {
+        // Fetch fresh user data
+        const userData = await getCurrentUser();
+        
+        // Check verification status
+        const isVerified = userData?.userInfo?.verificationStatus === 'verified';
+        setNeedsVerification(!isVerified);
+
+        // Check subscription status
+        let hasActiveSubscription = false;
+        try {
+          const subscription = await getCurrentSubscription();
+          // Check if subscription exists and is active
+          if (subscription && subscription.status === 'active') {
+            hasActiveSubscription = true;
+          }
+        } catch (error) {
+          // If 404, no subscription exists
+          if (error.response?.status !== 404) {
+            console.error('Error checking subscription:', error);
+          }
+        }
+        setNeedsSubscription(!hasActiveSubscription);
+
+        // Show modal if user needs verification or subscription
+        if (!isVerified || !hasActiveSubscription) {
+          setShowVerificationModal(true);
+        }
+      } catch (error) {
+        console.error('Error checking verification and subscription:', error);
+      } finally {
+        setCheckingAccess(false);
+      }
+    };
+
+    checkAccess();
+  }, [userType, user?.id]);
 
   // Helper function to map frontend amenities to backend format
   const mapAmenityToBackend = (amenity) => {
@@ -631,9 +687,35 @@ function AddProperty() {
     }
   };
 
+  // Show loading state while checking access
+  if (checkingAccess) {
+    return (
+      <DashboardLayout>
+        <div className="block">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#6B4EFF] border-t-transparent mb-4"></div>
+              <p className="text-darkGray">Checking access...</p>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="block">
+        <VerificationSubscriptionModal
+          isOpen={showVerificationModal}
+          onClose={() => {
+            setShowVerificationModal(false);
+            // Redirect back to dashboard if user closes modal
+            navigate('/dashboard');
+          }}
+          needsVerification={needsVerification}
+          needsSubscription={needsSubscription}
+        />
         {/* Page Header */}
         <div className="mb-3">
           <h1 className="text-xl md:text-2xl font-bold text-secondary mb-0">

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react';
 import { useNavigate } from '@/lib/react-router-compat'
 import { useAuth } from '@/context/AuthContext'
 import BlueTrustedIcon from "../../../svg/websiteSvg/blueTrustedIcon";
@@ -9,13 +10,16 @@ import ImageBadge from "./ImageBadge";
 
 import ShielIcon from "@/svg/websiteSvg/shielIcon";
 import UsersIcon from "@/svg/websiteSvg/usersIcon";
-import { toast } from "react-toastify";
-import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtils';
-import { getCurrentUser } from "@/api/users";
+import VerificationSubscriptionModal from "@/components/common/VerificationSubscriptionModal";
+import { useVerificationSubscription } from "@/hooks/useVerificationSubscription";
 
 function Hero() {
   const navigate = useNavigate();
   const { userType, isAuthenticated, loading, user } = useAuth();
+  const [showModal, setShowModal] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [needsSubscription, setNeedsSubscription] = useState(false);
+  const { checkStatus } = useVerificationSubscription();
 
   const handleRentClick = () => {
     navigate('/properties');
@@ -23,29 +27,32 @@ function Hero() {
 
   const handlePropertyClick = async () => {
     if (userType === 'owner') {
-      // Check user verification status
+      // Check user verification and subscription status
       if (isAuthenticated && user) {
         try {
-          // Fetch fresh user data to get latest verification status
-          const freshUserData = await getCurrentUser();
-          const userForVerification = freshUserData || user;
+          // Check verification and subscription status
+          const status = await checkStatus();
           
-          // Only block if user exists and is explicitly not verified
-          if (userForVerification && !isUserVerified(userForVerification)) {
-            toast.error(getVerificationMessage('add property'));
+          // Set modal state based on what's needed
+          setNeedsVerification(status.needsVerification);
+          setNeedsSubscription(status.needsSubscription);
+          
+          // If user needs verification or subscription, show modal
+          if (status.needsVerification || status.needsSubscription) {
+            setShowModal(true);
             return;
           }
         } catch (error) {
-          console.error('Error checking user verification:', error);
-          // If error fetching user, use context user as fallback
-          if (user && !isUserVerified(user)) {
-            toast.error(getVerificationMessage('add property'));
-            return;
-          }
+          console.error('Error checking verification and subscription:', error);
+          // On error, show modal to be safe
+          setNeedsVerification(true);
+          setNeedsSubscription(true);
+          setShowModal(true);
+          return;
         }
       }
       
-      // If verified or user data not available, proceed
+      // If verified and subscribed, proceed
       navigate('/dashboard/properties/add');
     } else {
       // If not owner, redirect to signup or login
@@ -119,6 +126,13 @@ function Hero() {
           </div>
         </div>
       </div>
+
+      <VerificationSubscriptionModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        needsVerification={needsVerification}
+        needsSubscription={needsSubscription}
+      />
     </section>
   );
 }

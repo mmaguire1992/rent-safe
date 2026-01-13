@@ -119,8 +119,7 @@ function ProfileSettings() {
             postcode: data.postcode || '',
             country: data.country || '',
           },
-          // Note: businessName is not in the allowed fields list in backend
-          // If needed, it should be added to the backend service
+          businessName: data.businessName || '',
         },
       };
 
