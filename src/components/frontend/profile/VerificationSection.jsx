@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
 import { getMyDocuments, downloadDocument, deleteDocument } from "@/api/verification";
+import { getRenterPlan } from "@/api/subscriptions";
 import PaymentSection from "./PaymentSection";
 import GreenRoundCheckIcon from "../../../svg/websiteSvg/greenRoundCheckIcon";
 import WhiteCardIcon from "../../../svg/websiteSvg/whiteCardIcon";
@@ -36,6 +37,8 @@ function VerificationSection() {
   const [loading, setLoading] = useState(true);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState(null);
+  const [renterPlan, setRenterPlan] = useState(null);
+  const [planLoading, setPlanLoading] = useState(true);
 
   // Fetch documents on mount
   useEffect(() => {
@@ -52,6 +55,23 @@ function VerificationSection() {
       }
     };
     fetchDocuments();
+  }, []);
+
+  // Fetch renter subscription plan on mount
+  useEffect(() => {
+    const fetchRenterPlan = async () => {
+      try {
+        setPlanLoading(true);
+        const plan = await getRenterPlan();
+        setRenterPlan(plan);
+      } catch (error) {
+        console.error('Error fetching renter plan:', error);
+        // Don't show error toast, just log it - plan is optional
+      } finally {
+        setPlanLoading(false);
+      }
+    };
+    fetchRenterPlan();
   }, []);
 
   // Transform and categorize documents
@@ -107,6 +127,20 @@ function VerificationSection() {
   const handlePaymentComplete = (paymentData) => {
     console.log("Payment completed:", paymentData);
     setShowPayment(false);
+  };
+
+  const handlePaymentClick = () => {
+    // Check if there are any rejected or under review documents
+    const hasRejectedDocs = transformedDocuments.rejected.length > 0;
+    const hasUnderReviewDocs = transformedDocuments.underReview.length > 0;
+
+    if (hasRejectedDocs || hasUnderReviewDocs) {
+      toast.warning('Please wait for verification then only proceed with payment');
+      return;
+    }
+
+    // If all documents are verified (or no documents), proceed with payment
+    setShowPayment(true);
   };
 
   const handleDeleteDocument = (id) => {
@@ -208,49 +242,73 @@ function VerificationSection() {
         </>
       )}
 
-      {/* Payment Section - Keep existing payment UI */}
-      <section className="bg-white rounded-2xl border border-border p-4">
-        <div className="block">
-          <div>
-            <p className="text-base font-normal font-nunito text-midGray mb-1">
-              <span className="text-xl font-bold text-mainBlue">£6.99</span> /
-              listing
-            </p>
-            <p className="text-base font-nunito font-normal text-[#45556C] mb-3">
-              One-time payment{" "}
-              <span className="relative ml-3 before:content-[''] before:absolute before:left-[-11px] before:rounded-full before:w-[6px] before:bottom-2 before:h-[6px] before:bg-midGray  text-base font-nunito font-normal text-[#45556C]">
-                Lifetime verification
-              </span>
-            </p>
-            <ul className="space-y-1 text-sm text-text-secondary">
-              <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
-                <GreenRoundCheckIcon />
-                Unlimited owner contacts
-              </li>
-              <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
-                <GreenRoundCheckIcon />
-                Verified badge on profile
-              </li>
-              <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
-                <GreenRoundCheckIcon />
-                3x more responses from owners
-              </li>
-              <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
-                <GreenRoundCheckIcon />
-                Priority support
-              </li>
-            </ul>
+      {/* Payment Section - Dynamic from subscription plan */}
+      {planLoading ? (
+        <section className="bg-white rounded-2xl border border-border p-4">
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6B4EFF]"></div>
+            <p className="ml-4 text-darkGray">Loading subscription plan...</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowPayment(true)}
-            className="self-start mt-6 sm:self-auto px-6 py-2 rounded-[10px] bg-blueGradient text-white text-base font-bold shadow-[0px_2px_10px_0px_#00000033]  transition-opacity font-nunito flex items-center gap-2"
-          >
-            <WhiteCardIcon />
-            Continue to Payment
-          </button>
-        </div>
-      </section>
+        </section>
+      ) : renterPlan ? (
+        <section className="bg-white rounded-2xl border border-border p-4">
+          <div className="block">
+            <div>
+              <p className="text-base font-normal font-nunito text-midGray mb-1">
+                <span className="text-xl font-bold text-mainBlue">
+                  £{renterPlan.monthlyPrice?.toFixed(2) || '0.00'}
+                </span>
+                {renterPlan.userType === 'renter' ? ' / listing' : ' / month'}
+              </p>
+              <p className="text-base font-nunito font-normal text-[#45556C] mb-3">
+                {renterPlan.userType === 'renter' ? 'One-time payment' : 'Monthly subscription'}{" "}
+                <span className="relative ml-3 before:content-[''] before:absolute before:left-[-11px] before:rounded-full before:w-[6px] before:bottom-2 before:h-[6px] before:bg-midGray  text-base font-nunito font-normal text-[#45556C]">
+                  {renterPlan.userType === 'renter' ? 'Lifetime verification' : 'Recurring billing'}
+                </span>
+              </p>
+              {renterPlan.description && (
+                <p className="text-sm font-nunito font-normal text-[#45556C] mb-3">
+                  {renterPlan.description}
+                </p>
+              )}
+              <ul className="space-y-1 text-sm text-text-secondary">
+                <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
+                  <GreenRoundCheckIcon />
+                  Unlimited owner contacts
+                </li>
+                <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
+                  <GreenRoundCheckIcon />
+                  Verified badge on profile
+                </li>
+                <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
+                  <GreenRoundCheckIcon />
+                  3x more responses from owners
+                </li>
+                <li className="text-base font-normal font-nunito text-secondary flex items-center gap-2">
+                  <GreenRoundCheckIcon />
+                  Priority support
+                </li>
+              </ul>
+            </div>
+            <button
+              type="button"
+              onClick={handlePaymentClick}
+              className="self-start mt-6 sm:self-auto px-6 py-2 rounded-[10px] bg-blueGradient text-white text-base font-bold shadow-[0px_2px_10px_0px_#00000033]  transition-opacity font-nunito flex items-center gap-2"
+            >
+              <WhiteCardIcon />
+              Continue to Payment
+            </button>
+          </div>
+        </section>
+      ) : (
+        <section className="bg-white rounded-2xl border border-border p-4">
+          <div className="block">
+            <p className="text-base font-normal font-nunito text-darkGray">
+              No subscription plan available at the moment. Please contact support.
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && (

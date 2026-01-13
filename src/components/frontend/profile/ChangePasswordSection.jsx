@@ -250,11 +250,11 @@ function ChangePasswordSection() {
         }
       } else {
         // Display generic error message
-        const errorMessage = error.response?.data?.error || 
-                            error.response?.data?.message || 
-                            error.message || 
-                            'Failed to change password. Please try again.';
-        toast.error(errorMessage);
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Failed to change password. Please try again.';
+      toast.error(errorMessage);
         setErrors({ oldPassword: "", newPassword: "", confirmPassword: "" });
       }
     } finally {

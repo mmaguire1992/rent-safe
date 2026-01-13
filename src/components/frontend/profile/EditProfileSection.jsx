@@ -464,23 +464,23 @@ function EditProfileSection() {
       // Only call API if it's a backend image (uploaded to S3)
       if (isBackendImage) {
         // Image is from backend - call API to delete from S3
-        await deleteProfilePicture();
-        toast.success('Profile picture removed successfully');
+      await deleteProfilePicture();
+      toast.success('Profile picture removed successfully');
+      
+      // Refresh user data to get updated profile
+      const updatedUserData = await getCurrentUser();
+      const newProfileImage = updatedUserData?.userInfo?.profileImage || null;
+      if (updatedUserData?.userInfo) {
+        setFormData((prev) => ({ 
+          ...prev, 
+          profileImage: newProfileImage 
+        }));
+      }
         
-        // Refresh user data to get updated profile
-        const updatedUserData = await getCurrentUser();
-        const newProfileImage = updatedUserData?.userInfo?.profileImage || null;
-        if (updatedUserData?.userInfo) {
-          setFormData((prev) => ({ 
-            ...prev, 
-            profileImage: newProfileImage 
-          }));
-        }
-        
-        // Dispatch custom event to notify header/sidebar to refresh profile image
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('profileImageUpdated'));
-        }, 100);
+      // Dispatch custom event to notify header/sidebar to refresh profile image
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('profileImageUpdated'));
+      }, 100);
       } else if (isFileObject || isBlobPreview) {
         // Image is just a frontend preview - just remove from state
         setFormData((prev) => ({ ...prev, profileImage: null }));
@@ -624,7 +624,7 @@ function EditProfileSection() {
                            error.response?.data?.message || 
                            error.message || 
                            'Failed to save profile';
-        toast.error(errorMessage);
+      toast.error(errorMessage);
       }
     } finally {
       setSaving(false);

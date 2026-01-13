@@ -163,16 +163,16 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
       // Only call API if it's a backend image (uploaded to S3)
       if (isBackendImage) {
         // Image is from backend - call API to delete from S3
-        await deleteProfilePicture();
-        toast.success('Profile picture removed successfully');
-        
-        // Clear profile image from state
-        setProfileImage(null);
-        setImagePreview(null);
-        
-        // Refresh user data to get updated profile
-        const updatedUserData = await getCurrentUser();
-        if (updatedUserData?.userInfo) {
+      await deleteProfilePicture();
+      toast.success('Profile picture removed successfully');
+      
+      // Clear profile image from state
+      setProfileImage(null);
+      setImagePreview(null);
+      
+      // Refresh user data to get updated profile
+      const updatedUserData = await getCurrentUser();
+      if (updatedUserData?.userInfo) {
           // Update with latest data from backend
           const newProfileImage = updatedUserData.userInfo.profileImage || null;
           if (typeof newProfileImage === 'string') {

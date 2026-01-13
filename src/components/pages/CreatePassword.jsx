@@ -138,8 +138,8 @@ function CreatePassword() {
             });
           } else {
             // Password or other error - show in form
-            toast.error(errorMessage);
-            setErrors({ confirmPassword: errorMessage });
+          toast.error(errorMessage);
+          setErrors({ confirmPassword: errorMessage });
           }
         } finally {
           setLoading(false);

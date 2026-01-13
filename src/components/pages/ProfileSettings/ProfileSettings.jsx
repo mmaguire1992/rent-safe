@@ -181,27 +181,27 @@ function ProfileSettings() {
         // Show just the error message, not the field name for cleaner UX
         toast.error(firstError.message || 'Validation failed');
       } else {
-        // Extract error message - could be string (from Redux) or object (from axios)
-        let errorMessage = "Failed to update profile. Please try again.";
-        
-        if (typeof error === 'string') {
-          errorMessage = error;
+      // Extract error message - could be string (from Redux) or object (from axios)
+      let errorMessage = "Failed to update profile. Please try again.";
+      
+      if (typeof error === 'string') {
+        errorMessage = error;
         } else if (error && typeof error === 'object') {
           // When Redux rejects with object, check message property
           if (error.message && typeof error.message === 'string') {
             errorMessage = error.message;
           } else if (error?.payload) {
             errorMessage = typeof error.payload === 'string' ? error.payload : (error.payload.message || error.payload.error || errorMessage);
-          } else if (error?.response?.data?.error) {
-            errorMessage = error.response.data.error;
-          } else if (error?.response?.data?.message) {
-            errorMessage = error.response.data.message;
-          } else if (error?.message) {
-            errorMessage = error.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
           }
-        }
-        
-        toast.error(errorMessage);
+      }
+      
+      toast.error(errorMessage);
       }
       
       throw error; // Re-throw to let component handle it
@@ -251,22 +251,22 @@ function ProfileSettings() {
         // Show just the error message
         toast.error(firstError.message || 'Validation failed');
       } else {
-        // Extract error message - could be string (from Redux) or object (from axios)
-        let errorMessage = "Failed to verify OTP. Please try again.";
-        
-        if (typeof error === 'string') {
-          errorMessage = error;
+      // Extract error message - could be string (from Redux) or object (from axios)
+      let errorMessage = "Failed to verify OTP. Please try again.";
+      
+      if (typeof error === 'string') {
+        errorMessage = error;
         } else if (error?.payload) {
           errorMessage = typeof error.payload === 'string' ? error.payload : (error.payload.message || error.payload.error || errorMessage);
-        } else if (error?.response?.data?.error) {
-          errorMessage = error.response.data.error;
-        } else if (error?.response?.data?.message) {
-          errorMessage = error.response.data.message;
-        } else if (error?.message) {
-          errorMessage = error.message;
-        }
-        
-        toast.error(errorMessage);
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
       }
       
       throw error; // Let the modal handle the error display

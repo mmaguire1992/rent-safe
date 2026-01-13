@@ -125,8 +125,8 @@ function BasicInformation() {
         const errorMessage = firstError.message || 'Validation failed';
         
         // Display only the first specific error message
-        toast.error(errorMessage);
-        
+      toast.error(errorMessage);
+      
         // Map backend field names to form field names and set errors
         const fieldErrors = {};
         validationErrors.forEach((err) => {
