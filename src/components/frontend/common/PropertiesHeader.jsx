@@ -20,12 +20,13 @@ function PropertiesHeader({
   const [remainingContacts, setRemainingContacts] = useState(null);
   const [contactLimit, setContactLimit] = useState(5);
   const [loading, setLoading] = useState(true);
+  const [profileImage, setProfileImage] = useState(null);
   const { isAuthenticated, userType } = useAuth();
 
   useEffect(() => {
     const fetchUserContacts = async () => {
-      // Only fetch for authenticated renters
-      if (!isAuthenticated || userType !== 'renter') {
+      // Only fetch for authenticated users
+      if (!isAuthenticated) {
         setLoading(false);
         return;
       }
@@ -33,20 +34,51 @@ function PropertiesHeader({
       try {
         const userData = await getCurrentUser();
         if (userData) {
-          setRemainingContacts(userData.remainingContacts ?? null);
-          setContactLimit(userData.chatContactLimit ?? 5);
+          // Set contacts for renters
+          if (userType === 'renter') {
+            setRemainingContacts(userData.remainingContacts ?? null);
+            setContactLimit(userData.chatContactLimit ?? 5);
+          }
+          // Set profile image from userInfo
+          if (userData.userInfo?.profileImage) {
+            setProfileImage(userData.userInfo.profileImage);
+          }
         }
       } catch (err) {
         console.error('Error fetching user contacts:', err);
         // Set defaults on error
-        setRemainingContacts(null);
-        setContactLimit(5);
+        if (userType === 'renter') {
+          setRemainingContacts(null);
+          setContactLimit(5);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchUserContacts();
+
+    // Listen for profile image updates
+    const handleProfileImageUpdate = async () => {
+      if (!isAuthenticated) return;
+      try {
+        const userData = await getCurrentUser();
+        if (userData?.userInfo?.profileImage) {
+          const imageUrl = userData.userInfo.profileImage + (userData.userInfo.profileImage.includes('?') ? '&' : '?') + '_t=' + Date.now();
+          setProfileImage(imageUrl);
+        } else {
+          setProfileImage(null);
+        }
+      } catch (err) {
+        console.error('Error refreshing profile image:', err);
+      }
+    };
+
+    window.addEventListener('profileImageUpdated', handleProfileImageUpdate);
+
+    return () => {
+      window.removeEventListener('profileImageUpdated', handleProfileImageUpdate);
+    };
   }, [isAuthenticated, userType]);
 
   return (
@@ -89,8 +121,7 @@ function PropertiesHeader({
                 isSavedView={isSavedView}
                 onHomeClick={onHomeClick}
               />
-              {/* <ProfileMenu /> */}
-               {isAuthenticated && <ProfileMenu />}
+              {isAuthenticated && <ProfileMenu profileImage={profileImage} />}
             </div>
 
             {/* Mobile menu toggle */}

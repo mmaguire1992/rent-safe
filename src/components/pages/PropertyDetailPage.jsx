@@ -485,13 +485,15 @@ useEffect(() => {
             </h1>
           </div>
           <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
-            <button
-              onClick={toggleFavorite}
-              className="flex items-center gap-2 text-[#2B2F38] text-sm sm:text-base font-normal font-nunito transition-colors"
-            >
-              <HeartIcon isFilled={isFavorited} />
-              <span className="hidden sm:inline">Save</span>
-            </button>
+            {isAuthenticated() && (
+              <button
+                onClick={toggleFavorite}
+                className="flex items-center gap-2 text-[#2B2F38] text-sm sm:text-base font-normal font-nunito transition-colors"
+              >
+                <HeartIcon isFilled={isFavorited} />
+                <span className="hidden sm:inline">Save</span>
+              </button>
+            )}
             <button 
               onClick={handleShare}
               className="flex items-center gap-2 text-[#2B2F38] text-sm sm:text-base font-normal font-nunito transition-colors hover:text-[#6B4EFF]"

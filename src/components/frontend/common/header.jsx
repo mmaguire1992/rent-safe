@@ -7,6 +7,7 @@ import { IoClose } from "react-icons/io5";
 import { FiChevronDown } from "react-icons/fi";
 import HouseIcon from "@/svg/websiteSvg/houseIcon";
 import HeartIcon from "@/svg/websiteSvg/heartIcon";
+import ChatIcon from "@/svg/websiteSvg/chatIcon";
 import LogoutIcon from "@/svg/websiteSvg/logoutIcon";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
 import ProfileMenu from "./ProfileMenu";
@@ -14,8 +15,10 @@ import MobileSidebar from "./MobileSidebar";
 import { useAuth } from "@/context/AuthContext";
 import { getCurrentUser } from "@/api/users";
 import { getChatrooms } from "@/api/chat";
+import { getWishlistPropertyIds } from "@/api/wishlists";
 import { toast } from "react-toastify";
 import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtils';
+import { isAuthenticated as checkAuth } from "@/utils/auth";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,6 +32,7 @@ const Navbar = () => {
   const [contactLimit, setContactLimit] = useState(5);
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
+  const [favoriteCount, setFavoriteCount] = useState(0);
 
   const handleScrollToSection = (e, sectionId) => {
     e.preventDefault();
@@ -109,7 +113,7 @@ const Navbar = () => {
     setIsOpen(false);
   };
 
-  // Fetch user contacts and profile image
+  // Fetch user contacts, profile image, and wishlist count
   useEffect(() => {
     const fetchUserData = async () => {
       if (!isAuthenticated) {
@@ -128,6 +132,17 @@ const Navbar = () => {
           // Set profile image from userInfo
           if (userData.userInfo?.profileImage) {
             setProfileImage(userData.userInfo.profileImage);
+          }
+        }
+
+        // Fetch wishlist count
+        if (checkAuth()) {
+          try {
+            const wishlistIds = await getWishlistPropertyIds();
+            setFavoriteCount(wishlistIds?.length || 0);
+          } catch (wishlistErr) {
+            console.error('Error fetching wishlist:', wishlistErr);
+            setFavoriteCount(0);
           }
         }
 
@@ -248,6 +263,10 @@ const Navbar = () => {
   const isProfilePage =
     location.pathname === "/profile" ||
     location.pathname.startsWith("/profile");
+  
+  // Check if we're in saved view
+  const searchParams = new URLSearchParams(location.search);
+  const isSavedView = searchParams.get("saved") === "true";
 
   // Common button classes
   const baseBtn =
@@ -367,36 +386,31 @@ const Navbar = () => {
                   <HouseIcon />
                 </button>
 
-                <button className="relative text-primary hover:opacity-80 transition-opacity">
-                  <HeartIcon />
-                  <span className="absolute -top-1 -right-1 text-xs text-text-secondary font-medium">
-                    6
-                  </span>
+                <button 
+                  onClick={() => navigate('/properties?saved=true')}
+                  className={`relative transition-opacity ${
+                    isSavedView || favoriteCount > 0 
+                      ? "text-red-500 hover:opacity-80" 
+                      : "text-primary hover:opacity-80"
+                  }`}
+                >
+                  <HeartIcon isFilled={isSavedView || favoriteCount > 0} />
+                  {favoriteCount > 0 && (
+                    <span className="absolute -top-1 -right-1 text-xs text-text-secondary font-medium">
+                      {favoriteCount}
+                    </span>
+                  )}
                 </button>
 
                 <button
                   onClick={handleChatClick}
-                  className="relative text-gray-600 hover:text-primary transition-colors"
+                  className="relative text-primary hover:opacity-80 transition-opacity"
                 >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M10 2C5.58 2 2 5.13 2 9c0 1.66.7 3.18 1.85 4.3L2 18l4.7-1.7C7.82 17.3 9.34 18 11 18c4.42 0 8-3.13 8-7s-3.58-7-8-7z"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      fill="none"
-                    />
-                    <circle cx="15" cy="5" r="3" fill="#EF4444" />
-                  </svg>
+                  <ChatIcon isFilled={location.pathname === "/chat"} />
                 </button>
 
                 {/* User Profile */}
-                <ProfileMenu />
+                <ProfileMenu profileImage={profileImage} />
               </div>
             </div>
           ) : (
