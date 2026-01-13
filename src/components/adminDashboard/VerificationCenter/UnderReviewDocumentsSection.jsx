@@ -1,4 +1,5 @@
-import { FiLoader, FiX, FiFileText, FiDownload } from "react-icons/fi";
+import { FiBell, FiX, FiFileText, FiDownload,FiInfo } from "react-icons/fi";
+
 
 function UnderReviewDocumentsSection({ documents, onDelete, onDownload }) {
   if (!documents || documents.length === 0) return null;
@@ -21,7 +22,8 @@ function UnderReviewDocumentsSection({ documents, onDelete, onDownload }) {
               <div className="flex-1 min-w-0 overflow-hidden">
                 <p className="text-sm font-normal font-nunito text-secondary flex items-center gap-2">
                   <span className="truncate">{doc.name}</span>
-                  <FiLoader className="text-[#6B4EFF] text-xl animate-spin flex-shrink-0" />
+                  {/* Pending / under review status icon */}
+                  <FiInfo className="text-xl flex-shrink-0" style={{ color: '#FFD700' }} />
                 </p>
                 <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mt-1 flex-wrap">
                   {doc.docTypeLabel && (

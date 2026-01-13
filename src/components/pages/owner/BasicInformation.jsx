@@ -27,9 +27,17 @@ function BasicInformation() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // For fullName field, prevent leading spaces
+    let processedValue = value;
+    if (name === 'fullName') {
+      // Remove leading spaces
+      processedValue = value.replace(/^\s+/, '');
+    }
+    
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: processedValue,
     }));
     // Clear error when user starts typing
     if (errors[name]) {
@@ -43,10 +51,14 @@ function BasicInformation() {
   const validateForm = () => {
     const newErrors = {};
 
-    // Split fullName into firstName and lastName
-    const nameParts = formData.fullName.trim().split(/\s+/);
-    if (nameParts.length < 2) {
-      newErrors.fullName = "Please enter your first and last name";
+    // Validate fullName - allow single name or two names, but not empty
+    const trimmedName = formData.fullName.trim();
+    if (!trimmedName || trimmedName.length === 0) {
+      newErrors.fullName = "Name is required";
+    } else if (trimmedName.length < 2) {
+      newErrors.fullName = "Name must be at least 2 characters";
+    } else if (formData.fullName.startsWith(' ')) {
+      newErrors.fullName = "Name cannot start with a space";
     }
 
     if (!formData.email || !formData.email.trim()) {
@@ -79,9 +91,21 @@ function BasicInformation() {
 
     try {
       // Split fullName into firstName and lastName
-      const nameParts = formData.fullName.trim().split(/\s+/);
-      const firstName = nameParts[0];
-      const lastName = nameParts.slice(1).join(' ') || nameParts[0]; // If only one name, use it for both
+      // If single name (no space): use as full name for both firstName and lastName
+      // If two or more words: first word is firstName, rest is lastName
+      const trimmedName = formData.fullName.trim();
+      const nameParts = trimmedName.split(/\s+/).filter(part => part.length > 0);
+      
+      let firstName, lastName;
+      if (nameParts.length === 1) {
+        // Single name: use as full name
+        firstName = nameParts[0];
+        lastName = nameParts[0];
+      } else {
+        // Two or more words: first is firstName, rest is lastName
+        firstName = nameParts[0];
+        lastName = nameParts.slice(1).join(' ');
+      }
 
       // Call signup API
       const result = await signupUser({

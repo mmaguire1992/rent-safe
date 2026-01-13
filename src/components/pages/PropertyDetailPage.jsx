@@ -23,7 +23,6 @@ import { isAuthenticated } from "@/utils/auth";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { toast } from "react-toastify";
 import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
-import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtils';
 
 function PropertyDetailPage() {
   const { id } = useParams();
@@ -113,12 +112,7 @@ function PropertyDetailPage() {
   }, [user?.userType]);
   // Handle contact owner click
   const handleContactOwner = async () => {
-    // Check user verification status - use fresh user data if available, otherwise use user from context
-    const userForVerification = freshUserData || user;
-    if (userForVerification && !isUserVerified(userForVerification)) {
-      toast.error(getVerificationMessage('chat with other users'));
-      return;
-    }
+    // Removed verification check for renters - renters can contact owners regardless of verification status
 
     if (!property?.owner?._id && !property?.ownerId) {
       toast.error('Owner information not available');

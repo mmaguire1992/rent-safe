@@ -10,6 +10,7 @@ import HeartIcon from "@/svg/websiteSvg/heartIcon";
 import ChatIcon from "@/svg/websiteSvg/chatIcon";
 import LogoutIcon from "@/svg/websiteSvg/logoutIcon";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
+import RedCrossIcon from "@/svg/redCrossIcon";
 import ProfileMenu from "./ProfileMenu";
 import MobileSidebar from "./MobileSidebar";
 import { useAuth } from "@/context/AuthContext";
@@ -32,6 +33,7 @@ const Navbar = () => {
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
   const [favoriteCount, setFavoriteCount] = useState(0);
+  const [freshUserData, setFreshUserData] = useState(null);
   
   // Use shared payment status hook
   const { 
@@ -69,48 +71,9 @@ const Navbar = () => {
   };
 
   const handleChatClick = async () => {
-    // Only check verification for renters
-    if (isAuthenticated && userType === 'renter' && user) {
-      try {
-        // Fetch fresh user data to get latest verification status
-        const freshUserData = await getCurrentUser();
-        const userForVerification = freshUserData || user;
-        
-        // Check if user is verified
-        if (userForVerification && !isUserVerified(userForVerification)) {
-          // If not verified, check if user has chat history
-          try {
-            const chatrooms = await getChatrooms();
-            const hasChatHistory = chatrooms && chatrooms.length > 0;
-            
-            if (!hasChatHistory) {
-              // No chat history and not verified - show error and don't navigate
-              toast.error(getVerificationMessage('chat with other users'));
-              setIsOpen(false);
-              return;
-            }
-            // Has chat history but not verified - allow navigation (sending is blocked in chat component)
-          } catch (chatError) {
-            console.error('Error checking chat history:', chatError);
-            // If error checking chat history, show error and don't navigate
-            toast.error(getVerificationMessage('chat with other users'));
-            setIsOpen(false);
-            return;
-          }
-        }
-        // If verified, proceed normally
-      } catch (error) {
-        console.error('Error checking user verification:', error);
-        // If error, use context user as fallback
-        if (user && !isUserVerified(user)) {
-          toast.error(getVerificationMessage('chat with other users'));
-          setIsOpen(false);
-          return;
-        }
-      }
-    }
+    // Removed verification check for renters - renters can access chat regardless of verification status
     
-    // Navigate to chat (either verified user or has chat history)
+    // Navigate to chat
     navigate("/chat");
     setIsOpen(false);
   };
@@ -136,6 +99,8 @@ const Navbar = () => {
       try {
         const userData = await getCurrentUser();
         if (userData) {
+          // Store fresh user data for verification check
+          setFreshUserData(userData);
           // Set profile image from userInfo
           if (userData.userInfo?.profileImage) {
             setProfileImage(userData.userInfo.profileImage);
@@ -467,7 +432,11 @@ const Navbar = () => {
                         </div>
                       )}
                       <span className="absolute -top-1 -right-1">
-                        <GreenCheckedIcon />
+                        {isUserVerified(freshUserData || user) ? (
+                          <GreenCheckedIcon />
+                        ) : (
+                          <RedCrossIcon />
+                        )}
                       </span>
                     </div>
                     <span className="text-secondary font-semibold text-base">
@@ -498,7 +467,11 @@ const Navbar = () => {
                               </div>
                             )}
                             <span className="absolute -top-1 -right-1">
-                              <GreenCheckedIcon />
+                              {isUserVerified(freshUserData || user) ? (
+                                <GreenCheckedIcon />
+                              ) : (
+                                <RedCrossIcon />
+                              )}
                             </span>
                           </div>
                           <div>
@@ -512,6 +485,27 @@ const Navbar = () => {
                         </div>
                       </div>
                       <div className="py-1">
+                        <button
+                          className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-50"
+                          onClick={() => {
+                            setRenterMenuOpen(false);
+                            navigate("/profile");
+                          }}
+                        >
+                          Profile Settings
+                        </button>
+                        <button className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-50">
+                          Property History
+                        </button>
+                        <button
+                          onClick={() => {
+                            setRenterMenuOpen(false);
+                            navigate("/support");
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-50"
+                        >
+                          Support
+                        </button>
                         <button
                           onClick={() => {
                             setRenterMenuOpen(false);

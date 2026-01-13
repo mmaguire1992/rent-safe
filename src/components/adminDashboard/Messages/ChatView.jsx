@@ -14,6 +14,7 @@ import BlockIcon from "@/svg/blockIcon";
 import GrayRemoveIcon from "@/svg/grayRemoveIcon";
 import BlueEditIcon from "@/svg/blueEditIcon";
 import SendWhiteIcon from "@/svg/sendWhiteIcon";
+import RedCrossIcon from "@/svg/redCrossIcon";
 
 function ChatView({
   selectedConversation,
@@ -206,8 +207,20 @@ function ChatView({
             }`}
           >
             {msg.sender !== "you" && (
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#DBEAFE] flex items-center justify-center text-[#1447E6] font-normal text-xs sm:text-sm mr-2 sm:mr-3 flex-shrink-0">
-                {msg.senderInitials}
+              <div className="relative flex-shrink-0 mr-2 sm:mr-3">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#DBEAFE] flex items-center justify-center text-[#1447E6] font-normal text-xs sm:text-sm">
+                  {msg.senderInitials}
+                </div>
+                {/* Show verification icon for renters: cross if not verified, checkmark if verified */}
+                {msg.senderUserType === 'renter' && (
+                  <div className="absolute -bottom-0 -right-1 bg-white rounded-full">
+                    {msg.isVerified ? (
+                      <MediumCheckedIcon />
+                    ) : (
+                      <RedCrossIcon />
+                    )}
+                  </div>
+                )}
               </div>
             )}
             <div

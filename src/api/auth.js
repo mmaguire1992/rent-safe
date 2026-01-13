@@ -135,8 +135,14 @@ export const loginUser = async (credentials) => {
  */
 export const signupUser = async (userData) => {
   // Validate required fields
-  if (!userData || !userData.firstName || !userData.lastName || !userData.email || !userData.password || !userData.userType) {
-    throw new Error('First name, last name, email, password, and user type are required');
+  // Allow firstName or lastName to be empty if one is provided (handles single name case)
+  if (!userData || !userData.email || !userData.password || !userData.userType) {
+    throw new Error('Email, password, and user type are required');
+  }
+  
+  // At least one name field must be provided
+  if (!userData.firstName && !userData.lastName) {
+    throw new Error('Name is required');
   }
 
   try {

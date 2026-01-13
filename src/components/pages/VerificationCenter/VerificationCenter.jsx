@@ -260,6 +260,12 @@ function VerificationCenter() {
         return;
       }
 
+      // When re-uploading, only allow 1 file
+      if (reuploadingDocumentId && files.length > 1) {
+        toast.warning('You can only re-upload one file at a time.');
+        return;
+      }
+
       // Map frontend document type to backend docType
       // If reuploading, use the rejected document's docType, otherwise use selected
       const docType = reuploadingDocType || mapOptionToDocType(documentType);
@@ -401,20 +407,35 @@ function VerificationCenter() {
       }
 
       // Step 2: Store document metadata in database
-      const documentsToStore = uploadResult.uploadResults.map((result) => ({
-        fileUrl: result.url,
-        docType: docType, // Always use the user-selected docType (exact dropdown value)
-        fileType: result.fileType,
-        mime: result.mimeType,
-        metaData: {
-          s3Key: result.key,
-          s3Bucket: result.bucket,
-          originalFileName: result.fileName,
-          fileSize: result.fileSize,
-        },
-      }));
+      // When re-uploading, only process the first result and include documentIdToUpdate
+      const documentsToStore = reuploadingDocumentId 
+        ? [{
+            fileUrl: uploadResult.uploadResults[0].url,
+            docType: docType,
+            fileType: uploadResult.uploadResults[0].fileType,
+            mime: uploadResult.uploadResults[0].mimeType,
+            metaData: {
+              s3Key: uploadResult.uploadResults[0].key,
+              s3Bucket: uploadResult.uploadResults[0].bucket,
+              originalFileName: uploadResult.uploadResults[0].fileName,
+              fileSize: uploadResult.uploadResults[0].fileSize,
+              documentIdToUpdate: reuploadingDocumentId, // Include documentIdToUpdate for re-upload
+            },
+          }]
+        : uploadResult.uploadResults.map((result) => ({
+            fileUrl: result.url,
+            docType: docType,
+            fileType: result.fileType,
+            mime: result.mimeType,
+            metaData: {
+              s3Key: result.key,
+              s3Bucket: result.bucket,
+              originalFileName: result.fileName,
+              fileSize: result.fileSize,
+            },
+          }));
 
-      toast.info('Storing document information...');
+      toast.info(reuploadingDocumentId ? 'Updating document...' : 'Storing document information...');
       await dispatch(storeDocumentMetadata(documentsToStore)).unwrap();
 
       // Step 3: Refresh documents list
@@ -424,9 +445,10 @@ function VerificationCenter() {
       if (reuploadingDocumentId) {
         setReuploadingDocumentId(null);
         setReuploadingDocType(null);
+        toast.success('Document re-uploaded successfully and submitted for review!');
+      } else {
+        toast.success('Documents uploaded successfully and submitted for review!');
       }
-
-      toast.success('Documents uploaded successfully and submitted for review!');
     } catch (error) {
       console.error('Error submitting documents:', error);
       let errorMessage = "Failed to upload documents. Please try again.";
