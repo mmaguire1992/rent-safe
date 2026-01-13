@@ -486,6 +486,27 @@ const Navbar = () => {
                       </div>
                       <div className="py-1">
                         <button
+                          className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-50"
+                          onClick={() => {
+                            setRenterMenuOpen(false);
+                            navigate("/profile");
+                          }}
+                        >
+                          Profile Settings
+                        </button>
+                        <button className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-50">
+                          Property History
+                        </button>
+                        <button
+                          onClick={() => {
+                            setRenterMenuOpen(false);
+                            navigate("/support");
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-50"
+                        >
+                          Support
+                        </button>
+                        <button
                           onClick={() => {
                             setRenterMenuOpen(false);
                             logout();
