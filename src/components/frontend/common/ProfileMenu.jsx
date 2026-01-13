@@ -3,15 +3,35 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from '@/lib/react-router-compat';
 import { useAuth } from '@/context/AuthContext';
+import { getCurrentUser } from "@/api/users";
 import ProfileStatusCheckIcon from "@/svg/websiteSvg/profileStatusCheckIcon";
 import LogoutIcon from "@/svg/websiteSvg/logoutIcon";
 import { FiChevronDown } from "react-icons/fi";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
+import RedCrossIcon from "@/svg/redCrossIcon";
+import { isUserVerified } from '@/utils/verificationUtils';
+
 function ProfileMenu({ profileImage }) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
   const { logout, userName, user } = useAuth();
+  const [freshUserData, setFreshUserData] = useState(null);
+  
+  // Fetch fresh user data for verification status
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userData = await getCurrentUser();
+        if (userData) {
+          setFreshUserData(userData);
+        }
+      } catch (err) {
+        // Silently fail, will use context user as fallback
+      }
+    };
+    fetchUserData();
+  }, []);
   
   // Debug: Log profileImage prop
   useEffect(() => {
@@ -49,7 +69,11 @@ function ProfileMenu({ profileImage }) {
             </div>
           )}
           <span className="absolute -top-1 -right-1">
-            <GreenCheckedIcon />
+            {isUserVerified(freshUserData || user) ? (
+              <GreenCheckedIcon />
+            ) : (
+              <RedCrossIcon />
+            )}
           </span>
         </div>
         <div className="hidden md:flex items-center gap-1">

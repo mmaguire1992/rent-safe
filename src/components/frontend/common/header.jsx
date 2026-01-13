@@ -10,6 +10,7 @@ import HeartIcon from "@/svg/websiteSvg/heartIcon";
 import ChatIcon from "@/svg/websiteSvg/chatIcon";
 import LogoutIcon from "@/svg/websiteSvg/logoutIcon";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
+import RedCrossIcon from "@/svg/redCrossIcon";
 import ProfileMenu from "./ProfileMenu";
 import MobileSidebar from "./MobileSidebar";
 import { useAuth } from "@/context/AuthContext";
@@ -32,6 +33,7 @@ const Navbar = () => {
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
   const [favoriteCount, setFavoriteCount] = useState(0);
+  const [freshUserData, setFreshUserData] = useState(null);
   
   // Use shared payment status hook
   const { 
@@ -136,6 +138,8 @@ const Navbar = () => {
       try {
         const userData = await getCurrentUser();
         if (userData) {
+          // Store fresh user data for verification check
+          setFreshUserData(userData);
           // Set profile image from userInfo
           if (userData.userInfo?.profileImage) {
             setProfileImage(userData.userInfo.profileImage);
@@ -467,7 +471,11 @@ const Navbar = () => {
                         </div>
                       )}
                       <span className="absolute -top-1 -right-1">
-                        <GreenCheckedIcon />
+                        {isUserVerified(freshUserData || user) ? (
+                          <GreenCheckedIcon />
+                        ) : (
+                          <RedCrossIcon />
+                        )}
                       </span>
                     </div>
                     <span className="text-secondary font-semibold text-base">
@@ -498,7 +506,11 @@ const Navbar = () => {
                               </div>
                             )}
                             <span className="absolute -top-1 -right-1">
-                              <GreenCheckedIcon />
+                              {isUserVerified(freshUserData || user) ? (
+                                <GreenCheckedIcon />
+                              ) : (
+                                <RedCrossIcon />
+                              )}
                             </span>
                           </div>
                           <div>
