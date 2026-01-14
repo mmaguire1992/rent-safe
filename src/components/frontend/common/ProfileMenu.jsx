@@ -116,7 +116,7 @@ function ProfileMenu({ profileImage }) {
                 <p className="text-sm font-semibold text-text-primary">
                   {userName || 'User'}
                 </p>
-                <p className="text-xs text-text-secondary">
+                <p className="text-xs text-text-secondary truncate">
                   {user?.email || ''}
                 </p>
               </div>

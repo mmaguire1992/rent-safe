@@ -478,8 +478,8 @@ const Navbar = () => {
                             <p className="text-sm font-semibold text-text-primary">
                               {userName || 'User'}
                             </p>
-                            <p className="text-xs text-text-secondary">
-                              {user?.email || ''}
+                            <p className="text-xs text-text-secondary truncate md:w-[130px]">
+                              {user?.email || ''}renter12@yopmail.comrenter12@yopmail.comrenter12@yopmail.com
                             </p>
                           </div>
                         </div>
