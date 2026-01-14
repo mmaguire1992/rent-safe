@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from '@/lib/react-router-compat';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useAuth } from '@/context/AuthContext';
+import { getCurrentSubscription } from '@/api/subscriptions';
 import { FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 
 const VerificationSubscriptionModal = ({
@@ -10,15 +12,97 @@ const VerificationSubscriptionModal = ({
   onClose,
   needsVerification = false,
   needsSubscription = false,
+  // Optional props to avoid duplicate API calls
+  userData = null,
+  subscriptionData = null,
 }) => {
   const navigate = useNavigate();
+  const { userType } = useAuth();
+  const [subscription, setSubscription] = useState(subscriptionData);
+  const [loadingSubscription, setLoadingSubscription] = useState(!subscriptionData);
   useBodyScrollLock(isOpen);
 
-  if (!isOpen) return null;
+  // Fetch subscription status from backend only if not provided as prop
+  useEffect(() => {
+    // If subscription data is provided as prop, use it and skip fetching
+    if (subscriptionData !== null) {
+      setSubscription(subscriptionData);
+      setLoadingSubscription(false);
+      return;
+    }
+
+    // Only fetch if modal is open and user is owner
+    if (!isOpen || userType !== 'owner') {
+      setLoadingSubscription(false);
+      return;
+    }
+
+    const fetchSubscription = async () => {
+      try {
+        setLoadingSubscription(true);
+        const currentSubscription = await getCurrentSubscription();
+        setSubscription(currentSubscription);
+      } catch (error) {
+        // If 404 or error, user has no subscription
+        if (error.response?.status !== 404) {
+          console.error('Error fetching subscription:', error);
+        }
+        setSubscription(null);
+      } finally {
+        setLoadingSubscription(false);
+      }
+    };
+
+    fetchSubscription();
+  }, [isOpen, userType, subscriptionData]);
+
+  // Check verification status from userData prop or needsVerification prop
+  const isVerified = useMemo(() => {
+    if (userData?.userInfo?.verificationStatus === 'verified') {
+      return true;
+    }
+    // If userData not provided, rely on needsVerification prop
+    return !needsVerification;
+  }, [userData, needsVerification]);
+
+  // Check if user has active subscription
+  const hasActiveSubscription = useMemo(() => {
+    if (!subscription) return false;
+    return subscription.status === 'active' && 
+           subscription.remainingProperties !== undefined && 
+           subscription.remainingProperties > 0;
+  }, [subscription]);
+
+  // Determine actual needs based on fetched data
+  const actuallyNeedsVerification = useMemo(() => {
+    if (userData) {
+      // Use actual verification status from userData
+      return userData.userInfo?.verificationStatus !== 'verified';
+    }
+    // Fallback to prop if userData not provided
+    return needsVerification;
+  }, [userData, needsVerification]);
+
+  const actuallyNeedsSubscription = useMemo(() => {
+    return needsSubscription && !hasActiveSubscription && !loadingSubscription;
+  }, [needsSubscription, hasActiveSubscription, loadingSubscription]);
+
+  // Don't show modal if loading
+  if (!isOpen || loadingSubscription) return null;
+  
+  // If only subscription was needed and user has active subscription, don't show modal
+  if (needsSubscription && !actuallyNeedsVerification && hasActiveSubscription) {
+    return null;
+  }
+
+  // If nothing is needed, don't show modal
+  if (!actuallyNeedsVerification && !actuallyNeedsSubscription) {
+    return null;
+  }
 
   const handleGoToVerification = () => {
     // If only subscription is needed and user is verified, go to payments/subscription page
-    if (!needsVerification && needsSubscription) {
+    if (!actuallyNeedsVerification && actuallyNeedsSubscription) {
       navigate('/dashboard/payments');
     } else {
       // Otherwise go to verification page (which may also have subscription options)
@@ -27,24 +111,24 @@ const VerificationSubscriptionModal = ({
     onClose();
   };
 
-  // Determine title and message based on what's needed
+  // Determine title and message based on what's actually needed
   const getTitle = () => {
-    if (needsVerification && needsSubscription) {
+    if (actuallyNeedsVerification && actuallyNeedsSubscription) {
       return 'Verification & Subscription Required';
-    } else if (needsVerification) {
+    } else if (actuallyNeedsVerification) {
       return 'Verification Required';
-    } else if (needsSubscription) {
+    } else if (actuallyNeedsSubscription) {
       return 'Subscription Required';
     }
     return 'Action Required';
   };
 
   const getDescription = () => {
-    if (needsVerification && needsSubscription) {
+    if (actuallyNeedsVerification && actuallyNeedsSubscription) {
       return 'To add properties, you need to complete the following:';
-    } else if (needsVerification) {
+    } else if (actuallyNeedsVerification) {
       return 'To add properties, you need to verify your account:';
-    } else if (needsSubscription) {
+    } else if (actuallyNeedsSubscription) {
       return 'To add properties, you need to subscribe to a plan:';
     }
     return 'To add properties, you need to complete the following:';
@@ -69,7 +153,7 @@ const VerificationSubscriptionModal = ({
           </p>
           
           <div className="space-y-2">
-            {needsVerification && (
+            {actuallyNeedsVerification && (
               <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                 <div className="flex-shrink-0 mt-0.5">
                   <FiAlertCircle className="text-red-500 text-xl" />
@@ -85,7 +169,7 @@ const VerificationSubscriptionModal = ({
               </div>
             )}
             
-            {needsSubscription && (
+            {actuallyNeedsSubscription && (
               <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                 <div className="flex-shrink-0 mt-0.5">
                   <FiAlertCircle className="text-red-500 text-xl" />
@@ -108,9 +192,9 @@ const VerificationSubscriptionModal = ({
             onClick={handleGoToVerification}
             className="w-full px-4 py-3 bg-blueGradient text-white font-bold rounded-lg hover:opacity-90 transition-opacity shadow-sm"
           >
-            {needsVerification && needsSubscription 
+            {actuallyNeedsVerification && actuallyNeedsSubscription 
               ? 'Go to Verification' 
-              : needsVerification 
+              : actuallyNeedsVerification 
                 ? 'Go to Verification' 
                 : 'Go to Subscription'}
           </button>

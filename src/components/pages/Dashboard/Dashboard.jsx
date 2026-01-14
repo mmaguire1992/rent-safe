@@ -20,6 +20,9 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [profileCompletion, setProfileCompletion] = useState(null);
   const [completionLoading, setCompletionLoading] = useState(true);
+  // Store fetched data to pass to modal (prevents duplicate API calls)
+  const [userData, setUserData] = useState(null);
+  const [subscriptionData, setSubscriptionData] = useState(null);
 
   useEffect(() => {
     const checkVerificationAndSubscription = async () => {
@@ -30,19 +33,25 @@ function Dashboard() {
       }
 
       try {
-        // Fetch fresh user data
-        const userData = await getCurrentUser();
+        // Fetch fresh user data (includes subscriptionId)
+        const fetchedUserData = await getCurrentUser();
+        setUserData(fetchedUserData);
         
-        // Check verification status
-        const isVerified = userData?.userInfo?.verificationStatus === 'verified';
+        // Check verification status from userData
+        const isVerified = fetchedUserData?.userInfo?.verificationStatus === 'verified';
         setNeedsVerification(!isVerified);
 
         // Check subscription status
+        let subscription = null;
         let hasActiveSubscription = false;
         try {
-          const subscription = await getCurrentSubscription();
-          // Check if subscription exists and is active
-          if (subscription && subscription.status === 'active') {
+          subscription = await getCurrentSubscription();
+          setSubscriptionData(subscription);
+          // Check if subscription exists and is active with remaining properties
+          if (subscription && 
+              subscription.status === 'active' && 
+              subscription.remainingProperties !== undefined && 
+              subscription.remainingProperties > 0) {
             hasActiveSubscription = true;
           }
         } catch (error) {
@@ -50,6 +59,7 @@ function Dashboard() {
           if (error.response?.status !== 404) {
             console.error('Error checking subscription:', error);
           }
+          setSubscriptionData(null);
         }
         setNeedsSubscription(!hasActiveSubscription);
 
@@ -123,6 +133,8 @@ function Dashboard() {
           onClose={() => setShowModal(false)}
           needsVerification={needsVerification}
           needsSubscription={needsSubscription}
+          userData={userData}
+          subscriptionData={subscriptionData}
         />
       </div>
     </DashboardLayout>
