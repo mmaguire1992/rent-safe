@@ -9,6 +9,7 @@ function IdentityInformationSection({
   handleDateChange,
   existingDocuments = [],
   onDocumentsUpdated,
+  errors = {},
 }) {
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
@@ -81,8 +82,13 @@ function IdentityInformationSection({
             value={formData.identityPhone}
             onChange={handleChange}
             placeholder="Enter your phone number"
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              errors.identityPhone ? 'border-errorColor' : 'border-lightGray'
+            }`}
           />
+          {errors.identityPhone && (
+            <p className="mt-1 text-sm text-errorColor">{errors.identityPhone}</p>
+          )}
         </div>
       </div>
 

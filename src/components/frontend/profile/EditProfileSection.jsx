@@ -245,15 +245,90 @@ function EditProfileSection() {
     },
   ]);
 
+  const [errors, setErrors] = useState({});
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Fields that should only accept numbers
+    const numericFields = ['creditScore', 'annualSalary', 'grossMonthly', 'netMonthly', 'monthlyIncome'];
+    // Phone number fields - should only accept numbers and formatting characters
+    const phoneFields = ['phoneNumber', 'identityPhone', 'guarantorPhone'];
+    // Postcode fields - should only accept numbers (UK postcodes can have letters, but user wants numeric only)
+    const postcodeFields = ['postcode', 'currentPostcode'];
+    
+    let processedValue = value;
+    
+    if (numericFields.includes(name)) {
+      // Check if original value contains non-numeric characters
+      if (value && /[^0-9.]/.test(value)) {
+        const fieldLabel = name === 'creditScore' ? 'Credit score' : 
+                          name === 'annualSalary' ? 'Annual salary' :
+                          name === 'grossMonthly' ? 'Gross monthly' :
+                          name === 'netMonthly' ? 'Net monthly' :
+                          'Monthly income';
+        setErrors((prev) => ({
+          ...prev,
+          [name]: `${fieldLabel} must contain only numbers`,
+        }));
+      } else {
+        // Clear error if valid
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+      // Allow only numbers and decimal point (for salary/income fields)
+      if (name === 'creditScore') {
+        processedValue = value.replace(/[^0-9]/g, '');
+      } else {
+        // For salary/income fields, allow numbers and one decimal point
+        processedValue = value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+      }
+    } else if (phoneFields.includes(name)) {
+      // Check if original value contains alphabetic characters
+      if (value && /[a-zA-Z]/.test(value)) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: 'Phone number must contain only numbers and formatting characters (+, -, spaces, parentheses)',
+        }));
+      } else {
+        // Clear error if valid
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+      // Allow only numbers and common phone formatting characters
+      processedValue = value.replace(/[^0-9+\-().\s]/g, '');
+    } else if (postcodeFields.includes(name)) {
+      // Check if original value contains alphabetic characters
+      if (value && /[a-zA-Z]/.test(value)) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: 'Postcode must contain only numbers',
+        }));
+      } else {
+        // Clear error if valid
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+      // Allow only numbers
+      processedValue = value.replace(/[^0-9]/g, '');
+    }
+    
     setFormData((prev) => {
-      const updated = { ...prev, [name]: value };
+      const updated = { ...prev, [name]: processedValue };
       // Keep designation and jobTitle in sync
       if (name === 'designation') {
-        updated.jobTitle = value;
+        updated.jobTitle = processedValue;
       } else if (name === 'jobTitle') {
-        updated.designation = value;
+        updated.designation = processedValue;
       }
       return updated;
     });
@@ -647,9 +722,10 @@ function EditProfileSection() {
         handleChange={handleChange}
         handleImageUpload={handleImageUpload}
         onRemoveProfilePicture={handleRemoveProfilePicture}
+        errors={errors}
       />
 
-      <CreditCheckSection formData={formData} handleChange={handleChange} />
+      <CreditCheckSection formData={formData} handleChange={handleChange} errors={errors} />
 
       <IdentityInformationSection
         formData={formData}
@@ -657,6 +733,7 @@ function EditProfileSection() {
         handleDateChange={handleDateChange}
         existingDocuments={identityDocuments}
         onDocumentsUpdated={reloadDocuments}
+        errors={errors}
       />
 
       <CurrentAddressSection 
@@ -664,6 +741,7 @@ function EditProfileSection() {
         handleChange={handleChange}
         existingDocuments={proofOfAddressDocuments}
         onDocumentsUpdated={reloadUserDataAndDocuments}
+        errors={errors}
       />
 
       <EmploymentDetailsSection
@@ -672,6 +750,7 @@ function EditProfileSection() {
         handleDateChange={handleDateChange}
         handleDropdownChange={handleDropdownChange}
         employmentTypeOptions={employmentTypeOptions}
+        errors={errors}
       />
 
       <ProofOfIncomeSection
@@ -682,6 +761,7 @@ function EditProfileSection() {
         incomeTypeOptions={incomeTypeOptions}
         existingDocuments={paySlipDocuments}
         onDocumentsUpdated={reloadUserDataAndDocuments}
+        errors={errors}
       />
 
       <DocumentsSection
