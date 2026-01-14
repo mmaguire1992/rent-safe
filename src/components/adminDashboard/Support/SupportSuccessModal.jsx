@@ -19,7 +19,7 @@ function SupportSuccessModal({ isOpen, onClose }) {
         </button>
 
         {/* Success Icon */}
-        <div className="flex justify-start mb-4">
+        <div className="flex justify-center mb-4">
           <SuccessfullyCheck />
         </div>
 

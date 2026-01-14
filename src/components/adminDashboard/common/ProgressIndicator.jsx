@@ -14,7 +14,7 @@ function ProgressIndicator({ currentStep, totalSteps = 3 }) {
           <React.Fragment key={stepNumber}>
             {/* Step Circle */}
             <div
-              className={`relative z-10 w-[50px] h-[50px] sm:w-[60px] sm:h-[60px] rounded-full flex border-[6px] sm:border-[8px] border-[#E8E2FF] items-center justify-center font-semibold text-sm sm:text-base flex-shrink-0 ${
+              className={`relative z-10 w-[50px] h-[50px] sm:w-[60px] sm:h-[60px] rounded-full flex border-[6px] sm:border-[8px] border-[#E8E2FF] items-center justify-center font-normal text-sm md:text-xl flex-shrink-0 ${
                 isActive
                   ? "bg-[#4A2FCC] text-white"
                   : "bg-[#F9F9FC] text-gray-400"

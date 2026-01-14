@@ -277,7 +277,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                 </h2>
                 <div>
                   <label className="block text-base font-semibold text-secondary mb-1">
-                    Subject <span className="text-gray-500 text-sm">(Max 50 characters)</span>
+                    Subject<span className="text-errorColor">*</span> <span className="text-gray-500 text-sm">(Max 50 characters)</span>
                   </label>
                   <input
                     type="text"
@@ -295,7 +295,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                 </div>
                 <div className="mt-4">
                   <label className="block text-base font-semibold text-secondary mb-1">
-                    Priority
+                    Priority<span className="text-errorColor">*</span>
                   </label>
                   <select
                     name="priority"
@@ -313,7 +313,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
 
               <div>
                 <h2 className="text-base font-semibold font-nunito text-secondary mb-1">
-                  Add Notes <span className="text-gray-500 text-sm">(Max 200 characters)</span>
+                  Add Notes<span className="text-errorColor">*</span> <span className="text-gray-500 text-sm">(Max 200 characters)</span>
                 </h2>
                 <textarea
                   name="notes"
@@ -332,7 +332,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
 
               <div>
                 <h2 className="text-base font-semibold font-nunito text-secondary mb-1">
-                  Upload Documents
+                  Upload Documents<span className="text-errorColor">*</span>
                 </h2>
                 <FileUpload
                   label=""

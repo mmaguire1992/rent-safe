@@ -220,7 +220,7 @@ function RenterBasicInformation() {
               htmlFor="fullName"
               className="block text-base font-medium text-secondary mb-1"
             >
-              Full Name
+              Full Name <span className="text-errorColor">*</span>
             </label>
             <input
               type="text"
@@ -244,7 +244,7 @@ function RenterBasicInformation() {
               htmlFor="email"
               className="block text-base font-medium text-secondary mb-1"
             >
-              Email Address
+              Email Address <span className="text-errorColor">*</span>
             </label>
             <input
               type="email"
@@ -486,7 +486,7 @@ function RenterBasicInformation() {
               htmlFor="password"
               className="block text-base font-medium text-secondary mb-1"
             >
-              Create Password
+              Create Password <span className="text-errorColor">*</span>
             </label>
             <div className="relative">
               <input
