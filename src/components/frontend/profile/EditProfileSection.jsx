@@ -23,6 +23,7 @@ function EditProfileSection() {
   const [proofOfAddressDocuments, setProofOfAddressDocuments] = useState([]);
   const [paySlipDocuments, setPaySlipDocuments] = useState([]);
   const [otherDocuments, setOtherDocuments] = useState([]);
+  const [documentSectionDocuments, setDocumentSectionDocuments] = useState([]);
   
   // Function to reload user profile and documents
   const reloadUserDataAndDocuments = async () => {
@@ -100,33 +101,38 @@ function EditProfileSection() {
             return docGroup && docGroup.docs ? docGroup.docs : [];
           };
           
-          // Load identity documents (identity_proof, passport, driving_license, national_id)
-          let identityDocs = [];
-          const identityDocTypes = ['identity_proof', 'passport', 'driving_license', 'national_id'];
-          identityDocTypes.forEach(docType => {
-            const docs = getDocumentsByType(docType);
-            identityDocs = [...identityDocs, ...docs];
-          });
-          setIdentityDocuments(identityDocs);
-          
-          // Load proof of address documents
-          const proofOfAddressDocs = getDocumentsByType('proof_of_address');
-          setProofOfAddressDocuments(proofOfAddressDocs);
-          
-          // Load pay slip documents
-          const paySlipDocs = getDocumentsByType('pay_slip');
-          setPaySlipDocuments(paySlipDocs);
-          
-          // Load other documents (for guarantor section)
-          const otherDocs = getDocumentsByType('other');
-          setOtherDocuments(otherDocs);
-          
-          console.log('Reloaded documents:', {
-            identity: identityDocs.length,
-            proofOfAddress: proofOfAddressDocs.length,
-            paySlip: paySlipDocs.length,
-            other: otherDocs.length,
-          });
+            // Load identity documents (only identity_proof, not passport/driving_license/national_id)
+            const identityDocs = getDocumentsByType('identity_proof');
+            setIdentityDocuments(identityDocs);
+            
+            // Load documents section documents (passport, driving_license, national_id)
+            let docSectionDocs = [];
+            const docSectionTypes = ['passport', 'driving_license', 'national_id'];
+            docSectionTypes.forEach(docType => {
+              const docs = getDocumentsByType(docType);
+              docSectionDocs = [...docSectionDocs, ...docs];
+            });
+            setDocumentSectionDocuments(docSectionDocs);
+            
+            // Load proof of address documents
+            const proofOfAddressDocs = getDocumentsByType('proof_of_address');
+            setProofOfAddressDocuments(proofOfAddressDocs);
+            
+            // Load pay slip documents
+            const paySlipDocs = getDocumentsByType('pay_slip');
+            setPaySlipDocuments(paySlipDocs);
+            
+            // Load other documents (for guarantor section)
+            const otherDocs = getDocumentsByType('other');
+            setOtherDocuments(otherDocs);
+            
+            console.log('Reloaded documents:', {
+              identity: identityDocs.length,
+              documentSection: docSectionDocs.length,
+              proofOfAddress: proofOfAddressDocs.length,
+              paySlip: paySlipDocs.length,
+              other: otherDocs.length,
+            });
         }
       }
     } catch (error) {
@@ -485,14 +491,18 @@ function EditProfileSection() {
               return docGroup && docGroup.docs ? docGroup.docs : [];
             };
             
-            // Load identity documents (identity_proof, passport, driving_license, national_id)
-            let identityDocs = [];
-            const identityDocTypes = ['identity_proof', 'passport', 'driving_license', 'national_id'];
-            identityDocTypes.forEach(docType => {
-              const docs = getDocumentsByType(docType);
-              identityDocs = [...identityDocs, ...docs];
-            });
+            // Load identity documents (only identity_proof, not passport/driving_license/national_id)
+            const identityDocs = getDocumentsByType('identity_proof');
             setIdentityDocuments(identityDocs);
+            
+            // Load documents section documents (passport, driving_license, national_id)
+            let docSectionDocs = [];
+            const docSectionTypes = ['passport', 'driving_license', 'national_id'];
+            docSectionTypes.forEach(docType => {
+              const docs = getDocumentsByType(docType);
+              docSectionDocs = [...docSectionDocs, ...docs];
+            });
+            setDocumentSectionDocuments(docSectionDocs);
             
             // Load proof of address documents
             const proofOfAddressDocs = getDocumentsByType('proof_of_address');
@@ -771,6 +781,7 @@ function EditProfileSection() {
         handleDropdownChange={handleDropdownChange}
         documentTypeOptions={documentTypeOptions}
         onDocumentsUpdated={reloadUserDataAndDocuments}
+        existingDocuments={documentSectionDocuments}
       />
 
       <ReferencesSection

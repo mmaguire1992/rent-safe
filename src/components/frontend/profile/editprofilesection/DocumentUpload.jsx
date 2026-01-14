@@ -123,6 +123,15 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
   }, [existingDocumentsString, existingDocuments]);
 
   const handleFiles = async (files, isReupload = false, docIdToUpdate = null) => {
+    // Validation: Check if document type is required (when documentMetadata is provided)
+    if (documentMetadata && !isReupload) {
+      // For Documents section, documentType must be selected before upload
+      if (!documentMetadata.documentType || documentMetadata.documentType.trim() === '') {
+        toast.error('Please select a document type before uploading.');
+        return;
+      }
+    }
+    
     // Validation: Check total document count (all statuses: verified, pending, rejected)
     const totalDocs = uploadedFiles.length;
     const filesToAdd = Array.from(files).length;
