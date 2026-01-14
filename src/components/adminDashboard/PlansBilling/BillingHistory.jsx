@@ -1,25 +1,104 @@
+'use client'
+
 import { FiDownload } from "react-icons/fi";
 import { dateOptions } from "@/constant";
 import ButtonDropdown from "@/components/adminDashboard/common/buttonDropdown";
 
-function BillingHistory({ billingHistory, dateFilter, setDateFilter }) {
+function BillingHistory({ billingHistory, dateFilter, setDateFilter, loading }) {
   const getStatusBadgeClass = (status) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
+      case "succeeded":
       case "success":
         return "bg-[#DFFFE6] text-[#00893A]";
       case "failed":
         return "bg-[#FFEAEA] text-[#D24343]";
       case "pending":
+      case "processing":
         return "bg-[#FFF5CC] text-[#D19600]";
+      case "cancelled":
+      case "refunded":
+        return "bg-[#E6E8EC] text-[#5A5E67]";
       default:
         return "bg-[#E6E8EC] text-[#5A5E67]";
     }
   };
+
+  const formatStatus = (status) => {
+    if (!status) return 'Unknown';
+    const statusMap = {
+      'succeeded': 'Success',
+      'failed': 'Failed',
+      'pending': 'Pending',
+      'processing': 'Processing',
+      'cancelled': 'Cancelled',
+      'refunded': 'Refunded',
+    };
+    return statusMap[status.toLowerCase()] || status;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', { 
+      day: 'numeric', 
+      month: 'short', 
+      year: 'numeric' 
+    });
+  };
+
+  const formatAmount = (amount, currency = 'GBP') => {
+    if (amount === undefined || amount === null) return 'N/A';
+    const currencySymbol = currency === 'GBP' ? '£' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '';
+    return `${currencySymbol}${parseFloat(amount).toFixed(2)}`;
+  };
+
+  const getDescription = (payment) => {
+    if (payment.paymentType === 'plan_payment') {
+      const planKey = payment.metadata?.planKey || 'Plan';
+      return `${planKey.charAt(0).toUpperCase() + planKey.slice(1)} Plan - One-time Payment`;
+    } else if (payment.paymentType === 'verification_fee') {
+      return 'Verification Fee';
+    } else if (payment.paymentType === 'subscription') {
+      return 'Subscription Payment';
+    }
+    return payment.paymentType || 'Payment';
+  };
+
   const getDateDisplayText = (value) => {
     if (!value || value === "") return "Date";
     const option = dateOptions.find((opt) => opt.value === value);
     return option ? option.label : "Date";
   };
+
+  if (loading) {
+    return (
+      <div className="block">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+          <h2 className="lg:text-2xl text-xl font-bold font-nunito text-secondary mb-0">
+            Billing History
+          </h2>
+        </div>
+        <div className="text-center py-8">
+          <p className="text-darkGray font-nunito">Loading payment history...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!billingHistory || billingHistory.length === 0) {
+    return (
+      <div className="block">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+          <h2 className="lg:text-2xl text-xl font-bold font-nunito text-secondary mb-0">
+            Billing History
+          </h2>
+        </div>
+        <div className="text-center py-8 border border-lightGray rounded-[20px]">
+          <p className="text-darkGray font-nunito">No payment history found.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="block">
@@ -71,22 +150,22 @@ function BillingHistory({ billingHistory, dateFilter, setDateFilter }) {
             <tbody>
               {billingHistory.map((item, index) => (
                 <tr
-                  key={index}
+                  key={item._id || item.id || index}
                   className="border-b border-lightGray hover:bg-gray-50 transition-colors"
                 >
-                  <td className=" py-4 px-4 font-nunito text-secondary text-base">
+                  <td className="py-4 px-4 font-nunito text-secondary text-base">
                     <span className="text-midGray text-base mr-2">
                       {index + 1}.
                     </span>
                     <span className="text-secondary text-base font-nunito font-bold">
-                      {item.date}
+                      {formatDate(item.createdAt || item.paidAt || item.date)}
                     </span>
                   </td>
-                  <td className="text-secondary py-4 px-4  text-base font-nunito font-normal">
-                    {item.description}
+                  <td className="text-secondary py-4 px-4 text-base font-nunito font-normal">
+                    {getDescription(item)}
                   </td>
                   <td className="font-bold py-4 px-4 text-secondary text-base font-nunito">
-                    {item.amount}
+                    {formatAmount(item.amount, item.currency)}
                   </td>
                   <td className="py-4 px-4">
                     <span
@@ -94,7 +173,7 @@ function BillingHistory({ billingHistory, dateFilter, setDateFilter }) {
                         item.status
                       )}`}
                     >
-                      {item.status}
+                      {formatStatus(item.status)}
                     </span>
                   </td>
                   <td className="py-4 px-4">
@@ -113,23 +192,23 @@ function BillingHistory({ billingHistory, dateFilter, setDateFilter }) {
       <div className="md:hidden space-y-3 border border-lightGray rounded-[20px]">
         {billingHistory.map((item, index) => (
           <div
-            key={index}
-            className=" bg-white rounded-t-[20px] rounded-tr-[20px] last-of-type:rounded-b-[20px] last-of-type:rounded-br-[20px] last-of-type:border-b-0 border-b border-lightGray"
+            key={item._id || item.id || index}
+            className="bg-white rounded-t-[20px] rounded-tr-[20px] last-of-type:rounded-b-[20px] last-of-type:rounded-br-[20px] last-of-type:border-b-0 border-b border-lightGray"
           >
-            <div className="p-4 ">
+            <div className="p-4">
               <div className="flex items-end justify-between mb-2">
-                <div className="block ">
+                <div className="block">
                   <div className="flex items-start gap-2 mb-2">
                     <span className="text-midGray text-sm font-nunito">
                       #{index + 1}
                     </span>
                     <span className="text-secondary text-base font-nunito font-bold">
-                      {item.date}
+                      {formatDate(item.createdAt || item.paidAt || item.date)}
                     </span>
                   </div>
                   <div className="mb-2">
                     <p className="text-secondary text-sm font-nunito font-normal">
-                      {item.description}
+                      {getDescription(item)}
                     </p>
                   </div>
                 </div>
@@ -138,16 +217,16 @@ function BillingHistory({ billingHistory, dateFilter, setDateFilter }) {
                 </button>
               </div>
 
-              <div className="flex items-center justify-start gap-2 ">
+              <div className="flex items-center justify-start gap-2">
                 <span className="font-bold text-secondary text-base font-nunito">
-                  {item.amount}
+                  {formatAmount(item.amount, item.currency)}
                 </span>
                 <span
                   className={`inline-block px-3 py-1 rounded-full text-xs font-semibold font-nunito ${getStatusBadgeClass(
                     item.status
                   )}`}
                 >
-                  {item.status}
+                  {formatStatus(item.status)}
                 </span>
               </div>
             </div>

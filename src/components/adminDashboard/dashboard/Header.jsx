@@ -5,6 +5,7 @@ import { useNavigate } from '@/lib/react-router-compat';
 import { useAuth } from '@/context/AuthContext';
 import { getCurrentUser } from "@/api/users";
 import { getNotifications } from "@/api/notifications";
+import { getCurrentSubscription } from "@/api/subscriptions";
 import {
   FiSearch,
   FiBell,
@@ -22,11 +23,13 @@ import NotificationDropdown from "../common/NotificationDropdown";
 
 function Header({ onMenuClick }) {
   const navigate = useNavigate();
-  const { logout, userName, user, isAuthenticated } = useAuth();
+  const { logout, userName, user, isAuthenticated, userType } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [currentSubscription, setCurrentSubscription] = useState(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(false);
   const dropdownRef = useRef(null);
   const notificationRef = useRef(null);
 
@@ -109,6 +112,29 @@ function Header({ onMenuClick }) {
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
+  // Fetch current subscription for owners
+  useEffect(() => {
+    if (!isAuthenticated || userType !== 'owner') return;
+
+    const fetchSubscription = async () => {
+      try {
+        setLoadingSubscription(true);
+        const subscription = await getCurrentSubscription();
+        setCurrentSubscription(subscription);
+      } catch (error) {
+        // If 404, user has no subscription - that's fine
+        if (error.response?.status !== 404) {
+          console.error('Error fetching subscription:', error);
+        }
+        setCurrentSubscription(null);
+      } finally {
+        setLoadingSubscription(false);
+      }
+    };
+
+    fetchSubscription();
+  }, [isAuthenticated, userType]);
+
   const handleLogout = () => {
     logout();
     setDropdownOpen(false);
@@ -157,22 +183,51 @@ function Header({ onMenuClick }) {
 
         {/* Right - Notifications & Profile */}
         <div className="flex items-center gap-2 md:gap-4">
-          <div className="hidden lg:flex items-center gap-4  border border-lightGray rounded-xl py-1 pr-1 pl-3">
-            <div className="flex items-center gap-2">
-              <span className="text-midGray text-base font-bold font-nunito">
-                Current Plan:
-              </span>
-              <span className="text-yellow font-bold text-base font-nunito">
-                Premium
-              </span>
+          {/* Show subscription info and upgrade button only for owners */}
+          {userType === 'owner' && !loadingSubscription && (
+            <div className="hidden lg:flex items-center gap-4 border border-lightGray rounded-xl py-1 pr-1 pl-3">
+              {currentSubscription && currentSubscription.plan ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="text-midGray text-base font-bold font-nunito">
+                      Current Plan:
+                    </span>
+                    <span className="text-yellow font-bold text-base font-nunito">
+                      {currentSubscription.plan.name || 'Unknown Plan'}
+                    </span>
+                  </div>
+                  {/* Show upgrade button only if subscription is expired or property limit reached */}
+                  {(currentSubscription.status === 'expired' || 
+                    (currentSubscription.remainingProperties !== undefined && currentSubscription.remainingProperties === 0)) && (
+                    <button
+                      onClick={() => navigate("/dashboard/payments")}
+                      className="bg-yellowGradient text-white px-4 py-1.5 rounded-lg text-base font-bold font-nunito hover:bg-opacity-90 transition-colors whitespace-nowrap"
+                    >
+                      Upgrade Your Plan
+                    </button>
+                  )}
+                </>
+              ) : (
+                /* No subscription - show upgrade button */
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="text-midGray text-base font-bold font-nunito">
+                      Current Plan:
+                    </span>
+                    <span className="text-midGray text-base font-nunito">
+                      No Plan
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => navigate("/dashboard/payments")}
+                    className="bg-yellowGradient text-white px-4 py-1.5 rounded-lg text-base font-bold font-nunito hover:bg-opacity-90 transition-colors whitespace-nowrap"
+                  >
+                    Upgrade Your Plan
+                  </button>
+                </>
+              )}
             </div>
-            <button
-              onClick={() => navigate("/dashboard/payments")}
-              className="bg-yellowGradient text-white px-4 py-1.5  rounded-lg text-base font-bold font-nunito hover:bg-opacity-90 transition-colors whitespace-nowrap"
-            >
-              Upgrade Your Plan
-            </button>
-          </div>
+          )}
 
           <div className="relative" ref={notificationRef}>
             <button
