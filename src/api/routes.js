@@ -84,3 +84,8 @@ export const notifications = {
   markAsRead: '/notifications/mark-read',
 };
 
+// Subscriptions/Plans Routes
+export const subscriptions = {
+  getAllPlans: '/stripe/subscriptions/plans', // Public endpoint for getting plans
+  createCheckoutSession: '/stripe/subscriptions/checkout',
+};

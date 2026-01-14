@@ -14,7 +14,9 @@ export const getAllPlans = async () => {
     const response = await apiClient.get('/stripe/subscriptions/plans');
     // Handle different response structures
     let plans = [];
-    if (response.data?.message && Array.isArray(response.data.message)) {
+    if (response.data?.success && response.data?.data && Array.isArray(response.data.data)) {
+      plans = response.data.data;
+    } else if (response.data?.message && Array.isArray(response.data.message)) {
       plans = response.data.message;
     } else if (response.data?.data && Array.isArray(response.data.data)) {
       plans = response.data.data;
@@ -24,6 +26,25 @@ export const getAllPlans = async () => {
     return plans;
   } catch (error) {
     console.error('Error fetching subscription plans:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get owner subscription plans (all active plans for owner user type)
+ * @returns {Promise<Array>} Array of owner subscription plans
+ */
+export const getOwnerPlans = async () => {
+  try {
+    const plans = await getAllPlans();
+    // Filter for active owner plans
+    const ownerPlans = plans.filter(plan => 
+      plan.userType === 'owner' && plan.isActive === true
+    );
+    // Sort by displayOrder
+    return ownerPlans.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+  } catch (error) {
+    console.error('Error fetching owner plans:', error);
     throw error;
   }
 };
@@ -124,7 +145,8 @@ export const getUserVerificationPayment = async () => {
 export const getCurrentSubscription = async () => {
   try {
     const response = await apiClient.get('/stripe/subscriptions/current');
-    const subscription = response.data?.data || response.data;
+    // Backend returns: { success: true, message: { subscription data }, data: "message string" }
+    const subscription = response.data?.message || response.data?.data || response.data;
     return subscription || null;
   } catch (error) {
     // If 404, user has no subscription - return null
@@ -132,6 +154,33 @@ export const getCurrentSubscription = async () => {
       return null;
     }
     console.error('Error fetching current subscription:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get user's payment history
+ * @param {Object} params - Query parameters (page, limit, paymentType, status, dateFrom, dateTo)
+ * @returns {Promise<Object>} Payment history with pagination
+ */
+export const getPaymentHistory = async (params = {}) => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+    if (params.paymentType) queryParams.append('paymentType', params.paymentType);
+    if (params.status) queryParams.append('status', params.status);
+    if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+    if (params.dateTo) queryParams.append('dateTo', params.dateTo);
+
+    const url = `/stripe/subscriptions/payment-history${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await apiClient.get(url);
+    
+    // Backend returns: { success: true, message: { payments: [...], pagination: {...} }, data: "message string" }
+    const result = response.data?.message || response.data?.data || response.data;
+    return result || { payments: [], pagination: {} };
+  } catch (error) {
+    console.error('Error fetching payment history:', error);
     throw error;
   }
 };
