@@ -131,6 +131,19 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
         return;
       }
     }
+
+    // Validation: Expiry date cannot be in the past
+    // (Defensive check; UI calendar constrains selection too)
+    if (documentMetadata && documentMetadata.documentExpire) {
+      const exp = new Date(documentMetadata.documentExpire);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      exp.setHours(0, 0, 0, 0);
+      if (!isNaN(exp.getTime()) && exp.getTime() < today.getTime()) {
+        toast.error('Expiry date cannot be in the past.');
+        return;
+      }
+    }
     
     // Validation: Check total document count (all statuses: verified, pending, rejected)
     const totalDocs = uploadedFiles.length;
@@ -151,11 +164,11 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
       // Normal upload: check if adding new files would exceed the limit
       const remainingSlots = maxFiles - totalDocs;
       if (remainingSlots <= 0) {
-        toast.warning(`Maximum ${maxFiles} document(s) allowed. You currently have ${totalDocs} document(s). Please delete a document first to upload a new one.`);
+        toast.warning(`Maximum ${maxFiles} document${maxFiles === 1 ? '' : 's'} allowed. Delete a document to upload a new one.`);
         return;
       }
       if (filesToAdd > remainingSlots) {
-        toast.warning(`Maximum ${maxFiles} document(s) allowed. You can upload ${remainingSlots} more document(s).`);
+        toast.warning(`Maximum ${maxFiles} document${maxFiles === 1 ? '' : 's'} allowed.`);
         // Continue with the remaining slots
       }
     }
@@ -675,7 +688,7 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
                     disabled={uploading}
                     title="Delete document"
                   >
-                    <FiTrash2 className={`text-lg ${isRejected ? 'text-darkGray' : 'text-errorColor'}`} />
+                    <FiX className={`text-lg ${isRejected ? 'text-darkGray' : 'text-errorColor'}`} />
                   </button>
                 </div>
               </div>

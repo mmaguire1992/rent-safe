@@ -349,16 +349,19 @@ function VerificationSection() {
     );
   }
 
+  // Prevent showing multiple loaders at the same time (documents + plan).
+  const isPageLoading = loading || planLoading;
+
   return (
     <div className="space-y-6">
-      {/* Documents Section */}
-      {loading ? (
+      {isPageLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6B4EFF]"></div>
-          <p className="ml-4 text-darkGray">Loading documents...</p>
+          <p className="ml-4 text-darkGray">Loading...</p>
         </div>
       ) : (
         <>
+          {/* Documents Section */}
           {transformedDocuments.verified.length > 0 && (
             <VerifiedDocumentsSection
               documents={transformedDocuments.verified}
@@ -382,18 +385,9 @@ function VerificationSection() {
               onDownload={handleDownloadDocument}
             />
           )}
-        </>
-      )}
 
-      {/* Payment Section - Dynamic from subscription plan */}
-      {planLoading ? (
-        <section className="bg-white rounded-2xl border border-border p-4">
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6B4EFF]"></div>
-            <p className="ml-4 text-darkGray">Loading subscription plan...</p>
-          </div>
-        </section>
-      ) : renterPlan ? (
+          {/* Payment Section - Dynamic from subscription plan */}
+          {renterPlan ? (
         // Check if user has already paid (one-time payment)
         // Check: 1) userInfo.verificationStatus === 'verified' OR 2) verificationPayment exists
         // Use currentUser (fresh data) or fallback to user from context
@@ -580,6 +574,8 @@ function VerificationSection() {
             </p>
           </div>
         </section>
+      )}
+        </>
       )}
 
       {/* Delete Confirmation Modal */}

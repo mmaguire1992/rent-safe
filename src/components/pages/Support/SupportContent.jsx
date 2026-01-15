@@ -16,9 +16,15 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
   const [formData, setFormData] = useState({
     subject: "",
     notes: "",
-    priority: "medium",
+    priority: "",
   });
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [fieldErrors, setFieldErrors] = useState({
+    subject: "",
+    notes: "",
+    priority: "",
+    files: "",
+  });
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -26,6 +32,8 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+
+  const countNonSpaceChars = (text) => (text || "").replace(/\s/g, "").length;
 
   useEffect(() => {
     setIsLoading(true);
@@ -71,42 +79,79 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'subject' && value.length > 50) {
-      return;
+    const processedValue = value;
+
+    // Limit by non-space characters (spaces do not count towards the limit)
+    if (name === 'subject') {
+      if (countNonSpaceChars(processedValue) > 50) return;
     }
-    if (name === 'notes' && value.length > 200) {
-      return;
+    if (name === 'notes') {
+      if (countNonSpaceChars(processedValue) > 200) return;
     }
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    setFormData((prev) => ({ ...prev, [name]: processedValue }));
+
+    // Clear inline error when user fixes the field
+    if (name === 'subject') {
+      if (processedValue.trim()) {
+        setFieldErrors((prev) => ({ ...prev, subject: "" }));
+      }
+    }
+    if (name === 'notes') {
+      if (processedValue.trim()) {
+        setFieldErrors((prev) => ({ ...prev, notes: "" }));
+      }
+    }
+    if (name === 'priority') {
+      if (processedValue) {
+        setFieldErrors((prev) => ({ ...prev, priority: "" }));
+      }
+    }
+  };
+
+  const handleFilesChange = (files) => {
+    setUploadedFiles(files);
+    if (files && files.length > 0) {
+      setFieldErrors((prev) => ({ ...prev, files: "" }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.subject.trim()) {
-      toast.error('Please enter a subject');
-      return;
+
+    // Inline validation (avoid browser tooltips)
+    const nextErrors = { subject: "", notes: "", priority: "", files: "" };
+    if (countNonSpaceChars(formData.subject) === 0) nextErrors.subject = "Subject is required";
+    if (countNonSpaceChars(formData.notes) === 0) nextErrors.notes = "Notes are required";
+    if (countNonSpaceChars(formData.notes) > 200) nextErrors.notes = "Notes cannot exceed 200 characters";
+    if (!formData.priority) nextErrors.priority = "Priority is required";
+    // Required documents (matches UI asterisk)
+    if (!uploadedFiles || uploadedFiles.length === 0) nextErrors.files = "Please upload at least one document";
+
+    // Backend accepts only images for support ticket media
+    const allowedImageMimes = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']);
+    const hasInvalidType =
+      uploadedFiles &&
+      uploadedFiles.some((f) => f && f.type && !allowedImageMimes.has(String(f.type).toLowerCase()));
+    if (hasInvalidType) {
+      nextErrors.files = "Invalid file type. Only JPG, PNG, GIF, WEBP images are allowed.";
     }
 
-    if (!formData.notes.trim()) {
-      toast.error('Please enter your notes');
-      return;
-    }
-
-    if (formData.notes.length > 200) {
-      toast.error('Description cannot exceed 200 characters');
+    const hasErrors = Object.values(nextErrors).some(Boolean);
+    if (hasErrors) {
+      setFieldErrors(nextErrors);
       return;
     }
 
     try {
       setIsSubmitting(true);
       
-      const subject = formData.subject.trim().substring(0, 50);
+      const subject = formData.subject.trim();
 
       const ticketResponse = await createSupportTicket({
         subject: subject,
         description: formData.notes,
-        priority: formData.priority || 'medium'
+        priority: formData.priority
       });
 
       const ticketId = ticketResponse?.data?._id || ticketResponse?.data?.id || ticketResponse?._id || ticketResponse?.data?.ticket?._id;
@@ -120,15 +165,29 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
           await uploadSupportTicketMedia(ticketId, uploadedFiles);
         } catch (uploadError) {
           console.error('Error uploading files:', uploadError);
+          // Ticket is created but attachments failed - don't show success modal
+          const msg =
+            uploadError.response?.data?.error ||
+            uploadError.response?.data?.message ||
+            uploadError.message ||
+            'Failed to upload attachments. Please try again with image files.';
+          toast.error(msg);
+
+          // Refresh list so user can see the created ticket
+          setIsLoading(true);
+          setShowForm(false);
+          await loadTickets();
+          return;
         }
       }
 
       setFormData({
         subject: "",
         notes: "",
-        priority: "medium",
+        priority: "",
       });
       setUploadedFiles([]);
+      setFieldErrors({ subject: "", notes: "", priority: "", files: "" });
       setIsLoading(true);
       setShowForm(false);
 
@@ -260,8 +319,9 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
             <button
               onClick={() => {
                 setShowForm(false);
-                setFormData({ subject: "", notes: "", priority: "medium" });
+                setFormData({ subject: "", notes: "", priority: "" });
                 setUploadedFiles([]);
+                setFieldErrors({ subject: "", notes: "", priority: "", files: "" });
                 setIsSuccessModalOpen(false);
               }}
               className="px-4 py-2 text-secondary border border-lightGray rounded-[10px] hover:bg-gray-50 font-nunito"
@@ -270,7 +330,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
             </button>
           </div>
           <div className="bg-white rounded-[14px] border border-lightGray p-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form noValidate onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <h2 className="text-xl font-semibold font-nunito text-secondary mb-4">
                   Add Details
@@ -284,13 +344,16 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                     name="subject"
                     value={formData.subject}
                     onChange={handleInputChange}
-                    maxLength={50}
-                    className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 font-nunito"
+                    className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 font-nunito ${
+                      fieldErrors.subject ? 'border-errorColor' : 'border-lightGray'
+                    }`}
                     placeholder="Enter subject (max 50 characters)"
-                    required
                   />
+                  {fieldErrors.subject && (
+                    <p className="mt-1 text-sm text-errorColor">{fieldErrors.subject}</p>
+                  )}
                   <p className="text-sm text-gray-500 mt-1">
-                    {formData.subject.length}/50 characters
+                    {countNonSpaceChars(formData.subject)}/50 characters
                   </p>
                 </div>
                 <div className="mt-4">
@@ -301,13 +364,21 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                     name="priority"
                     value={formData.priority}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 font-nunito bg-white"
+                    className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 font-nunito bg-white ${
+                      fieldErrors.priority ? 'border-errorColor' : 'border-lightGray'
+                    }`}
                   >
+                    <option value="" disabled>
+                      Select priority
+                    </option>
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
                     <option value="high">High</option>
                     <option value="urgent">Urgent</option>
                   </select>
+                  {fieldErrors.priority && (
+                    <p className="mt-1 text-sm text-errorColor">{fieldErrors.priority}</p>
+                  )}
                 </div>
               </div>
 
@@ -320,13 +391,16 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                   value={formData.notes}
                   onChange={handleInputChange}
                   rows="6"
-                  maxLength={200}
-                  className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 font-nunito resize-none"
+                  className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 font-nunito resize-none ${
+                    fieldErrors.notes ? 'border-errorColor' : 'border-lightGray'
+                  }`}
                   placeholder="Enter your notes (max 200 characters)"
-                  required
                 />
+                {fieldErrors.notes && (
+                  <p className="mt-1 text-sm text-errorColor">{fieldErrors.notes}</p>
+                )}
                 <p className="text-sm text-gray-500 mt-1">
-                  {formData.notes.length}/200 characters
+                  {countNonSpaceChars(formData.notes)}/200 characters
                 </p>
               </div>
 
@@ -336,11 +410,15 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                 </h2>
                 <FileUpload
                   label=""
-                  acceptedTypes=".pdf,.docx,.png"
+                  // Backend only accepts images for support ticket media
+                  acceptedTypes=".jpg,.jpeg,.png,.gif,.webp"
                   maxFiles={3}
-                  onFilesChange={setUploadedFiles}
+                  onFilesChange={handleFilesChange}
                   uploadedFiles={uploadedFiles}
                 />
+                {fieldErrors.files && (
+                  <p className="mt-1 text-sm text-errorColor">{fieldErrors.files}</p>
+                )}
               </div>
 
               <div className="flex justify-end">

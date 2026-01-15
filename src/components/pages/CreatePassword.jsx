@@ -90,7 +90,7 @@ function CreatePassword() {
     if (!formData.confirmPassword.trim()) {
       newErrors.confirmPassword = "Please confirm your new password";
     } else if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
+      newErrors.confirmPassword = "Passwords must match";
     }
 
     setErrors(newErrors);

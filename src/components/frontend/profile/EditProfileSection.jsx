@@ -260,7 +260,7 @@ function EditProfileSection() {
     const numericFields = ['creditScore', 'annualSalary', 'grossMonthly', 'netMonthly', 'monthlyIncome'];
     // Phone number fields - should only accept numbers and formatting characters
     const phoneFields = ['phoneNumber', 'identityPhone', 'guarantorPhone'];
-    // Postcode fields - should only accept numbers (UK postcodes can have letters, but user wants numeric only)
+    // Postcode fields - UK postcodes can contain letters and numbers
     const postcodeFields = ['postcode', 'currentPostcode'];
     
     let processedValue = value;
@@ -310,11 +310,11 @@ function EditProfileSection() {
       // Allow only numbers and common phone formatting characters
       processedValue = value.replace(/[^0-9+\-().\s]/g, '');
     } else if (postcodeFields.includes(name)) {
-      // Check if original value contains alphabetic characters
-      if (value && /[a-zA-Z]/.test(value)) {
+      // Allow only letters, numbers and spaces (UK postcode style). Disallow other special chars.
+      if (value && /[^a-zA-Z0-9\s]/.test(value)) {
         setErrors((prev) => ({
           ...prev,
-          [name]: 'Postcode must contain only numbers',
+          [name]: 'Postcode can contain only letters and numbers',
         }));
       } else {
         // Clear error if valid
@@ -324,8 +324,8 @@ function EditProfileSection() {
           return newErrors;
         });
       }
-      // Allow only numbers
-      processedValue = value.replace(/[^0-9]/g, '');
+      // Keep only letters/numbers/spaces and normalize to uppercase
+      processedValue = value.replace(/[^a-zA-Z0-9\s]/g, '').toUpperCase();
     }
     
     setFormData((prev) => {
@@ -336,11 +336,113 @@ function EditProfileSection() {
       } else if (name === 'jobTitle') {
         updated.designation = processedValue;
       }
+      
+      // Validate gross vs net salary
+      if (name === 'grossMonthly' || name === 'netMonthly') {
+        const grossValue = name === 'grossMonthly' ? processedValue : updated.grossMonthly;
+        const netValue = name === 'netMonthly' ? processedValue : updated.netMonthly;
+        
+        // Only validate if both values are provided and are valid numbers
+        if (grossValue && netValue) {
+          const grossNum = parseFloat(grossValue);
+          const netNum = parseFloat(netValue);
+          
+          if (!isNaN(grossNum) && !isNaN(netNum)) {
+            if (grossNum < netNum) {
+              setErrors((prev) => ({
+                ...prev,
+                grossMonthly: 'Gross monthly salary cannot be less than net monthly salary',
+                netMonthly: 'Net monthly salary cannot be greater than gross monthly salary',
+              }));
+            } else {
+              // Clear errors if validation passes
+              setErrors((prev) => {
+                const newErrors = { ...prev };
+                // Only clear the specific validation error
+                if (newErrors.grossMonthly === 'Gross monthly salary cannot be less than net monthly salary') {
+                  delete newErrors.grossMonthly;
+                }
+                if (newErrors.netMonthly === 'Net monthly salary cannot be greater than gross monthly salary') {
+                  delete newErrors.netMonthly;
+                }
+                return newErrors;
+              });
+            }
+          }
+        } else {
+          // Clear validation errors if one field is empty
+          setErrors((prev) => {
+            const newErrors = { ...prev };
+            if (newErrors.grossMonthly === 'Gross monthly salary cannot be less than net monthly salary') {
+              delete newErrors.grossMonthly;
+            }
+            if (newErrors.netMonthly === 'Net monthly salary cannot be greater than gross monthly salary') {
+              delete newErrors.netMonthly;
+            }
+            return newErrors;
+          });
+        }
+      }
+      
       return updated;
     });
   };
 
   const handleDateChange = (name, value) => {
+    // Defensive validation for date fields (even though UI calendar constrains selection)
+    if (name === 'dateOfBirth' && value) {
+      const selected = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      selected.setHours(0, 0, 0, 0);
+
+      // Must not be in the future
+      if (!isNaN(selected.getTime()) && selected.getTime() > today.getTime()) {
+        setErrors((prev) => ({ ...prev, dateOfBirth: 'Date of birth cannot be a future date' }));
+      } else {
+        // Must be at least 18 years old
+        const eighteenYearsAgo = new Date(today);
+        eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
+        eighteenYearsAgo.setHours(0, 0, 0, 0);
+
+        if (!isNaN(selected.getTime()) && selected.getTime() > eighteenYearsAgo.getTime()) {
+          setErrors((prev) => ({ ...prev, dateOfBirth: 'DOB cannot be less than 18 years' }));
+        } else {
+          setErrors((prev) => {
+            const next = { ...prev };
+            if (next.dateOfBirth === 'Date of birth cannot be a future date') delete next.dateOfBirth;
+            if (next.dateOfBirth === 'DOB cannot be less than 18 years') delete next.dateOfBirth;
+            return next;
+          });
+        }
+      }
+    }
+
+    if (name === 'documentExpire' && value) {
+      setFormData((prev) => {
+        const next = { ...prev, [name]: value };
+
+        // Expiry date must never be in the past (Passport / Driving License / ID Card)
+        const selected = new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        selected.setHours(0, 0, 0, 0);
+
+        if (!isNaN(selected.getTime()) && selected.getTime() < today.getTime()) {
+          setErrors((prevErr) => ({ ...prevErr, documentExpire: 'Expiry date cannot be in the past' }));
+        } else {
+          setErrors((prevErr) => {
+            const nextErr = { ...prevErr };
+            if (nextErr.documentExpire === 'Expiry date cannot be in the past') delete nextErr.documentExpire;
+            return nextErr;
+          });
+        }
+
+        return next;
+      });
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -782,6 +884,7 @@ function EditProfileSection() {
         documentTypeOptions={documentTypeOptions}
         onDocumentsUpdated={reloadUserDataAndDocuments}
         existingDocuments={documentSectionDocuments}
+        errors={errors}
       />
 
       <ReferencesSection

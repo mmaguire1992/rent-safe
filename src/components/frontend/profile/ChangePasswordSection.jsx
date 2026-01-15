@@ -51,7 +51,8 @@ function ChangePasswordSection() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const nextFormData = { ...formData, [name]: value };
+    setFormData(nextFormData);
 
     // Clear error when user starts typing
     if (errors[name]) {
@@ -60,7 +61,12 @@ function ChangePasswordSection() {
 
     // Validate on change (but don't show error until blur or submit)
     if (touched[name]) {
-      validateField(name, value);
+      validateField(name, value, nextFormData);
+    }
+
+    // Cross-field validation: when newPassword changes, re-validate confirmPassword too
+    if (name === "newPassword" && touched.confirmPassword) {
+      validateField("confirmPassword", nextFormData.confirmPassword, nextFormData);
     }
   };
 
@@ -70,7 +76,7 @@ function ChangePasswordSection() {
     validateField(name, value);
   };
 
-  const validateField = (name, value) => {
+  const validateField = (name, value, data = formData) => {
     let error = "";
 
     switch (name) {
@@ -93,7 +99,7 @@ function ChangePasswordSection() {
       case "confirmPassword":
         if (!value) {
           error = "Please confirm your new password";
-        } else if (formData.newPassword && value !== formData.newPassword) {
+        } else if (data.newPassword && value !== data.newPassword) {
           error = "Passwords do not match";
         }
         break;

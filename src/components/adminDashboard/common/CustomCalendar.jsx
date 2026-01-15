@@ -6,12 +6,30 @@ import GrayCalendarIcon from "@/svg/grayCalendarIcon";
 
 function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, maxDate }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  // Initialize currentDate with selected date if available, otherwise use today
+  const [currentDate, setCurrentDate] = useState(() => {
+    if (value) {
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? new Date() : date;
+    }
+    return new Date();
+  });
+  const [viewMode, setViewMode] = useState('month'); // 'month' or 'year'
   const calendarRef = useRef(null);
   const error = [];
 
   // Parse value to Date object
   const selectedDate = value ? new Date(value) : null;
+
+  // Update currentDate when value changes (when user selects a date)
+  useEffect(() => {
+    if (value) {
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        setCurrentDate(date);
+      }
+    }
+  }, [value]);
   
   // Get minimum date object (no default - allow all past dates if not provided)
   // Always calculate fresh to ensure we're using current date
@@ -45,6 +63,7 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, 
     const handleClickOutside = (event) => {
       if (calendarRef.current && !calendarRef.current.contains(event.target)) {
         setIsOpen(false);
+        setViewMode('month'); // Reset to month view when closing
       }
     };
 
@@ -55,6 +74,13 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
+  }, [isOpen]);
+
+  // Reset view mode when calendar opens
+  useEffect(() => {
+    if (isOpen) {
+      setViewMode('month');
+    }
   }, [isOpen]);
 
   // Get days in month
@@ -102,9 +128,63 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, 
   };
 
   const goToNextMonth = () => {
-    setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
-    );
+    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+    // Don't allow navigating to months after maxDate (if maxDate is set)
+    const maxDateObj = getMaxDateObj();
+    if (maxDateObj) {
+      const maxMonth = new Date(maxDateObj.getFullYear(), maxDateObj.getMonth(), 1);
+      if (newDate <= maxMonth) {
+        setCurrentDate(newDate);
+      }
+    } else {
+      // No maxDate restriction - allow navigating to any future month
+      setCurrentDate(newDate);
+    }
+  };
+
+  // Navigate years
+  const goToPreviousYear = () => {
+    const newDate = new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), 1);
+    const minDateObj = getMinDateObj();
+    if (minDateObj) {
+      const minYear = minDateObj.getFullYear();
+      if (newDate.getFullYear() >= minYear) {
+        setCurrentDate(newDate);
+      }
+    } else {
+      setCurrentDate(newDate);
+    }
+  };
+
+  const goToNextYear = () => {
+    const newDate = new Date(currentDate.getFullYear() + 1, currentDate.getMonth(), 1);
+    const maxDateObj = getMaxDateObj();
+    if (maxDateObj) {
+      const maxYear = maxDateObj.getFullYear();
+      if (newDate.getFullYear() <= maxYear) {
+        setCurrentDate(newDate);
+      }
+    } else {
+      setCurrentDate(newDate);
+    }
+  };
+
+  // Handle year selection
+  const handleYearClick = (year) => {
+    const newDate = new Date(year, currentDate.getMonth(), 1);
+    setCurrentDate(newDate);
+    setViewMode('month'); // Switch back to month view after selecting year
+  };
+
+  // Generate years for year picker (show 12 years at a time)
+  const getYearRange = () => {
+    const currentYear = currentDate.getFullYear();
+    const startYear = Math.floor(currentYear / 12) * 12; // Round down to nearest multiple of 12
+    const years = [];
+    for (let i = 0; i < 12; i++) {
+      years.push(startYear + i);
+    }
+    return years;
   };
 
   // Handle date selection
@@ -236,31 +316,44 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, 
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-2 bg-white border border-lightGray rounded-xl shadow-lg z-50 w-[320px] p-4">
-          {/* Calendar Header */}
-          <div className="flex items-center justify-between mb-4">
-            <button
-              type="button"
-              onClick={goToPreviousMonth}
-              disabled={(() => {
-                const minDateObj = getMinDateObj();
-                if (!minDateObj) return false; // No restriction if no minDate
-                return new Date(currentDate.getFullYear(), currentDate.getMonth(), 1) <= new Date(minDateObj.getFullYear(), minDateObj.getMonth(), 1);
-              })()}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FiChevronLeft className="w-5 h-5 text-secondary" />
-            </button>
-            <h3 className="text-base font-bold text-secondary">
-              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </h3>
-            <button
-              type="button"
-              onClick={goToNextMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <FiChevronRight className="w-5 h-5 text-secondary" />
-            </button>
-          </div>
+          {viewMode === 'month' ? (
+            <>
+              {/* Calendar Header */}
+              <div className="flex items-center justify-between mb-4">
+                <button
+                  type="button"
+                  onClick={goToPreviousMonth}
+                  disabled={(() => {
+                    const minDateObj = getMinDateObj();
+                    if (!minDateObj) return false; // No restriction if no minDate
+                    return new Date(currentDate.getFullYear(), currentDate.getMonth(), 1) <= new Date(minDateObj.getFullYear(), minDateObj.getMonth(), 1);
+                  })()}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FiChevronLeft className="w-5 h-5 text-secondary" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('year')}
+                  className="px-3 py-1 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <h3 className="text-base font-bold text-secondary cursor-pointer">
+                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                  </h3>
+                </button>
+                <button
+                  type="button"
+                  onClick={goToNextMonth}
+                  disabled={(() => {
+                    const maxDateObj = getMaxDateObj();
+                    if (!maxDateObj) return false; // No restriction if no maxDate
+                    return new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1) > new Date(maxDateObj.getFullYear(), maxDateObj.getMonth(), 1);
+                  })()}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FiChevronRight className="w-5 h-5 text-secondary" />
+                </button>
+              </div>
 
           {/* Day Names */}
           <div className="grid grid-cols-7 gap-1 mb-2">
@@ -307,6 +400,88 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, 
               );
             })}
           </div>
+            </>
+          ) : (
+            <>
+              {/* Year Picker Header */}
+              <div className="flex items-center justify-between mb-4">
+                <button
+                  type="button"
+                  onClick={goToPreviousYear}
+                  disabled={(() => {
+                    const minDateObj = getMinDateObj();
+                    if (!minDateObj) return false;
+                    return currentDate.getFullYear() <= minDateObj.getFullYear();
+                  })()}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FiChevronLeft className="w-5 h-5 text-secondary" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('month')}
+                  className="px-3 py-1 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <h3 className="text-base font-bold text-secondary cursor-pointer">
+                    {getYearRange()[0]} - {getYearRange()[11]}
+                  </h3>
+                </button>
+                <button
+                  type="button"
+                  onClick={goToNextYear}
+                  disabled={(() => {
+                    const maxDateObj = getMaxDateObj();
+                    if (!maxDateObj) return false;
+                    return currentDate.getFullYear() >= maxDateObj.getFullYear();
+                  })()}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FiChevronRight className="w-5 h-5 text-secondary" />
+                </button>
+              </div>
+
+              {/* Year Grid */}
+              <div className="grid grid-cols-4 gap-2">
+                {getYearRange().map((year) => {
+                  const minDateObj = getMinDateObj();
+                  const maxDateObj = getMaxDateObj();
+                  const isYearDisabled = 
+                    (minDateObj && year < minDateObj.getFullYear()) ||
+                    (maxDateObj && year > maxDateObj.getFullYear());
+                  const isCurrentYear = year === currentDate.getFullYear();
+                  const isSelectedYear = selectedDate && year === selectedDate.getFullYear();
+
+                  return (
+                    <button
+                      key={year}
+                      type="button"
+                      onClick={() => !isYearDisabled && handleYearClick(year)}
+                      disabled={isYearDisabled}
+                      className={`
+                        py-2 px-3 rounded-lg text-sm font-medium transition-colors
+                        ${
+                          isYearDisabled
+                            ? "cursor-not-allowed opacity-40 text-gray-400"
+                            : "cursor-pointer hover:bg-purple-50"
+                        }
+                        ${
+                          isSelectedYear
+                            ? "bg-[#6B4EFF] text-white"
+                            : isCurrentYear && !isYearDisabled
+                            ? "bg-purple-100 text-[#6B4EFF] font-bold"
+                            : !isYearDisabled
+                            ? "text-secondary hover:bg-gray-50"
+                            : ""
+                        }
+                      `}
+                    >
+                      {year}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
