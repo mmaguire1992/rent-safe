@@ -50,14 +50,14 @@ function CurrentPlanDetails({ currentPlan, onUpgrade }) {
           CURRENT PLAN
         </h3>
         {showUpgradeButton && (
-          <div className="hidden md:flex gap-3">
-            <button
-              onClick={onUpgrade}
-              className="bg-yellowGradient text-white px-6 py-2 rounded-[10px] text-base font-bold font-nunito transition-colors whitespace-nowrap"
-            >
-              <span>Upgrade Your Plan</span>
-            </button>
-          </div>
+        <div className="hidden md:flex gap-3">
+          <button
+            onClick={onUpgrade}
+            className="bg-yellowGradient text-white px-6 py-2 rounded-[10px] text-base font-bold font-nunito transition-colors whitespace-nowrap"
+          >
+            <span>Upgrade Your Plan</span>
+          </button>
+        </div>
         )}
       </div>
       <div className="p-0 mt-4 md:mt-0">
@@ -78,28 +78,28 @@ function CurrentPlanDetails({ currentPlan, onUpgrade }) {
                 </span>
               </div>
               {currentPlan.totalProperties > 0 && (
-                <div className="flex items-center gap-2">
-                  <PropertyGreenIcon />
-                  <span className="text-base font-normal font-nunito text-secondary">
-                    Properties Remaining:{" "}
-                    <span className="font-bold">
+              <div className="flex items-center gap-2">
+                <PropertyGreenIcon />
+                <span className="text-base font-normal font-nunito text-secondary">
+                  Properties Remaining:{" "}
+                  <span className="font-bold">
                       {currentPlan.propertiesRemaining || 0} of{" "}
-                      {currentPlan.totalProperties}
-                    </span>
+                    {currentPlan.totalProperties}
                   </span>
-                </div>
+                </span>
+              </div>
               )}
             </div>
           </div>
           {showUpgradeButton && (
-            <div className="flex md:hidden gap-3">
-              <button
-                onClick={onUpgrade}
-                className="bg-yellowGradient text-white px-4 py-2 rounded-[10px] text-sm font-bold font-nunito transition-colors whitespace-nowrap"
-              >
-                <span>Upgrade Your Plan</span>
-              </button>
-            </div>
+          <div className="flex md:hidden gap-3">
+            <button
+              onClick={onUpgrade}
+              className="bg-yellowGradient text-white px-4 py-2 rounded-[10px] text-sm font-bold font-nunito transition-colors whitespace-nowrap"
+            >
+              <span>Upgrade Your Plan</span>
+            </button>
+          </div>
           )}
         </div>
       </div>

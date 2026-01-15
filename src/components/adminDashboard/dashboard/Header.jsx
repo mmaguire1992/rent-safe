@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { useNavigate } from '@/lib/react-router-compat';
 import { useAuth } from '@/context/AuthContext';
 import { getCurrentUser } from "@/api/users";
@@ -21,17 +21,73 @@ import GreenCheckedIcon from "@/svg/greenCheckedIcon";
 import LogoutIcon from "@/svg/logoutIcon";
 import NotificationDropdown from "../common/NotificationDropdown";
 
+// Cache keys
+const CACHE_KEYS = {
+  SUBSCRIPTION: 'header_subscription_cache',
+  SUBSCRIPTION_TIMESTAMP: 'header_subscription_timestamp',
+  PROFILE_IMAGE: 'header_profile_image_cache',
+};
+
+// Cache duration: 5 minutes
+const CACHE_DURATION = 5 * 60 * 1000;
+
+// Helper functions for cache
+const getCachedSubscription = () => {
+  try {
+    const cached = localStorage.getItem(CACHE_KEYS.SUBSCRIPTION);
+    const timestamp = localStorage.getItem(CACHE_KEYS.SUBSCRIPTION_TIMESTAMP);
+    if (cached && timestamp) {
+      const age = Date.now() - parseInt(timestamp, 10);
+      if (age < CACHE_DURATION) {
+        return JSON.parse(cached);
+      }
+    }
+  } catch (e) {
+    // Ignore cache errors
+  }
+  return null;
+};
+
+const setCachedSubscription = (subscription) => {
+  try {
+    localStorage.setItem(CACHE_KEYS.SUBSCRIPTION, JSON.stringify(subscription));
+    localStorage.setItem(CACHE_KEYS.SUBSCRIPTION_TIMESTAMP, Date.now().toString());
+  } catch (e) {
+    // Ignore cache errors
+  }
+};
+
+const clearSubscriptionCache = () => {
+  try {
+    localStorage.removeItem(CACHE_KEYS.SUBSCRIPTION);
+    localStorage.removeItem(CACHE_KEYS.SUBSCRIPTION_TIMESTAMP);
+  } catch (e) {
+    // Ignore cache errors
+  }
+};
+
 function Header({ onMenuClick }) {
   const navigate = useNavigate();
   const { logout, userName, user, isAuthenticated, userType } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState(null);
+  const [profileImage, setProfileImage] = useState(() => {
+    // Initialize from user context immediately
+    return user?.userInfo?.profileImage || null;
+  });
   const [unreadCount, setUnreadCount] = useState(0);
-  const [currentSubscription, setCurrentSubscription] = useState(null);
+  const [currentSubscription, setCurrentSubscription] = useState(() => {
+    // Initialize from cache immediately for instant render
+    if (userType === 'owner') {
+      return getCachedSubscription();
+    }
+    return null;
+  });
   const [loadingSubscription, setLoadingSubscription] = useState(false);
   const dropdownRef = useRef(null);
   const notificationRef = useRef(null);
+  const subscriptionFetchedRef = useRef(false);
+  const profileImageFetchedRef = useRef(false);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -50,26 +106,42 @@ function Header({ onMenuClick }) {
     };
   }, [dropdownOpen]);
 
-  // Fetch profile image
+  // Initialize profile image from user context first, then fetch if needed (only once)
   useEffect(() => {
-    const fetchProfileImage = async () => {
-      if (!isAuthenticated) return;
-      
-      try {
-        const userData = await getCurrentUser();
-        if (userData?.userInfo?.profileImage) {
-          setProfileImage(userData.userInfo.profileImage);
-        }
-      } catch (err) {
-        console.error('Error fetching profile image:', err);
-      }
-    };
+    if (!isAuthenticated) {
+      setProfileImage(null);
+      profileImageFetchedRef.current = false;
+      return;
+    }
 
-    fetchProfileImage();
+    // Use profile image from context if available (immediate render)
+    if (user?.userInfo?.profileImage) {
+      setProfileImage(user.userInfo.profileImage);
+    }
+
+    // Only fetch once per session if we don't have it from context
+    if (!profileImageFetchedRef.current && !user?.userInfo?.profileImage) {
+      profileImageFetchedRef.current = true;
+      
+      // Fetch profile image in background (non-blocking)
+      const fetchProfileImage = async () => {
+        try {
+          const userData = await getCurrentUser();
+          if (userData?.userInfo?.profileImage) {
+            setProfileImage(userData.userInfo.profileImage);
+          } else {
+            setProfileImage(null);
+          }
+        } catch (err) {
+          console.error('Error fetching profile image:', err);
+        }
+      };
+      
+      fetchProfileImage();
+    }
 
     // Listen for profile image updates
     const handleProfileImageUpdate = async () => {
-      // Re-fetch user data to get the latest profile image
       try {
         const userData = await getCurrentUser();
         if (userData?.userInfo?.profileImage) {
@@ -89,7 +161,7 @@ function Header({ onMenuClick }) {
     return () => {
       window.removeEventListener('profileImageUpdated', handleProfileImageUpdate);
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated]); // Removed user?.userInfo?.profileImage from deps to prevent re-fetching
 
   // Fetch notifications count on mount and periodically
   useEffect(() => {
@@ -184,9 +256,19 @@ function Header({ onMenuClick }) {
         {/* Right - Notifications & Profile */}
         <div className="flex items-center gap-2 md:gap-4">
           {/* Show subscription info and upgrade button only for owners */}
-          {userType === 'owner' && !loadingSubscription && (
+          {userType === 'owner' && (
             <div className="hidden lg:flex items-center gap-4 border border-lightGray rounded-xl py-1 pr-1 pl-3">
-              {currentSubscription && currentSubscription.plan ? (
+              {loadingSubscription ? (
+                /* Loading state - show placeholder */
+                <div className="flex items-center gap-2">
+                  <span className="text-midGray text-base font-bold font-nunito">
+                    Current Plan:
+                  </span>
+                  <span className="text-midGray text-base font-nunito animate-pulse">
+                    Loading...
+                  </span>
+                </div>
+              ) : currentSubscription && currentSubscription.plan ? (
                 <>
                   <div className="flex items-center gap-2">
                     <span className="text-midGray text-base font-bold font-nunito">

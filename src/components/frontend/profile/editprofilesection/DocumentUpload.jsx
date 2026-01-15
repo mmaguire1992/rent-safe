@@ -675,7 +675,7 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
                     disabled={uploading}
                     title="Delete document"
                   >
-                    <FiX className={`text-lg ${isRejected ? 'text-darkGray' : 'text-errorColor'}`} />
+                    <FiTrash2 className={`text-lg ${isRejected ? 'text-darkGray' : 'text-errorColor'}`} />
                   </button>
                 </div>
               </div>

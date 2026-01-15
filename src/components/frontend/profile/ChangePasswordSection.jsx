@@ -52,12 +52,12 @@ function ChangePasswordSection() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-    
+
     // Validate on change (but don't show error until blur or submit)
     if (touched[name]) {
       validateField(name, value);
@@ -114,7 +114,7 @@ function ChangePasswordSection() {
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
-    
+
     return {
       isValid: minLength && hasUpperCase && hasLowerCase && hasNumber,
       errors: {
@@ -199,13 +199,13 @@ function ChangePasswordSection() {
       });
 
       toast.success("Password changed successfully! Please login again with your new password.");
-      
-    // Reset form
-    setFormData({
-      oldPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
+
+      // Reset form
+      setFormData({
+        oldPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
       setErrors({
         oldPassword: "",
         newPassword: "",
@@ -225,7 +225,7 @@ function ChangePasswordSection() {
 
     } catch (error) {
       console.error('Error changing password:', error);
-      
+
       // Extract validation errors from different possible locations
       let validationErrors = null;
       if (error?.validationErrors && Array.isArray(error.validationErrors)) {
@@ -233,13 +233,13 @@ function ChangePasswordSection() {
       } else if (error?.response?.data?.errors && Array.isArray(error.response.data.errors)) {
         validationErrors = error.response.data.errors;
       }
-      
+
       // Display only the first validation error (one toast at a time)
       if (validationErrors && validationErrors.length > 0) {
         const firstError = validationErrors[0];
         // Show just the error message
         toast.error(firstError.message || 'Validation failed');
-        
+
         // Set field-specific error in form for the first error only
         if (firstError.field === 'oldPassword' || firstError.field === 'email') {
           setErrors({ oldPassword: firstError.message, newPassword: "", confirmPassword: "" });
@@ -250,11 +250,11 @@ function ChangePasswordSection() {
         }
       } else {
         // Display generic error message
-      const errorMessage = error.response?.data?.error || 
-                          error.response?.data?.message || 
-                          error.message || 
-                          'Failed to change password. Please try again.';
-      toast.error(errorMessage);
+        const errorMessage = error.response?.data?.error ||
+          error.response?.data?.message ||
+          error.message ||
+          'Failed to change password. Please try again.';
+        toast.error(errorMessage);
         setErrors({ oldPassword: "", newPassword: "", confirmPassword: "" });
       }
     } finally {
@@ -263,17 +263,17 @@ function ChangePasswordSection() {
   };
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
-      <SectionHeader 
-        icon={() => <FiLock className="w-5 h-5 text-primary" />} 
-        title="Change Password" 
+      <SectionHeader
+        icon={() => <FiLock className="w-5 h-5 text-primary" />}
+        title="Change Password"
       />
 
       <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
           {/* Old Password */}
           <div>
             <label className="block text-sm md:text-base font-medium text-secondary mb-1">
-              Current Password <span className="text-errorColor">*</span>
+              Old Password <span className="text-errorColor">*</span>
             </label>
             <div className="relative">
               <input
@@ -282,12 +282,11 @@ function ChangePasswordSection() {
                 value={formData.oldPassword}
                 onChange={handleInputChange}
                 onBlur={handleBlur}
-                className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
-                  touched.oldPassword && errors.oldPassword
+                className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${touched.oldPassword && errors.oldPassword
                     ? "border-errorColor"
                     : "border-lightGray"
-                }`}
-                placeholder="Enter your current password"
+                  }`}
+                placeholder="Enter your old password"
                 required
                 disabled={loading}
               />
@@ -304,9 +303,10 @@ function ChangePasswordSection() {
               <p className="text-xs text-errorColor mt-1">{errors.oldPassword}</p>
             )}
           </div>
-
-          {/* New Password */}
-          <div>
+        </div>
+        {/* New Password */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div >
             <label className="block text-sm md:text-base font-medium text-secondary mb-1">
               New Password <span className="text-errorColor">*</span>
             </label>
@@ -317,11 +317,10 @@ function ChangePasswordSection() {
                 value={formData.newPassword}
                 onChange={handleInputChange}
                 onBlur={handleBlur}
-                className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
-                  touched.newPassword && errors.newPassword
+                className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${touched.newPassword && errors.newPassword
                     ? "border-errorColor"
                     : "border-lightGray"
-                }`}
+                  }`}
                 placeholder="Enter your new password"
                 required
                 disabled={loading}
@@ -339,12 +338,12 @@ function ChangePasswordSection() {
               <p className="text-xs text-errorColor mt-1">{errors.newPassword}</p>
             )}
           </div>
-        </div>
+       
 
         {/* Confirm Password */}
         <div>
           <label className="block text-sm md:text-base font-medium text-secondary mb-1">
-            Confirm New Password <span className="text-errorColor">*</span>
+            Confirm Password <span className="text-errorColor">*</span>
           </label>
           <div className="relative">
             <input
@@ -353,12 +352,11 @@ function ChangePasswordSection() {
               value={formData.confirmPassword}
               onChange={handleInputChange}
               onBlur={handleBlur}
-              className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
-                touched.confirmPassword && errors.confirmPassword
+              className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${touched.confirmPassword && errors.confirmPassword
                   ? "border-errorColor"
                   : "border-lightGray"
-              }`}
-              placeholder="Confirm your new password"
+                }`}
+              placeholder="Enter your Confirm password"
               required
               disabled={loading}
             />
@@ -375,7 +373,7 @@ function ChangePasswordSection() {
             <p className="text-xs text-errorColor mt-1">{errors.confirmPassword}</p>
           )}
         </div>
-
+        </div>
         {/* Save Button */}
         <div className="flex justify-end pt-4">
           <button
