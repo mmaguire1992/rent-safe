@@ -48,8 +48,10 @@ function Dashboard() {
           subscription = await getCurrentSubscription();
           setSubscriptionData(subscription);
           // Check if subscription exists and is active with remaining properties
+          // Handle both 'active' and 'activate' status (backend may use 'activate')
+          const isActiveStatus = subscription.status === 'active' || subscription.status === 'activate';
           if (subscription && 
-              subscription.status === 'active' && 
+              isActiveStatus && 
               subscription.remainingProperties !== undefined && 
               subscription.remainingProperties > 0) {
             hasActiveSubscription = true;

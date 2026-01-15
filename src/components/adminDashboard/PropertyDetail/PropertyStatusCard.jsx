@@ -36,9 +36,9 @@ const getStatusBadgeColor = (status) => {
   } else if (statusLower === 'rented') {
     return 'bg-[#FFF5CC] text-[#D19600]';
   } else if (statusLower === 'pending_approval') {
-    return 'bg-blue-100 text-blue-600';
+    return 'bg-gray-100 text-blue-600'; // Light gray background with blue text for pending approval
   } else if (statusLower === 'draft') {
-    return 'bg-gray-100 text-gray-600';
+    return 'bg-[#E8E2FF] text-[#6B4EFF]'; // Purple color for draft
   } else if (statusLower === 'suspended') {
     return 'bg-red-100 text-red-600';
   } else {

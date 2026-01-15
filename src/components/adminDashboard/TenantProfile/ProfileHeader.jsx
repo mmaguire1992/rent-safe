@@ -6,6 +6,7 @@ import SmallCheckIcon from "@/svg/smallCheckIcon";
 import DesignationIcon from "@/svg/designationIcon";
 import BlueLocationIcon from "@/svg/blueLocationIcon";
 import BlueIncomeIcon from "@/svg/blueIncomeIcon";
+import RedCrossIcon from "@/svg/redCrossIcon";
 
 function ProfileHeader({ tenantData, onSendOffer, onChat }) {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ function ProfileHeader({ tenantData, onSendOffer, onChat }) {
             alt={tenantData.name}
             className="w-24 h-24 md:w-[150px] mx-auto md:mx-0 md:h-[150px] shadow-[0px_0px_40px_0px_#4A4A4A14] rounded-full object-cover"
           />
-          {tenantData.verified && (
+          {tenantData.verified === true && (
             <span className="absolute bottom-0 right-0">
               <LargeCheckIcon />
             </span>
@@ -30,9 +31,13 @@ function ProfileHeader({ tenantData, onSendOffer, onChat }) {
             <h1 className="text-xl md:text-2xl font-bold text-secondary">
               {tenantData.name}
             </h1>
-            {tenantData.verified && (
+            {tenantData.verified === true ? (
               <span className="bg-[#DFFFE6] text-[#00893A] font-nunito font-normal text-base px-3 py-1 rounded-full flex items-center gap-1">
                 Verified <SmallCheckIcon />
+              </span>
+            ) : (
+              <span className="bg-red-100 text-red-600 font-nunito font-normal text-base px-3 py-1 rounded-full flex items-center gap-1">
+                Not Verified <RedCrossIcon />
               </span>
             )}
           </div>
@@ -49,7 +54,7 @@ function ProfileHeader({ tenantData, onSendOffer, onChat }) {
                   Designation
                 </p>
                 <p className="text-secondary text-base font-nunito font-normal">
-                  {tenantData.designation}
+                  {tenantData.designation && tenantData.designation !== 'N/A' && tenantData.designation.trim() !== '' ? tenantData.designation : '-'}
                 </p>
               </div>
             </div>
@@ -62,7 +67,7 @@ function ProfileHeader({ tenantData, onSendOffer, onChat }) {
                   Location
                 </p>
                 <p className="text-secondary text-base font-nunito font-normal">
-                  {tenantData.location}
+                  {tenantData.location && tenantData.location !== 'N/A' && tenantData.location.trim() !== '' ? tenantData.location : '-'}
                 </p>
               </div>
             </div>
@@ -75,7 +80,7 @@ function ProfileHeader({ tenantData, onSendOffer, onChat }) {
                   Monthly Income
                 </p>
                 <p className="text-[#4A2FCC] text-base font-nunito font-normal">
-                  {tenantData.monthlyIncome}
+                  {tenantData.monthlyIncome && tenantData.monthlyIncome !== 'N/A' && String(tenantData.monthlyIncome).trim() !== '' ? tenantData.monthlyIncome : '-'}
                 </p>
               </div>
             </div>

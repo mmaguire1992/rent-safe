@@ -12,6 +12,7 @@ function MultiSelectDropdown({
   className = "",
   error = false,
   disabled = false,
+  getIcon = null, // Function to get icon for an option: (option) => IconComponent
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -94,21 +95,25 @@ function MultiSelectDropdown({
             </span>
           ) : (
             <div className="flex items-center gap-2 flex-wrap">
-              {selectedOptions.slice(0, 2).map((option) => (
-                <span
-                  key={option.value}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-[#E8E2FF] text-[#6B4EFF] rounded text-sm font-medium"
-                >
-                  {option.label}
-                  <button
-                    type="button"
-                    onClick={(e) => handleRemove(option.value, e)}
-                    className="hover:text-[#6B4EFF] opacity-70 hover:opacity-100"
+              {selectedOptions.slice(0, 2).map((option) => {
+                const Icon = getIcon ? getIcon(option) : null;
+                return (
+                  <span
+                    key={option.value}
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-[#E8E2FF] text-[#6B4EFF] rounded text-sm font-medium"
                   >
-                    <FiX className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
+                    {Icon && <span className="flex items-center"><Icon /></span>}
+                    {option.label}
+                    <button
+                      type="button"
+                      onClick={(e) => handleRemove(option.value, e)}
+                      className="hover:text-[#6B4EFF] opacity-70 hover:opacity-100"
+                    >
+                      <FiX className="w-3 h-3" />
+                    </button>
+                  </span>
+                );
+              })}
               {selectedValues.length > 2 && (
                 <span className="text-darkGray text-sm md:text-base font-nunito font-medium">
                   +{selectedValues.length - 2} more
@@ -131,6 +136,7 @@ function MultiSelectDropdown({
         <div className="absolute z-50 w-full mt-1 bg-white border border-lightGray rounded-xl shadow-lg max-h-60 overflow-auto">
           {options.map((option) => {
             const selected = isSelected(option.value);
+            const Icon = getIcon ? getIcon(option) : null;
             return (
               <button
                 key={option.value}
@@ -161,6 +167,11 @@ function MultiSelectDropdown({
                     </svg>
                   )}
                 </div>
+                {Icon && (
+                  <span className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                    <Icon />
+                  </span>
+                )}
                 <span>{option.label}</span>
               </button>
             );

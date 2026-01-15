@@ -210,8 +210,8 @@ export async function getRecentRequests(limit = 10) {
         throw new Error('Action must be a boolean (true to block, false to unblock)');
       }
 
-      const actionStr = action ? 'block' : 'unblock';
-      const response = await usePatchApi(chatRoutes.updateChatroom(chatroomId), true, { action: actionStr });
+      // Backend expects boolean, not string
+      const response = await usePatchApi(chatRoutes.blockUnblockChatroom(chatroomId), true, { action });
 
       if (response && response.success && response.data) {
         return response.data;
@@ -240,7 +240,14 @@ export async function getRecentRequests(limit = 10) {
         throw new Error('Valid action is required: delete, block, or unblock');
       }
 
-      const response = await usePatchApi(chatRoutes.updateChatroom(chatroomId), true, { action });
+      // Handle block/unblock separately (they use different endpoint)
+      if (action === 'block' || action === 'unblock') {
+        const blockAction = action === 'block';
+        return await blockUnblockChatroom(chatroomId, blockAction);
+      }
+
+      // Handle delete (uses updateChatroom endpoint)
+      const response = await usePatchApi(chatRoutes.updateChatroom(chatroomId), true, { action: 'delete' });
       
       if (response && response.success && response.data) {
         return response.data;

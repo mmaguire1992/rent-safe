@@ -1,6 +1,16 @@
 import MultiSelectDropdown from "@/components/adminDashboard/common/MultiSelectDropdown";
 import { preferredRenterTypeOptions } from "@/constant";
 import BlueAIIcon from "@/svg/blueAIIcon";
+import RedMaleIcon from "@/svg/redMaleIcon";
+import SingleFemaleIcon from "@/svg/singleFemaleIcon";
+import CoupleIcon from "@/svg/coupleIcon";
+import FamilyIcon from "@/svg/familyIcon";
+import StudentIcon from "@/svg/studentIcon";
+import ProfessionalIcon from "@/svg/professionalIcon";
+import SelfEmployedIcon from "@/svg/selfEmployedIcon";
+import RetiredIcon from "@/svg/retiredIcon";
+import SharersIcon from "@/svg/sharersIcon";
+import CarporateTenantIcon from "@/svg/carporateTenantIcon";
 
 function RenterDescriptionStep({ formData, setFormData, setShowAIModal }) {
   const handlePreferredRenterTypeChange = (selectedValues) => {
@@ -8,6 +18,34 @@ function RenterDescriptionStep({ formData, setFormData, setShowAIModal }) {
       ...formData,
       preferredRenterTypes: selectedValues,
     });
+  };
+
+  // Get icon for preferred renter type
+  const getPreferredRenterIcon = (option) => {
+    switch (option.value) {
+      case "single-male":
+        return RedMaleIcon;
+      case "single-female":
+        return SingleFemaleIcon;
+      case "couple":
+        return CoupleIcon;
+      case "family":
+        return FamilyIcon;
+      case "students":
+        return StudentIcon;
+      case "professionals":
+        return ProfessionalIcon;
+      case "self-employed":
+        return SelfEmployedIcon;
+      case "retired":
+        return RetiredIcon;
+      case "sharers":
+        return SharersIcon;
+      case "corporate":
+        return CarporateTenantIcon;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -59,6 +97,7 @@ function RenterDescriptionStep({ formData, setFormData, setShowAIModal }) {
             value={formData.preferredRenterTypes || []}
             onChange={handlePreferredRenterTypeChange}
             placeholder="Select preferred renter types"
+            getIcon={getPreferredRenterIcon}
           />
         </div>
 

@@ -22,6 +22,7 @@ export const properties = {
   updatePropertyStatus: (id) => `/properties/${id}/status`,
   uploadPropertyMedia: (id) => `/properties/${id}/media`,
   uploadMultiplePropertyMedia: (id) => `/properties/${id}/media/multiple`,
+  deletePropertyMedia: (id, mediaId) => `/properties/${id}/media/${mediaId}`,
 };
 
 // Auth Routes (for reference)
@@ -51,6 +52,7 @@ export const chat = {
   uploadMedia: '/chat/upload-media',
   getRecentRequests: '/chat/recent-requests',
   updateChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}`,
+  blockUnblockChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}/block`,
 };
 
 // Dashboard Routes

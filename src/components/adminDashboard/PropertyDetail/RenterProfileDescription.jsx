@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from "react";
-import { getPreferredRenterIcon } from "@/constant";
+import { getPreferredRenterIcon, preferredRenterTypeOptions } from "@/constant";
 
 function RenterProfileDescription({
   description,
@@ -73,17 +73,80 @@ function RenterProfileDescription({
   const formattedPreferredRenterTypes = useMemo(() => {
     // First try to use extracted type from description
     if (extractedPreferredType) {
+      // If it's an array (comma-separated values from description)
+      if (Array.isArray(extractedPreferredType)) {
+        const formatted = extractedPreferredType
+          .map(type => {
+            const value = typeof type === 'string' ? type : (type.value || type.label);
+            const option = preferredRenterTypeOptions.find(
+              opt => opt.value === value || opt.label === value || 
+              opt.value.toLowerCase() === value.toLowerCase() ||
+              opt.label.toLowerCase() === value.toLowerCase()
+            );
+            return option ? { label: option.label, value: option.value } : null;
+          })
+          .filter(type => type !== null);
+        return formatted;
+      }
+      // If it's a single string, try to split by comma
+      if (typeof extractedPreferredType === 'string' && extractedPreferredType.includes(',')) {
+        const typesArray = extractedPreferredType.split(',').map(t => t.trim()).filter(t => t);
+        const formatted = typesArray
+          .map(type => {
+            const option = preferredRenterTypeOptions.find(
+              opt => opt.value === type || opt.label === type ||
+              opt.value.toLowerCase() === type.toLowerCase() ||
+              opt.label.toLowerCase() === type.toLowerCase()
+            );
+            return option ? { label: option.label, value: option.value } : null;
+          })
+          .filter(type => type !== null);
+        return formatted;
+      }
+      // Single value
       const formatted = formatPreferredRenterType(extractedPreferredType);
       return formatted ? [formatted] : [];
     }
     
     // Fall back to preferredRenterTypes prop
     if (preferredRenterTypes) {
-      // If it's an array, format all
+      // If it's an array, filter to only show selected ones
       if (Array.isArray(preferredRenterTypes) && preferredRenterTypes.length > 0) {
-        return preferredRenterTypes
-          .map(type => formatPreferredRenterType(type))
-          .filter(type => type !== null);
+        // Check if the array contains objects with 'checked' property (all options format)
+        const hasCheckedProperty = preferredRenterTypes.some(
+          type => typeof type === 'object' && 'checked' in type
+        );
+        
+        if (hasCheckedProperty) {
+          // Filter to only include items with checked: true
+          const selectedTypes = preferredRenterTypes
+            .filter(type => typeof type === 'object' && type.checked === true)
+            .map(type => {
+              // Find the matching option from preferredRenterTypeOptions
+              const option = preferredRenterTypeOptions.find(
+                opt => opt.value === type.value || opt.label === type.label
+              );
+              return option ? { label: option.label, value: option.value } : null;
+            })
+            .filter(type => type !== null);
+          
+          return selectedTypes;
+        } else {
+          // Array of strings/values - these are all selected
+          // Map each value to its corresponding option from preferredRenterTypeOptions
+          const selectedTypes = preferredRenterTypes
+            .map(typeValue => {
+              // Handle both string values and objects
+              const value = typeof typeValue === 'string' ? typeValue : (typeValue.value || typeValue.label);
+              const option = preferredRenterTypeOptions.find(
+                opt => opt.value === value || opt.label === value
+              );
+              return option ? { label: option.label, value: option.value } : null;
+            })
+            .filter(type => type !== null);
+          
+          return selectedTypes;
+        }
       }
       // If it's a single value
       const formatted = formatPreferredRenterType(preferredRenterTypes);
@@ -142,17 +205,17 @@ function RenterProfileDescription({
           <h2 className="text-lg sm:text-xl font-bold font-nunito text-secondary mb-4">
             Preferred Renter Type
           </h2>
-          <div className="flex sm:items-center flex-col sm:flex-row sm:gap-4 flex-wrap">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             {formattedPreferredRenterTypes.map((type, index) => {
               const Icon = getPreferredRenterIcon(type.label || type.value);
               return (
                 <div key={index} className="flex items-center gap-2 py-1.5 sm:py-3 transition-colors">
                   {Icon && (
-                    <span className="bg-[#FFDDEE] w-[36px] h-[36px] rounded-[10px] flex items-center justify-center">
+                    <span className="bg-[#FFDDEE] w-[36px] h-[36px] rounded-[10px] flex items-center justify-center flex-shrink-0">
                       <Icon />
                     </span>
                   )}
-                  <span className="text-sm sm:text-base font-normal font-nunito text-darkGray">
+                  <span className="text-sm sm:text-base font-normal font-nunito text-darkGray whitespace-nowrap">
                     {type.label || type.value}
                   </span>
                 </div>

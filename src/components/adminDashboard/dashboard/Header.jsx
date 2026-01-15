@@ -48,23 +48,7 @@ const getCachedSubscription = () => {
   return null;
 };
 
-const setCachedSubscription = (subscription) => {
-  try {
-    localStorage.setItem(CACHE_KEYS.SUBSCRIPTION, JSON.stringify(subscription));
-    localStorage.setItem(CACHE_KEYS.SUBSCRIPTION_TIMESTAMP, Date.now().toString());
-  } catch (e) {
-    // Ignore cache errors
-  }
-};
 
-const clearSubscriptionCache = () => {
-  try {
-    localStorage.removeItem(CACHE_KEYS.SUBSCRIPTION);
-    localStorage.removeItem(CACHE_KEYS.SUBSCRIPTION_TIMESTAMP);
-  } catch (e) {
-    // Ignore cache errors
-  }
-};
 
 function Header({ onMenuClick }) {
   const navigate = useNavigate();

@@ -168,9 +168,16 @@ function PropertiesTable({
                       </td>
                       <td className="py-4 px-4">
                         <span
-                          className={`px-3 py-1 rounded-full text-base font-nunito font-normal ${property.status === "Active"
+                          className={`px-3 py-1 rounded-full text-base font-nunito font-normal ${
+                            property.status === "Active"
                               ? "bg-[#DFFFE6] text-[#00893A]"
-                              : "bg-[#FFF5CC] text-[#D19600]"
+                              : property.status === "Pending Approval" || property.status === "pending_approval"
+                              ? "bg-gray-100 text-blue-600"
+                              : property.status === "Rent Out" || property.status === "rented"
+                              ? "bg-[#FFF5CC] text-[#D19600]"
+                              : property.status === "Draft" || property.status === "draft"
+                              ? "bg-[#E8E2FF] text-[#6B4EFF]"
+                              : "bg-gray-100 text-gray-600"
                             }`}
                         >
                           {property.status}

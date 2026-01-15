@@ -5,7 +5,7 @@ import { FiX, FiCheckCircle } from "react-icons/fi";
 import SuccessfullyCheck from "@/svg/successfullyCheck";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
-function SuccessModal({ showSuccessModal, setShowSuccessModal, formData, propertyId }) {
+function SuccessModal({ showSuccessModal, setShowSuccessModal, formData, propertyId, isEdit = false }) {
   const navigate = useNavigate();
   useBodyScrollLock(showSuccessModal);
 
@@ -29,12 +29,13 @@ function SuccessModal({ showSuccessModal, setShowSuccessModal, formData, propert
             <SuccessfullyCheck />
           </div>
           <h2 className="text-2xl font-bold text-secondary mb-2">
-            Your Property Is Now Live!
+            {isEdit ? "Property Updated Successfully!" : "Your Property Is Now Live!"}
           </h2>
           <p className="text-darkGray text-base font-normal font-nunito mb-6">
-            Your listing is successfully published and renters can now view and
-            contact you. You can manage this property anytime from your
-            dashboard.
+            {isEdit 
+              ? "Your property has been updated successfully. The changes are pending approval."
+              : "Your listing is successfully published and renters can now view and contact you. You can manage this property anytime from your dashboard."
+            }
           </p>
           <div className="flex gap-3 justify-center flex-wrap md:flex-nowrap">
             <button

@@ -34,9 +34,9 @@ const VerificationSubscriptionModal = ({
     // Only fetch if modal is open and user is owner
     if (!isOpen || userType !== 'owner') {
       setLoadingSubscription(false);
-      return;
-    }
-
+        return;
+      }
+      
     const fetchSubscription = async () => {
       try {
         setLoadingSubscription(true);
@@ -66,9 +66,11 @@ const VerificationSubscriptionModal = ({
   }, [userData, needsVerification]);
 
   // Check if user has active subscription
+  // Handle both 'active' and 'activate' status (backend may use 'activate')
   const hasActiveSubscription = useMemo(() => {
     if (!subscription) return false;
-    return subscription.status === 'active' && 
+    const isActiveStatus = subscription.status === 'active' || subscription.status === 'activate';
+    return isActiveStatus && 
            subscription.remainingProperties !== undefined && 
            subscription.remainingProperties > 0;
   }, [subscription]);
@@ -193,10 +195,10 @@ const VerificationSubscriptionModal = ({
             className="w-full px-4 py-3 bg-blueGradient text-white font-bold rounded-lg hover:opacity-90 transition-opacity shadow-sm"
           >
             {actuallyNeedsVerification && actuallyNeedsSubscription 
-              ? 'Go to Verification' 
-              : actuallyNeedsVerification 
                 ? 'Go to Verification' 
-                : 'Go to Subscription'}
+              : actuallyNeedsVerification 
+                  ? 'Go to Verification' 
+                  : 'Go to Subscription'}
           </button>
           <button
             onClick={onClose}

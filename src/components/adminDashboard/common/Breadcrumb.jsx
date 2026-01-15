@@ -39,6 +39,14 @@ function Breadcrumb({ customLabels = {} }) {
           isActive: true,
         });
       }
+      // Handle edit property
+      else if (pathSegments[2] === "edit" && params.id) {
+        breadcrumbs.push({
+          label: customLabels.edit || "Edit Property",
+          path: `/dashboard/properties/edit/${params.id}`,
+          isActive: true,
+        });
+      }
       // Handle property detail
       else if (params.id && pathSegments[2] === params.id) {
         try {
