@@ -31,9 +31,11 @@ function GuarantorInfo({ guarantor }) {
               </p>
             </div>
           </div>
-          <span className="bg-[#DFFFE6] text-[#00893A] px-2 py-1 rounded-full text-xs font-normal font-nunito flex items-center gap-1 flex-shrink-0">
-            Verified <SmallCheckIcon />
-          </span>
+          {guarantor?.verified && (
+            <span className="bg-[#DFFFE6] text-[#00893A] px-2 py-1 rounded-full text-xs font-normal font-nunito flex items-center gap-1 flex-shrink-0">
+              Verified <SmallCheckIcon />
+            </span>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

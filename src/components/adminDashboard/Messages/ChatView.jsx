@@ -14,6 +14,7 @@ import BlockIcon from "@/svg/blockIcon";
 import GrayRemoveIcon from "@/svg/grayRemoveIcon";
 import BlueEditIcon from "@/svg/blueEditIcon";
 import SendWhiteIcon from "@/svg/sendWhiteIcon";
+import RedCrossIcon from "@/svg/redCrossIcon";
 
 function ChatView({
   selectedConversation,
@@ -36,6 +37,7 @@ function ChatView({
   isBlocked = false,
   isBlockedByCurrentUser = false,
   isCurrentUserBlocked = false,
+  isVerified = true,
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
@@ -205,8 +207,20 @@ function ChatView({
             }`}
           >
             {msg.sender !== "you" && (
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#DBEAFE] flex items-center justify-center text-[#1447E6] font-normal text-xs sm:text-sm mr-2 sm:mr-3 flex-shrink-0">
-                {msg.senderInitials}
+              <div className="relative flex-shrink-0 mr-2 sm:mr-3">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#DBEAFE] flex items-center justify-center text-[#1447E6] font-normal text-xs sm:text-sm">
+                  {msg.senderInitials}
+                </div>
+                {/* Show verification icon for renters: cross if not verified, checkmark if verified */}
+                {msg.senderUserType === 'renter' && (
+                  <div className="absolute -bottom-0 -right-1 bg-white rounded-full">
+                    {msg.isVerified ? (
+                      <MediumCheckedIcon />
+                    ) : (
+                      <RedCrossIcon />
+                    )}
+                  </div>
+                )}
               </div>
             )}
             <div
@@ -335,6 +349,12 @@ function ChatView({
               {selectedConversation?.name || 'This user'} has blocked you
             </p>
           </div>
+        ) : !isVerified ? (
+          <div className="text-center py-4">
+            <p className="text-gray-600 text-sm mb-2">
+              Your profile is not approved yet. Please wait for admin verification to chat with other users.
+            </p>
+          </div>
         ) : isBlockedByCurrentUser ? (
           <div className="space-y-3">
             <div className="text-center py-2">
@@ -343,10 +363,9 @@ function ChatView({
               </p>
               <button
                 onClick={handleUnblockFromInput}
-                disabled={isProcessing}
-                className="text-[#6B4EFF] hover:text-[#4A2FCC] font-semibold text-sm underline disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-[#6B4EFF] hover:text-[#4A2FCC] font-semibold text-sm underline"
               >
-                {isProcessing ? 'Unblocking...' : 'Unblock'}
+                Unblock
               </button>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 opacity-50 pointer-events-none">

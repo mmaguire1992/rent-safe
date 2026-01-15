@@ -11,9 +11,11 @@ import HouseIcon from "@/svg/websiteSvg/houseIcon";
 import LocationTwo from "@/svg/websiteSvg/locationTwo";
 import ApartmentIcon from "../../../svg/apartmentIcon";
 import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
+import { useAuth } from "@/context/AuthContext";
 
 function PropertyCard({ property, isFavorited = false, onToggleFavorite }) {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   const handleCardClick = (e) => {
     // Don't navigate if clicking on action buttons (share, heart)
@@ -22,8 +24,14 @@ function PropertyCard({ property, isFavorited = false, onToggleFavorite }) {
     }
     // Navigate to property detail page with property ID
     // Route is /properties/[id] (plural) not /property/[id] (singular)
+    // Preserve current page parameter from URL so user returns to same page
     if (property?.id) {
-      navigate(`/properties/${property.id}`);
+      const currentSearchParams = new URLSearchParams(window.location.search);
+      const currentPage = currentSearchParams.get("page");
+      const backUrl = currentPage && currentPage !== "1" 
+        ? `/properties/${property.id}?fromPage=${currentPage}` 
+        : `/properties/${property.id}`;
+      navigate(backUrl);
     } else {
       navigate("/properties");
     }
@@ -113,26 +121,28 @@ function PropertyCard({ property, isFavorited = false, onToggleFavorite }) {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleShare}
-                className="text-text-secondary hover:text-primary transition-colors"
+                className="text-[#9FA3AA] hover:text-[#000000] transition-colors"
                 title="Share property"
               >
                 <ShareIcon />
               </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onToggleFavorite) {
-                    onToggleFavorite();
-                  }
-                }}
-                className={`transition-colors ${
-                  isFavorited
-                    ? "text-red-500"
-                    : "text-text-secondary hover:text-primary"
-                }`}
-              >
-                <HeartIcon isFilled={isFavorited} />
-              </button>
+              {isAuthenticated && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onToggleFavorite) {
+                      onToggleFavorite();
+                    }
+                  }}
+                  className={`transition-colors ${
+                    isFavorited
+                      ? "text-red-400"
+                      : "text-[#9FA3AA] hover:text-[#000000]"
+                  }`}
+                >
+                  <HeartIcon isFilled={isFavorited} />
+                </button>
+              )}
             </div>
           </div>
 

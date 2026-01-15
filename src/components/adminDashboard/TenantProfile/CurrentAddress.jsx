@@ -28,7 +28,7 @@ function CurrentAddress({ address }) {
               Address
             </p>
             <p className="font-normal text-secondary text-base font-nunito">
-              {address.address}
+              {address.address && address.address !== 'N/A' && String(address.address).trim() !== '' ? address.address : '-'}
             </p>
           </div>
         </div>
@@ -41,7 +41,7 @@ function CurrentAddress({ address }) {
               City
             </p>
             <p className="font-normal text-secondary text-base font-nunito">
-              {address.city}
+              {address.city && address.city !== 'N/A' && String(address.city).trim() !== '' ? address.city : '-'}
             </p>
           </div>
         </div>
@@ -54,7 +54,7 @@ function CurrentAddress({ address }) {
               Country
             </p>
             <p className="font-normal text-secondary text-base font-nunito">
-              {address.country}
+              {address.country && address.country !== 'N/A' && String(address.country).trim() !== '' ? address.country : '-'}
             </p>
           </div>
         </div>
@@ -67,7 +67,7 @@ function CurrentAddress({ address }) {
               Postcode
             </p>
             <p className="font-normal text-secondary text-base font-nunito">
-              {address.postcode}
+              {address.postcode && address.postcode !== 'N/A' && String(address.postcode).trim() !== '' ? address.postcode : '-'}
             </p>
           </div>
         </div>

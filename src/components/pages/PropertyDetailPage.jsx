@@ -18,6 +18,7 @@ import { getCurrentUser } from "@/api/users";
 import { createOrGetChatroom } from "@/api/chat";
 import { addToWishlist, removeFromWishlist, checkWishlist, getWishlistPropertyIds } from "@/api/wishlists";
 import { useAuth } from "@/context/AuthContext";
+import { getUserVerificationPayment } from "@/api/subscriptions";
 import { isAuthenticated } from "@/utils/auth";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { toast } from "react-toastify";
@@ -35,6 +36,8 @@ function PropertyDetailPage() {
   const [error, setError] = useState(null);
   const [remainingContacts, setRemainingContacts] = useState(null);
   const [isContacting, setIsContacting] = useState(false);
+  const [hasPaidVerification, setHasPaidVerification] = useState(false);
+  const [freshUserData, setFreshUserData] = useState(null);
 
   // Fetch property data from API
   useEffect(() => {
@@ -61,13 +64,42 @@ function PropertyDetailPage() {
     fetchProperty();
   }, [id]);
 
-  // Fetch current user's remaining contacts
+  // Fetch current user's remaining contacts and payment status
   useEffect(() => {
     const fetchUserContacts = async () => {
+      // Only fetch if user is authenticated (has token)
+      if (!isAuthenticated()) {
+        return;
+      }
+
       try {
         const userData = await getCurrentUser();
+        setFreshUserData(userData); // Store fresh user data for verification check
         if (userData && userData.remainingContacts !== undefined) {
           setRemainingContacts(userData.remainingContacts);
+        }
+        
+        // Check if user has paid verification fee (for renters)
+        if (user?.userType === 'renter') {
+          try {
+            const payment = await getUserVerificationPayment();
+            if (payment && payment.status === 'succeeded') {
+              setHasPaidVerification(true);
+            } else {
+              // Fallback: Check userInfo.verificationStatus
+              const isVerified = userData.userInfo?.verificationStatus === 'verified';
+              setHasPaidVerification(isVerified);
+            }
+          } catch (error) {
+            // If 404, user hasn't paid - check verification status
+            if (error.response?.status === 404) {
+              const isVerified = userData.userInfo?.verificationStatus === 'verified';
+              setHasPaidVerification(isVerified);
+            } else {
+              console.error('Error checking verification payment:', error);
+              setHasPaidVerification(false);
+            }
+          }
         }
       } catch (err) {
         console.error('Error fetching user contacts:', err);
@@ -77,10 +109,11 @@ function PropertyDetailPage() {
     };
 
     fetchUserContacts();
-  }, []);
-
+  }, [user?.userType]);
   // Handle contact owner click
   const handleContactOwner = async () => {
+    // Removed verification check for renters - renters can contact owners regardless of verification status
+
     if (!property?.owner?._id && !property?.ownerId) {
       toast.error('Owner information not available');
       return;
@@ -113,6 +146,7 @@ function PropertyDetailPage() {
         }
         
         // Refresh user data to get updated remaining contacts
+        if (isAuthenticated()) {
         try {
           const userData = await getCurrentUser();
           if (userData && userData.remainingContacts !== undefined) {
@@ -120,6 +154,7 @@ function PropertyDetailPage() {
           }
         } catch (err) {
           console.error('Error refreshing user contacts:', err);
+          }
         }
         
         // Redirect to chat page with chatroom ID
@@ -449,6 +484,7 @@ function PropertyDetailPage() {
             </h1>
           </div>
           <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
+            {isAuthenticated() && (
             <button
               onClick={toggleFavorite}
               className="flex items-center gap-2 text-[#2B2F38] text-sm sm:text-base font-normal font-nunito transition-colors"
@@ -456,6 +492,7 @@ function PropertyDetailPage() {
               <HeartIcon isFilled={isFavorited} />
               <span className="hidden sm:inline">Save</span>
             </button>
+            )}
             <button 
               onClick={handleShare}
               className="flex items-center gap-2 text-[#2B2F38] text-sm sm:text-base font-normal font-nunito transition-colors hover:text-[#6B4EFF]"
@@ -480,7 +517,7 @@ function PropertyDetailPage() {
               owner={property.owner}
               ownerName={property.owner ? `${property.owner.firstName || ''} ${property.owner.lastName || ''}`.trim() : undefined}
               propertiesCount={property.owner?.propertiesCount}
-              remainingContacts={remainingContacts}
+              remainingContacts={hasPaidVerification ? null : remainingContacts}
               isContacting={isContacting}
             />
 

@@ -1,11 +1,30 @@
 'use client'
 
-import { Link } from '@/lib/react-router-compat';
-
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from '@/lib/react-router-compat';
 import AuthLayout from "@/components/AuthLayout";
 import SuccessfullyCheck from "@/svg/successfullyCheck";
 
 function PasswordSuccess() {
+  const [countdown, setCountdown] = useState(3);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    } else {
+      // Redirect to login page after countdown
+      navigate("/login");
+    }
+  }, [countdown, navigate]);
+
+  const handleGoToLogin = () => {
+    navigate("/login");
+  };
+
   return (
     <AuthLayout>
       <div className="block max-w-[420px] mx-auto">
@@ -30,12 +49,18 @@ function PasswordSuccess() {
         </p>
 
         {/* Back to Login Button */}
-        <Link
-          to="/login"
-          className="w-full  text-center mt-4 bg-blueGradient h-[56px] text-white text-base font-bold py-3 rounded-xl flex items-center justify-center transition-all shadow-[0px_2px_10px_0px_#00000033]"
+        <button
+          onClick={handleGoToLogin}
+          className="w-full text-center mt-4 bg-blueGradient h-[56px] text-white text-base font-bold py-3 rounded-xl flex items-center justify-center transition-all shadow-[0px_2px_10px_0px_#00000033]"
         >
           Back to Login
-        </Link>
+        </button>
+
+        {/* Countdown */}
+        <p className="text-base text-darkGray mt-4 text-center">
+          Redirecting to login in{" "}
+          <span className="font-bold text-yellow">{countdown}s</span>
+        </p>
       </div>
     </AuthLayout>
   );

@@ -9,6 +9,7 @@ function IdentityInformationSection({
   handleDateChange,
   existingDocuments = [],
   onDocumentsUpdated,
+  errors = {},
 }) {
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
@@ -37,8 +38,12 @@ function IdentityInformationSection({
             value={formData.dateOfBirth}
             onChange={(value) => handleDateChange("dateOfBirth", value)}
             placeholder="DD/MM/YYYY"
-            maxDate={new Date().toISOString().split('T')[0]} // Allow past dates, but not future dates
+            // Allow selecting up to today (no future dates). Age 18+ is validated separately.
+            maxDate={new Date().toISOString().split('T')[0]}
           />
+          {errors.dateOfBirth && (
+            <p className="mt-1 text-sm text-errorColor">{errors.dateOfBirth}</p>
+          )}
         </div>
 
         <div>
@@ -64,8 +69,10 @@ function IdentityInformationSection({
             name="identityEmail"
             value={formData.identityEmail}
             onChange={handleChange}
-            placeholder="Enter your email address"
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            disabled
+            readOnly
+            placeholder="Email cannot be changed"
+            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary bg-gray-100 cursor-not-allowed opacity-70"
           />
         </div>
 
@@ -79,8 +86,13 @@ function IdentityInformationSection({
             value={formData.identityPhone}
             onChange={handleChange}
             placeholder="Enter your phone number"
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              errors.identityPhone ? 'border-errorColor' : 'border-lightGray'
+            }`}
           />
+          {errors.identityPhone && (
+            <p className="mt-1 text-sm text-errorColor">{errors.identityPhone}</p>
+          )}
         </div>
       </div>
 

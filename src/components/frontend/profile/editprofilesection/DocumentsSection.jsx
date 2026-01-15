@@ -11,7 +11,31 @@ function DocumentsSection({
   handleDropdownChange,
   documentTypeOptions,
   onDocumentsUpdated,
+  existingDocuments = [],
+  errors = {},
 }) {
+  // Map dropdown values to backend docType enum values
+  const docTypeMap = {
+    'passport': 'passport',
+    'driving-license': 'driving_license',
+    'id-card': 'national_id',
+  };
+  
+  // Get the current docType based on selected documentType
+  const currentDocType = docTypeMap[formData.documentType] || null;
+  
+  // Filter existing documents to only show those matching the selected document type
+  // If no document type is selected, show all documents from this section (passport, driving_license, national_id)
+  const filteredDocuments = existingDocuments.filter(doc => {
+    if (currentDocType) {
+      // If a document type is selected, only show documents of that type
+      return doc.docType === currentDocType;
+    } else {
+      // If no document type is selected, show all documents from Documents section
+      return ['passport', 'driving_license', 'national_id'].includes(doc.docType);
+    }
+  });
+  
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
       <SectionHeader icon={BlueDocumentIcon} title="Documents" />
@@ -51,22 +75,20 @@ function DocumentsSection({
             value={formData.documentExpire}
             onChange={(value) => handleDateChange("documentExpire", value)}
             placeholder="DD/MM/YYYY"
+            // Expiry date must never be in the past (Passport / Driving License / ID Card)
+            minDate={new Date().toISOString().split('T')[0]}
           />
+          {errors.documentExpire && (
+            <p className="mt-1 text-sm text-errorColor">{errors.documentExpire}</p>
+          )}
         </div>
       </div>
 
       <DocumentUpload
         label="Upload document to verify the above information"
         maxFiles={1}
-        docType={(() => {
-          // Map dropdown values to backend docType enum values
-          const docTypeMap = {
-            'passport': 'passport',
-            'driving-license': 'driving_license',
-            'id-card': 'national_id',
-          };
-          return docTypeMap[formData.documentType] || 'passport';
-        })()}
+        docType={currentDocType || 'passport'} // Default to passport if not selected, but validation will prevent upload
+        existingDocuments={filteredDocuments}
         documentMetadata={{
           documentType: formData.documentType || '',
           documentNumber: formData.documentNumber || '',

@@ -1,3 +1,4 @@
+import DownArrowIcon from '@/svg/downArrowIcon';
 import { useState, useEffect } from 'react';
 
 function PriceRange({ min, max, onChange, onChangeMin, onChangeMax, minRange = 0, maxRange = 10000 }) {
@@ -16,11 +17,11 @@ function PriceRange({ min, max, onChange, onChangeMin, onChangeMax, minRange = 0
   const handleMinChange = (value) => {
     const numValue = Number(value);
     if (isNaN(numValue)) return;
-    
+
     // Ensure min doesn't exceed max
     const newMin = Math.max(minRange, Math.min(numValue, localMax));
     setLocalMin(newMin);
-    
+
     if (onChangeMin) {
       onChangeMin(newMin);
     } else if (onChange) {
@@ -32,11 +33,11 @@ function PriceRange({ min, max, onChange, onChangeMin, onChangeMax, minRange = 0
   const handleMaxChange = (value) => {
     const numValue = Number(value);
     if (isNaN(numValue)) return;
-    
+
     // Ensure max doesn't go below min
     const newMax = Math.min(maxRange, Math.max(numValue, localMin));
     setLocalMax(newMax);
-    
+
     if (onChangeMax) {
       onChangeMax(newMax);
     } else if (onChange) {
@@ -51,19 +52,71 @@ function PriceRange({ min, max, onChange, onChangeMin, onChangeMax, minRange = 0
   };
 
   return (
-    <div className="px-4 sm:px-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-text-primary mb-3">Select Price Range</h3>
+        <>
+      <style>{`
+        .price-range-slider {
+          -webkit-appearance: none;
+          appearance: none;
+          height: 6px;
+          border-radius: 3px;
+          outline: none;
+          background: #E6E8EC;
+        }
+        
+        .price-range-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 16px;
+          height: 16px;
+          border-radius: 20px;
+          background: #6B4EFF;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          margin-top: -5px;
+        }
+        
+        .price-range-slider::-moz-range-thumb {
+          width: 12px;
+          height: 24px;
+          border-radius: 6px;
+          background: #6B4EFF;
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .price-range-slider::-webkit-slider-runnable-track {
+          height: 6px;
+          border-radius: 3px;
+          background: #E6E8EC;
+        }
+        
+        .price-range-slider::-moz-range-track {
+          height: 6px;
+          border-radius: 3px;
+          background: #E6E8EC;
+        }
+      `}</style>
+    <div className="px-4 sm:px-6 pb-10 md:pb-0">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-base font-semibold text-text-primary flex items-center gap-2 justify-between w-full">
+          Select Price Range
+          <DownArrowIcon/>
+        </h3>
       </div>
       <div className="space-y-4">
-        <input
-          type="range"
-          min={minRange}
-          max={maxRange}
-          value={localMax}
-          onChange={(e) => handleSliderChange(e.target.value)}
-          className="w-full"
-        />
+        <div className="relative">
+
+          <input
+            type="range"
+            min={minRange}
+            max={maxRange}
+            value={localMax}
+            onChange={(e) => handleSliderChange(e.target.value)}
+            className="w-full price-range-slider"
+          />
+        </div>
+
         <div className="flex justify-between">
           <div className="flex justify-between text-sm items-center text-text-secondary gap-3">
             <p className="text-text-secondary text-2xl">€</p>
@@ -91,8 +144,8 @@ function PriceRange({ min, max, onChange, onChangeMin, onChangeMax, minRange = 0
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
-
 export default PriceRange;

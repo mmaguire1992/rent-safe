@@ -7,12 +7,20 @@ import { IoClose } from "react-icons/io5";
 import { FiChevronDown } from "react-icons/fi";
 import HouseIcon from "@/svg/websiteSvg/houseIcon";
 import HeartIcon from "@/svg/websiteSvg/heartIcon";
+import ChatIcon from "@/svg/websiteSvg/chatIcon";
 import LogoutIcon from "@/svg/websiteSvg/logoutIcon";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
+import RedCrossIcon from "@/svg/redCrossIcon";
 import ProfileMenu from "./ProfileMenu";
 import MobileSidebar from "./MobileSidebar";
 import { useAuth } from "@/context/AuthContext";
 import { getCurrentUser } from "@/api/users";
+import { usePaymentStatus } from "@/hooks/usePaymentStatus";
+import { getChatrooms } from "@/api/chat";
+import { getWishlistPropertyIds } from "@/api/wishlists";
+import { toast } from "react-toastify";
+import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtils';
+import { isAuthenticated as checkAuth } from "@/utils/auth";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,10 +30,18 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, userName, userType, user, logout } = useAuth();
-  const [remainingContacts, setRemainingContacts] = useState(null);
-  const [contactLimit, setContactLimit] = useState(5);
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
+  const [favoriteCount, setFavoriteCount] = useState(0);
+  const [freshUserData, setFreshUserData] = useState(null);
+  
+  // Use shared payment status hook
+  const { 
+    hasPaidVerification, 
+    loading: paymentCheckLoading, 
+    remainingContacts, 
+    contactLimit 
+  } = usePaymentStatus();
 
   const handleScrollToSection = (e, sectionId) => {
     e.preventDefault();
@@ -54,7 +70,10 @@ const Navbar = () => {
     }
   };
 
-  const handleChatClick = () => {
+  const handleChatClick = async () => {
+    // Removed verification check for renters - renters can access chat regardless of verification status
+    
+    // Navigate to chat
     navigate("/chat");
     setIsOpen(false);
   };
@@ -64,41 +83,83 @@ const Navbar = () => {
     setIsOpen(false);
   };
 
-  // Fetch user contacts and profile image
+  // Fetch profile image and wishlist count
+  // Payment status is now handled by usePaymentStatus hook
   useEffect(() => {
     const fetchUserData = async () => {
       if (!isAuthenticated) {
         setLoading(false);
+        // Try to get profile image from context user as fallback
+        if (user?.userInfo?.profileImage) {
+          setProfileImage(user.userInfo.profileImage);
+        }
         return;
       }
 
       try {
         const userData = await getCurrentUser();
         if (userData) {
-          // Set contacts for renters
-          if (userType === 'renter') {
-            setRemainingContacts(userData.remainingContacts ?? null);
-            setContactLimit(userData.chatContactLimit ?? 5);
-          }
+          // Store fresh user data for verification check
+          setFreshUserData(userData);
           // Set profile image from userInfo
           if (userData.userInfo?.profileImage) {
             setProfileImage(userData.userInfo.profileImage);
+          } else {
+            // Fallback to context user
+            if (user?.userInfo?.profileImage) {
+              setProfileImage(user.userInfo.profileImage);
+            } else {
+              setProfileImage(null);
+            }
+          }
+        } else {
+          // Fallback to context user
+          if (user?.userInfo?.profileImage) {
+            setProfileImage(user.userInfo.profileImage);
           }
         }
-      } catch (err) {
-        console.error('Error fetching user data:', err);
-        // Set defaults on error
-        if (userType === 'renter') {
-          setRemainingContacts(null);
-          setContactLimit(5);
+
+        // Fetch wishlist count
+        if (checkAuth()) {
+          try {
+            const wishlistIds = await getWishlistPropertyIds();
+            setFavoriteCount(wishlistIds?.length || 0);
+          } catch (wishlistErr) {
+            setFavoriteCount(0);
+          }
         }
+
+      } catch (err) {
       } finally {
         setLoading(false);
       }
     };
 
     fetchUserData();
-  }, [isAuthenticated, userType]);
+
+    // Listen for profile image updates
+    const handleProfileImageUpdate = async () => {
+      // Re-fetch user data to get the latest profile image
+      try {
+        const userData = await getCurrentUser();
+        if (userData?.userInfo?.profileImage) {
+          // Add cache-busting parameter to force image refresh
+          const imageUrl = userData.userInfo.profileImage + (userData.userInfo.profileImage.includes('?') ? '&' : '?') + '_t=' + Date.now();
+          setProfileImage(imageUrl);
+        } else {
+          setProfileImage(null);
+        }
+      } catch (err) {
+        console.error('Error refreshing profile image:', err);
+      }
+    };
+
+    window.addEventListener('profileImageUpdated', handleProfileImageUpdate);
+
+    return () => {
+      window.removeEventListener('profileImageUpdated', handleProfileImageUpdate);
+    };
+  }, [isAuthenticated, userType, user?.id]);
 
   // Close renter menu when clicking outside
   useEffect(() => {
@@ -179,6 +240,10 @@ const Navbar = () => {
   const isProfilePage =
     location.pathname === "/profile" ||
     location.pathname.startsWith("/profile");
+  
+  // Check if we're in saved view
+  const searchParams = new URLSearchParams(location.search);
+  const isSavedView = searchParams.get("saved") === "true";
 
   // Common button classes
   const baseBtn =
@@ -275,19 +340,40 @@ const Navbar = () => {
           {/* Desktop Right Side - Conditional based on profile page */}
           {isProfilePage ? (
             <div className="hidden lg:flex items-center gap-4">
-              {/* Pricing Buttons */}
-              <div className="flex items-center gap-2">
-                <button className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium text-text-primary hover:bg-gray-200 transition">
-                  Free Contacts: {!loading && remainingContacts !== null ? (
-                    <span className="text-red-500">{remainingContacts}/{contactLimit}</span>
+              {/* Pricing Buttons - Show Premium User if paid, otherwise show Free Contacts */}
+              {userType === 'renter' && (
+                <div className="flex items-center gap-2">
+                  {paymentCheckLoading ? (
+                    <>
+                      {/* Loading State - Show nothing or minimal loading indicator */}
+                      <div className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium text-text-primary">
+                        <span className="text-gray-400">Loading...</span>
+                      </div>
+                    </>
+                  ) : hasPaidVerification ? (
+                    <>
+                      {/* Premium User Badge */}
+                      <button className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition shadow-sm">
+                        Premium User
+                      </button>
+                    </>
                   ) : (
-                    <span className="text-gray-400">-/{contactLimit}</span>
+                    <>
+                      {/* Free User - Show Free Contacts */}
+                      <button className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium text-text-primary hover:bg-gray-200 transition">
+                        Free Contacts: {!loading && remainingContacts !== null ? (
+                          <span className="text-red-500">{remainingContacts}/{contactLimit}</span>
+                        ) : (
+                          <span className="text-gray-400">-/{contactLimit}</span>
+                        )}
+                      </button>
+                      <button className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition shadow-sm">
+                        Use one connect per listing
+                      </button>
+                    </>
                   )}
-                </button>
-                <button className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition shadow-sm">
-                  use one connect per listing
-                </button>
-              </div>
+                </div>
+              )}
 
               {/* Icons */}
               <div className="flex items-center gap-4 ml-4 pl-4 border-l border-gray-200">
@@ -298,36 +384,31 @@ const Navbar = () => {
                   <HouseIcon />
                 </button>
 
-                <button className="relative text-primary hover:opacity-80 transition-opacity">
-                  <HeartIcon />
-                  <span className="absolute -top-1 -right-1 text-xs text-text-secondary font-medium">
-                    6
-                  </span>
+                <button 
+                  onClick={() => navigate('/properties?saved=true')}
+                  className={`relative transition-opacity ${
+                    isSavedView || favoriteCount > 0 
+                      ? "text-red-500 hover:opacity-80" 
+                      : "text-primary hover:opacity-80"
+                  }`}
+                >
+                  <HeartIcon isFilled={isSavedView || favoriteCount > 0} />
+                  {favoriteCount > 0 && (
+                    <span className="absolute -top-1 -right-1 text-xs text-text-secondary font-medium">
+                      {favoriteCount}
+                    </span>
+                  )}
                 </button>
 
                 <button
                   onClick={handleChatClick}
-                  className="relative text-gray-600 hover:text-primary transition-colors"
+                  className="relative text-primary hover:opacity-80 transition-opacity"
                 >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M10 2C5.58 2 2 5.13 2 9c0 1.66.7 3.18 1.85 4.3L2 18l4.7-1.7C7.82 17.3 9.34 18 11 18c4.42 0 8-3.13 8-7s-3.58-7-8-7z"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      fill="none"
-                    />
-                    <circle cx="15" cy="5" r="3" fill="#EF4444" />
-                  </svg>
+                  <ChatIcon isFilled={location.pathname === "/chat"} />
                 </button>
 
                 {/* User Profile */}
-                <ProfileMenu />
+                <ProfileMenu profileImage={profileImage} />
               </div>
             </div>
           ) : (
@@ -351,7 +432,11 @@ const Navbar = () => {
                         </div>
                       )}
                       <span className="absolute -top-1 -right-1">
-                        <GreenCheckedIcon />
+                        {isUserVerified(freshUserData || user) ? (
+                          <GreenCheckedIcon />
+                        ) : (
+                          <RedCrossIcon />
+                        )}
                       </span>
                     </div>
                     <span className="text-secondary font-semibold text-base">
@@ -382,20 +467,45 @@ const Navbar = () => {
                               </div>
                             )}
                             <span className="absolute -top-1 -right-1">
-                              <GreenCheckedIcon />
+                              {isUserVerified(freshUserData || user) ? (
+                                <GreenCheckedIcon />
+                              ) : (
+                                <RedCrossIcon />
+                              )}
                             </span>
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-text-primary">
                               {userName || 'User'}
                             </p>
-                            <p className="text-xs text-text-secondary">
-                              {user?.email || ''}
+                            <p className="text-xs text-text-secondary truncate md:w-[130px]">
+                              {user?.email || ''}renter12@yopmail.comrenter12@yopmail.comrenter12@yopmail.com
                             </p>
                           </div>
                         </div>
                       </div>
                       <div className="py-1">
+                        <button
+                          className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-50"
+                          onClick={() => {
+                            setRenterMenuOpen(false);
+                            navigate("/profile");
+                          }}
+                        >
+                          Profile Settings
+                        </button>
+                        <button className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-50">
+                          Property History
+                        </button>
+                        <button
+                          onClick={() => {
+                            setRenterMenuOpen(false);
+                            navigate("/support");
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-50"
+                        >
+                          Support
+                        </button>
                         <button
                           onClick={() => {
                             setRenterMenuOpen(false);

@@ -27,7 +27,7 @@ function IdentityInfo({ identity }) {
               Full Name
             </p>
             <p className="font-normal text-secondary text-base font-nunito">
-              {identity.fullName}
+              {identity.fullName && identity.fullName !== 'N/A' && String(identity.fullName).trim() !== '' ? identity.fullName : '-'}
             </p>
           </div>
         </div>
@@ -66,7 +66,7 @@ function IdentityInfo({ identity }) {
               Phone
             </p>
             <p className="font-normal text-secondary text-base font-nunito">
-              {identity.phone}
+              {identity.phone && identity.phone !== 'N/A' && String(identity.phone).trim() !== '' ? identity.phone : '-'}
             </p>
           </div>
         </div>
@@ -79,7 +79,7 @@ function IdentityInfo({ identity }) {
               Email Address
             </p>
             <p className="font-normal text-secondary text-base font-nunito">
-              {identity.email}
+              {identity.email && identity.email !== 'N/A' && String(identity.email).trim() !== '' ? identity.email : '-'}
             </p>
           </div>
         </div>

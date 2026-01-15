@@ -5,7 +5,7 @@ import UploadIcon from "@/svg/uploadIcon";
 import { uploadDocumentsToS3, storeDocuments, deleteDocument } from "@/api/verification";
 import { toast } from "react-toastify";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
-import { FiDownload, FiTrash2 } from "react-icons/fi";
+import { FiDownload, FiTrash2, FiUpload, FiFileText, FiAlertCircle, FiX } from "react-icons/fi";
 
 function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identity_proof', existingDocuments = [], onDocumentsUpdated, documentMetadata = null, onDocumentDeleted = null }) {
   const [dragActive, setDragActive] = useState(false);
@@ -13,6 +13,8 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
   const [uploading, setUploading] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState(null);
+  const [reuploadingDocId, setReuploadingDocId] = useState(null);
+  const fileInputRef = useRef(null);
   
   // Debug: Log component mount with docType
   useEffect(() => {
@@ -50,11 +52,6 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
     }
   };
 
-  const handleFileInput = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      handleFiles(e.target.files);
-    }
-  };
 
   // Load existing documents on mount and when existingDocuments changes
   // Use string comparison to prevent infinite loops from array reference changes
@@ -69,25 +66,117 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
     if (existingDocuments && Array.isArray(existingDocuments) && existingDocuments.length > 0) {
       // Convert existing documents to file-like objects for display
       const existingFiles = existingDocuments.map(doc => {
+        // Format document type label
+        const docTypeLabels = {
+          'pay_slip': 'Pay Slip',
+          'bank_statement': 'Bank Statement',
+          'identity_proof': 'Identity Proof',
+          'passport': 'Passport',
+          'driving_license': 'Driving License',
+          'national_id': 'National ID',
+          'proof_of_address': 'Proof of Address',
+          'utility_bill': 'Utility Bill',
+          'tax_document': 'Tax Document',
+          'other': 'Other',
+        };
+        
+        // Format file size
+        const fileSize = doc.metaData?.fileSize || doc.fileSize || 0;
+        const formatFileSize = (bytes) => {
+          if (bytes === 0) return '0 B';
+          const k = 1024;
+          const sizes = ['B', 'KB', 'MB', 'GB'];
+          const i = Math.floor(Math.log(bytes) / Math.log(k));
+          return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+        };
+        
+        // Format upload date
+        const uploadDate = doc.metaData?.uploadedAt || doc.createdAt;
+        const formatDate = (dateString) => {
+          if (!dateString) return 'Unknown';
+          const date = new Date(dateString);
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+        };
+        
         const fileObj = {
           name: doc.metaData?.originalFileName || doc.fileName || doc.metaData?.fileName || 'Document',
           url: doc.fileUrl || doc.url,
           id: doc._id || doc.id,
           isExisting: true,
           docType: doc.docType,
+          docTypeLabel: docTypeLabels[doc.docType] || doc.docType,
           verificationStatus: doc.is_verified,
+          rejectionReason: doc.reason_for_rejection || doc.rejectionReason || null,
+          fileSize: formatFileSize(fileSize),
+          uploadedDate: formatDate(uploadDate),
         };
         return fileObj;
       });
       setUploadedFiles(existingFiles);
+      // Reset reupload state when documents change
+      setReuploadingDocId(null);
     } else {
       // Clear files if no existing documents
       setUploadedFiles([]);
     }
   }, [existingDocumentsString, existingDocuments]);
 
-  const handleFiles = async (files) => {
-    const validFiles = Array.from(files).slice(0, maxFiles);
+  const handleFiles = async (files, isReupload = false, docIdToUpdate = null) => {
+    // Validation: Check if document type is required (when documentMetadata is provided)
+    if (documentMetadata && !isReupload) {
+      // For Documents section, documentType must be selected before upload
+      if (!documentMetadata.documentType || documentMetadata.documentType.trim() === '') {
+        toast.error('Please select a document type before uploading.');
+        return;
+      }
+    }
+
+    // Validation: Expiry date cannot be in the past
+    // (Defensive check; UI calendar constrains selection too)
+    if (documentMetadata && documentMetadata.documentExpire) {
+      const exp = new Date(documentMetadata.documentExpire);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      exp.setHours(0, 0, 0, 0);
+      if (!isNaN(exp.getTime()) && exp.getTime() < today.getTime()) {
+        toast.error('Expiry date cannot be in the past.');
+        return;
+      }
+    }
+    
+    // Validation: Check total document count (all statuses: verified, pending, rejected)
+    const totalDocs = uploadedFiles.length;
+    const filesToAdd = Array.from(files).length;
+    
+    if (isReupload) {
+      // Re-upload: replacing an existing document, so count stays the same
+      // Only allow 1 file for re-upload
+      if (filesToAdd > 1) {
+        toast.warning('You can only re-upload one file at a time.');
+        return;
+      }
+      if (!docIdToUpdate) {
+        toast.error('Document ID is missing for re-upload.');
+        return;
+      }
+    } else {
+      // Normal upload: check if adding new files would exceed the limit
+      const remainingSlots = maxFiles - totalDocs;
+      if (remainingSlots <= 0) {
+        toast.warning(`Maximum ${maxFiles} document${maxFiles === 1 ? '' : 's'} allowed. Delete a document to upload a new one.`);
+        return;
+      }
+      if (filesToAdd > remainingSlots) {
+        toast.warning(`Maximum ${maxFiles} document${maxFiles === 1 ? '' : 's'} allowed.`);
+        // Continue with the remaining slots
+      }
+    }
+
+    // Limit valid files based on available slots
+    const validFiles = isReupload 
+      ? Array.from(files).slice(0, 1) // Re-upload allows only 1 file
+      : Array.from(files).slice(0, Math.min(filesToAdd, maxFiles - totalDocs));
 
     if (validFiles.length === 0) {
       toast.warning(`Please select a file to upload`);
@@ -100,9 +189,10 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
       // Track if we're replacing an existing document
       const hadExistingDocument = uploadedFiles.length > 0 && maxFiles === 1;
       
-      // If there's an existing document and we're uploading a new one, delete the old one first
+      // If reuploading, we don't delete the document - backend will update it
+      // If there's an existing document and we're uploading a new one (not reupload), delete the old one first
       // This implements "replace" behavior for single-document types (like identity_proof)
-      if (hadExistingDocument) {
+      if (hadExistingDocument && !isReupload) {
         const existingFile = uploadedFiles[0];
         if (existingFile.id) {
           try {
@@ -187,6 +277,10 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
               documentNumber: documentMetadata.documentNumber || '',
               documentExpire: documentMetadata.documentExpire || '',
             } : {}),
+            // If reuploading, include the document ID so backend can update it
+            ...(isReupload && docIdToUpdate ? {
+              documentIdToUpdate: docIdToUpdate,
+            } : {}),
           },
         };
         
@@ -197,6 +291,8 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
           fileName: docToStore.metaData.originalFileName,
           label: label,
           propDocType: docType, // The prop value
+          isReupload: isReupload,
+          docIdToUpdate: docIdToUpdate,
         });
         
         return docToStore;
@@ -217,6 +313,34 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
         : (storedDocumentsResponse?.documents || []);
       
       // Add uploaded files to state
+      const docTypeLabels = {
+        'pay_slip': 'Pay Slip',
+        'bank_statement': 'Bank Statement',
+        'identity_proof': 'Identity Proof',
+        'passport': 'Passport',
+        'driving_license': 'Driving License',
+        'national_id': 'National ID',
+        'proof_of_address': 'Proof of Address',
+        'utility_bill': 'Utility Bill',
+        'tax_document': 'Tax Document',
+        'other': 'Other',
+      };
+      
+      const formatFileSize = (bytes) => {
+        if (!bytes || bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+      };
+      
+      const formatDate = (dateString) => {
+        if (!dateString) return new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        const date = new Date(dateString);
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+      };
+      
       const newFiles = validFiles.map((file, index) => {
         const storedDoc = Array.isArray(storedDocuments) 
           ? storedDocuments[index] 
@@ -228,12 +352,33 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
           id: storedDoc?._id || storedDoc?.id || storedDoc?._id || storedDoc?.id,
           isExisting: false,
           docType: docType,
+          docTypeLabel: docTypeLabels[docType] || docType,
+          verificationStatus: storedDoc?.is_verified ?? null,
+          rejectionReason: storedDoc?.reason_for_rejection || storedDoc?.rejectionReason || null,
+          fileSize: formatFileSize(file.size || storedDoc?.fileSize || storedDoc?.metaData?.fileSize),
+          uploadedDate: formatDate(storedDoc?.createdAt || storedDoc?.metaData?.uploadedAt),
         };
       });
 
-      // For single-file uploads (maxFiles === 1), replace instead of append
-      const updatedFiles = maxFiles === 1 ? newFiles : [...uploadedFiles, ...newFiles];
+      // For reupload, replace the specific document; otherwise append
+      let updatedFiles;
+      if (isReupload && docIdToUpdate) {
+        // Replace the document being reuploaded
+        updatedFiles = uploadedFiles.map(file => 
+          file.id === docIdToUpdate ? newFiles[0] : file
+        );
+        // If document wasn't found in list, just append
+        if (!updatedFiles.some(f => f.id === docIdToUpdate)) {
+          updatedFiles = [...uploadedFiles, ...newFiles];
+        }
+      } else {
+        // For single-file uploads (maxFiles === 1), replace instead of append
+        updatedFiles = maxFiles === 1 ? newFiles : [...uploadedFiles, ...newFiles];
+      }
       setUploadedFiles(updatedFiles);
+      
+      // Reset reupload state
+      setReuploadingDocId(null);
       
       if (onFilesChange) {
         onFilesChange(updatedFiles);
@@ -245,7 +390,9 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
       }
 
       // Show appropriate success message
-      if (hadExistingDocument) {
+      if (isReupload) {
+        toast.success('Document re-uploaded successfully');
+      } else if (hadExistingDocument) {
         toast.success('Document replaced successfully');
       } else {
         toast.success(`${validFiles.length} document(s) uploaded successfully`);
@@ -337,8 +484,27 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
     setFileToDelete(null);
   };
 
-  // Hide upload area if document already exists (for single-file uploads)
-  const shouldShowUploadArea = maxFiles > 1 || uploadedFiles.length === 0;
+  const handleReuploadClick = (docId) => {
+    setReuploadingDocId(docId);
+    // Trigger file input click
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileInput = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const isReupload = !!reuploadingDocId;
+      handleFiles(e.target.files, isReupload, reuploadingDocId);
+      // Reset file input
+      e.target.value = '';
+    }
+  };
+
+  // Hide upload area if max documents reached (count all statuses: verified, pending, rejected)
+  // For reupload, always show upload area when a document is selected for reupload
+  const totalDocs = uploadedFiles.length;
+  const shouldShowUploadArea = reuploadingDocId ? true : (maxFiles > 1 ? totalDocs < maxFiles : totalDocs === 0);
 
   return (
     <div className="mt-4">
@@ -360,10 +526,11 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
           }`}
         >
           <input
+            ref={fileInputRef}
             type="file"
             id={`doc-upload-${label}`}
             className="hidden"
-            multiple={maxFiles > 1}
+            multiple={maxFiles > 1 && !reuploadingDocId}
             accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
             onChange={handleFileInput}
             disabled={uploading}
@@ -382,7 +549,12 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
               pdf, doc, and png. Max {maxFiles} {maxFiles === 1 ? 'doc' : 'docs'}.
               {uploading && <span className="text-primary ml-2">Uploading...</span>}
             </p>
-            {maxFiles === 1 && uploadedFiles.length === 0 && (
+            {reuploadingDocId && (
+              <p className="text-xs text-primary mt-2 font-medium">
+                Re-uploading document. Select a new file to replace the rejected document.
+              </p>
+            )}
+            {maxFiles === 1 && uploadedFiles.length === 0 && !reuploadingDocId && (
               <p className="text-xs text-midGray mt-2">
                 Uploading a new document will replace any existing document
               </p>
@@ -400,60 +572,128 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
         </div>
       )}
       {uploadedFiles.length > 0 && (
-        <div className="mt-4 space-y-2">
-          {uploadedFiles.map((file, index) => (
-            <div
-              key={file.id || index}
-              className="flex items-center justify-between bg-white border border-lightGray p-3 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <span className="text-primary font-bold text-sm">
-                      {file.name.split('.').pop().toUpperCase()}
-                    </span>
+        <div className="mt-4 space-y-3">
+          {uploadedFiles.map((file, index) => {
+            const isRejected = file.verificationStatus === false;
+            
+            return (
+              <div
+                key={file.id || index}
+                className={`flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:p-4 p-3 rounded-[14px] overflow-hidden ${
+                  isRejected 
+                    ? 'bg-[#FEF2F2] border border-[#FFC9C9]' 
+                    : 'bg-white border border-lightGray'
+                }`}
+              >
+                <div className="flex items-center md:gap-4 gap-2 sm:gap-3 flex-1 min-w-0">
+                  <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center flex-shrink-0 ${
+                    isRejected ? 'bg-[#D24343]' : 'bg-purple-100'
+                  }`}>
+                    {isRejected ? (
+                      <FiFileText className="text-white text-lg" />
+                    ) : (
+                      <span className={`font-bold text-sm ${
+                        file.verificationStatus === true ? 'text-green-600' : 'text-primary'
+                      }`}>
+                        {file.name.split('.').pop().toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <p className={`text-sm font-normal font-nunito flex items-center gap-2 ${
+                      isRejected ? 'text-secondary' : 'text-secondary'
+                    }`}>
+                      <span className="truncate">{file.name}</span>
+                      {isRejected && (
+                        <FiAlertCircle className="text-[#D24343] text-lg animate-pulse flex-shrink-0" />
+                      )}
+                    </p>
+                    <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mt-1 flex-wrap">
+                      {file.docTypeLabel && (
+                        <span className={`text-xs font-semibold font-nunito px-2 py-0.5 rounded border whitespace-nowrap ${
+                          isRejected 
+                            ? 'text-[#D24343] bg-white border-[#FFC9C9]' 
+                            : 'text-primary bg-purple-50 border-purple-200'
+                        }`}>
+                          {file.docTypeLabel}
+                        </span>
+                      )}
+                      {file.fileSize && (
+                        <span className="text-xs font-normal font-nunito text-midGray whitespace-nowrap">
+                          {file.fileSize}
+                        </span>
+                      )}
+                      {file.uploadedDate && (
+                        <span className="text-xs font-normal relative before:content-[''] before:absolute before:left-[-8px] sm:before:left-[-11px] before:rounded-full before:w-[6px] before:bottom-1 before:h-[6px] before:bg-midGray font-nunito text-midGray whitespace-nowrap">
+                          Uploaded {file.uploadedDate}
+                        </span>
+                      )}
+                      {!isRejected && (
+                        <span className={`text-xs font-medium whitespace-nowrap ${
+                          file.verificationStatus === true ? 'text-green-600' :
+                          file.verificationStatus === null ? 'text-yellow-600' :
+                          'text-secondary'
+                        }`}>
+                          {file.verificationStatus === true ? 'Verified' :
+                           file.verificationStatus === null ? 'Pending Review' :
+                           'Rejected'}
+                        </span>
+                      )}
+                    </div>
+                    {isRejected && file.rejectionReason && (
+                      <div className="mt-2 bg-white border border-[#FFC9C9] rounded-[8px] p-2">
+                        <p className="text-xs font-semibold font-nunito text-[#D24343] mb-1">Rejection Reason:</p>
+                        <p className="text-xs font-normal font-nunito text-red-600">{file.rejectionReason}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-secondary truncate" title={file.name}>
-                    {file.name}
-                  </p>
-                  {file.verificationStatus !== undefined && (
-                    <p className="text-xs text-darkGray mt-1">
-                      Status: {
-                        file.verificationStatus === true ? 'Verified' :
-                        file.verificationStatus === false ? 'Rejected' :
-                        'Pending Review'
-                      }
-                    </p>
+                <div className="flex items-center gap-2 sm:gap-3 md:flex-shrink-0 md:self-start md:mt-0">
+                  {file.url && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.open(file.url, '_blank', 'noopener,noreferrer');
+                      }}
+                      className={`p-2 rounded-lg transition-colors flex-shrink-0 ${
+                        isRejected 
+                          ? 'hover:bg-red-50' 
+                          : 'hover:bg-purple-50'
+                      }`}
+                      title="Download document"
+                    >
+                      <FiDownload className={`text-lg ${isRejected ? 'text-[#D24343]' : 'text-primary'}`} />
+                    </button>
                   )}
+                  {isRejected && (
+                    <button
+                      type="button"
+                      onClick={() => handleReuploadClick(file.id)}
+                      className="px-4 py-2 bg-blueGradient text-white rounded-[10px] text-sm font-bold shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors whitespace-nowrap"
+                      disabled={uploading}
+                      title="Re-upload document"
+                    >
+                      Re-upload
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteClick(index)}
+                    className={`p-2 rounded-lg transition-colors flex-shrink-0 ${
+                      isRejected 
+                        ? 'hover:bg-red-50' 
+                        : 'hover:bg-red-50'
+                    }`}
+                    disabled={uploading}
+                    title="Delete document"
+                  >
+                    <FiX className={`text-lg ${isRejected ? 'text-darkGray' : 'text-errorColor'}`} />
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {file.url && (
-                  <a
-                    href={file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 text-primary hover:bg-purple-50 rounded-lg transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                    title="Download document"
-                  >
-                    <FiDownload className="w-5 h-5" />
-                  </a>
-                )}
-                <button
-                  type="button"
-                  onClick={() => handleDeleteClick(index)}
-                  className="p-2 text-errorColor hover:bg-red-50 rounded-lg transition-colors"
-                  disabled={uploading}
-                  title="Delete document"
-                >
-                  <FiTrash2 className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

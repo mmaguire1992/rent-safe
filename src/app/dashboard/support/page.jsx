@@ -1,5 +1,5 @@
-import Support from '@/components/pages/Support/Support'
+import SupportPage from '@/components/pages/Support/SupportPage'
 
-export default function SupportPage() {
-  return <Support />
+export default function SupportPageRoute() {
+  return <SupportPage />
 }

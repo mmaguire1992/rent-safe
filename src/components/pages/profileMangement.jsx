@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from '@/lib/react-router-compat';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from "react-toastify";
 import Header from "@/components/frontend/common/header";
 import ProfileTabs from "@/components/frontend/profile/ProfileTabs";
 import EditProfileSection from "@/components/frontend/profile/EditProfileSection";
@@ -46,7 +47,23 @@ function ProfileManagementPage() {
     if (tabParam) {
       setActiveTab(tabParam);
     }
-  }, [searchParams]);
+
+    // Handle payment success/cancel redirects
+    const paymentStatus = searchParams.get("payment");
+    if (paymentStatus === "success") {
+      toast.success("Payment successful! Your verification is now active.");
+      // Remove the payment parameter from URL
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("payment");
+      setSearchParams(newParams, { replace: true });
+    } else if (paymentStatus === "cancelled") {
+      toast.info("Payment was cancelled. You can try again anytime.");
+      // Remove the payment parameter from URL
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("payment");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const renderContent = () => {
     if (activeTab === "edit") return <EditProfileSection />;

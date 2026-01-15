@@ -8,8 +8,8 @@ function Pagination({
   showInfo = true,
   maxVisiblePages = 5,
 }) {
-  const startIndex = (currentPage - 1) * itemsPerPage + 1;
-  const endIndex = Math.min(currentPage * itemsPerPage, totalItems);
+  const startIndex = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endIndex = totalItems === 0 ? 0 : Math.min(currentPage * itemsPerPage, totalItems);
 
   const handlePageChange = (page) => {
     if (
@@ -19,6 +19,8 @@ function Pagination({
       onPageChange
     ) {
       onPageChange(page);
+      // Scroll to top when page changes
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 

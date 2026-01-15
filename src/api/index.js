@@ -10,6 +10,9 @@ export * from './auth';
 export * from './properties';
 export { getMyActiveProperties } from './properties';
 
+// Export notifications API
+export * from './notifications';
+
 // Export API client
 export { default as apiClient } from './apiClient';
 export { useGetApi, usePostApi, usePutApi, useDeleteApi, usePatchApi } from './apiClient';

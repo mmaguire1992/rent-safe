@@ -28,16 +28,6 @@ export const getCurrentUser = async () => {
       throw new Error('No user data received from server');
     }
     
-    // Log in development to help debug
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ User profile fetched:', {
-        id: userData.id,
-        email: userData.email,
-        hasUserInfo: !!userData.userInfo,
-        userInfoKeys: userData.userInfo ? Object.keys(userData.userInfo) : [],
-      });
-    }
-    
     return userData;
   } catch (error) {
     console.error('Error fetching user profile:', error);
@@ -45,6 +35,46 @@ export const getCurrentUser = async () => {
     if (error.response?.status === 401) {
       throw new Error('Unauthorized. Please login again.');
     }
+    throw error;
+  }
+};
+
+/**
+ * Get profile completion status (Owner only)
+ * Fetches profile completion percentage and missing fields
+ * @returns {Promise<Object>} - Profile completion data
+ * @returns {Promise<Object.completionPercentage>} - Completion percentage (0-100)
+ * @returns {Promise<Object.pendingTask>} - First missing field (e.g., "profile image")
+ * @returns {Promise<Object.missingFields>} - Array of missing field labels
+ * @returns {Promise<Object.isComplete>} - Whether profile is 100% complete
+ */
+export const getProfileCompletion = async () => {
+  try {
+    const response = await apiClient.get('/users/me/profile-completion');
+    const completionData = response.data?.data || response.data;
+    
+    if (!completionData) {
+      throw new Error('No completion data received from server');
+    }
+    
+    return completionData;
+  } catch (error) {
+    console.error('Error fetching profile completion:', error);
+    
+    if (error.response?.status === 401) {
+      throw new Error('Unauthorized. Please login again.');
+    }
+    
+    if (error.response?.status === 400) {
+      // Not an owner, return default values
+      return {
+        completionPercentage: 0,
+        pendingTask: null,
+        missingFields: [],
+        isComplete: false,
+      };
+    }
+    
     throw error;
   }
 };
@@ -74,12 +104,17 @@ export const updateUserProfile = async (profileData) => {
     return updatedData;
   } catch (error) {
     console.error('Error updating user profile:', error);
-    // Provide more specific error messages
-    if (error.response?.data?.errors) {
-      const validationErrors = error.response.data.errors;
-      const errorMessage = validationErrors.map(err => `${err.field}: ${err.message}`).join(', ');
-      throw new Error(errorMessage || 'Validation failed');
+    
+    // Extract validation errors if present
+    if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+      // Create a custom error object with validation details
+      const validationError = new Error(error.response.data.error || 'Validation failed');
+      validationError.validationErrors = error.response.data.errors;
+      validationError.response = error.response; // Preserve original response
+      throw validationError;
     }
+    
+    // For other errors, preserve the original error
     throw error;
   }
 };
@@ -91,6 +126,24 @@ export const updateUserProfile = async (profileData) => {
  */
 export const uploadProfilePicture = async (file) => {
   try {
+    // Validate file before proceeding
+    if (!file) {
+      throw new Error('No file provided');
+    }
+    
+    // Check if it's actually a File object, not a blob URL string
+    if (typeof file === 'string') {
+      if (file.startsWith('blob:')) {
+        throw new Error('Invalid file: received blob URL instead of File object. Please select the file again.');
+      } else {
+        throw new Error('Invalid file: received string instead of File object. Please select the file again.');
+      }
+    }
+    
+    if (!(file instanceof File) && !(file instanceof Blob)) {
+      throw new Error('Invalid file: must be a File object');
+    }
+    
     const formData = new FormData();
     // Backend expects field name to be 'profileImage' (not 'file')
     formData.append('profileImage', file);
@@ -100,6 +153,7 @@ export const uploadProfilePicture = async (file) => {
         'Content-Type': 'multipart/form-data',
       },
     });
+    
     return response.data?.data || response.data;
   } catch (error) {
     console.error('Error uploading profile picture:', error);
@@ -135,6 +189,15 @@ export const changePassword = async (passwordData) => {
     return response.data;
   } catch (error) {
     console.error('Error changing password:', error);
+    
+    // Extract validation errors if present
+    if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+      const validationError = new Error(error.response.data.error || 'Validation failed');
+      validationError.validationErrors = error.response.data.errors;
+      validationError.response = error.response;
+      throw validationError;
+    }
+    
     throw error;
   }
 };
@@ -150,6 +213,15 @@ export const requestPhoneUpdate = async (phone) => {
     return response.data;
   } catch (error) {
     console.error('Error requesting phone update:', error);
+    
+    // Extract validation errors if present
+    if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+      const validationError = new Error(error.response.data.error || 'Validation failed');
+      validationError.validationErrors = error.response.data.errors;
+      validationError.response = error.response;
+      throw validationError;
+    }
+    
     throw error;
   }
 };
@@ -165,6 +237,15 @@ export const verifyPhoneUpdate = async (otp) => {
     return response.data?.data || response.data;
   } catch (error) {
     console.error('Error verifying phone update:', error);
+    
+    // Extract validation errors if present
+    if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+      const validationError = new Error(error.response.data.error || 'Validation failed');
+      validationError.validationErrors = error.response.data.errors;
+      validationError.response = error.response;
+      throw validationError;
+    }
+    
     throw error;
   }
 };

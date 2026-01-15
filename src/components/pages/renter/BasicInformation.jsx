@@ -37,9 +37,23 @@ function RenterBasicInformation() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // For fullName field, prevent leading spaces
+    let processedValue = value;
+    if (name === 'fullName') {
+      // Remove leading spaces
+      processedValue = value.replace(/^\s+/, '');
+    }
+    
+    // For phoneNumber field, only allow numbers and common phone formatting characters
+    if (name === 'phoneNumber') {
+      // Allow only numbers, +, -, spaces, parentheses, and dots
+      processedValue = value.replace(/[^0-9+\-().\s]/g, '');
+    }
+    
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: processedValue,
     }));
     // Clear error when user starts typing
     if (errors[name]) {
@@ -53,10 +67,14 @@ function RenterBasicInformation() {
   const validateForm = () => {
     const newErrors = {};
 
-    // Split fullName into firstName and lastName
-    const nameParts = formData.fullName.trim().split(/\s+/);
-    if (nameParts.length < 2) {
-      newErrors.fullName = "Please enter your first and last name";
+    // Validate fullName - allow single name or two names, but not empty
+    const trimmedName = formData.fullName.trim();
+    if (!trimmedName || trimmedName.length === 0) {
+      newErrors.fullName = "Name is required";
+    } else if (trimmedName.length < 2) {
+      newErrors.fullName = "Name must be at least 2 characters";
+    } else if (formData.fullName.startsWith(' ')) {
+      newErrors.fullName = "Name cannot start with a space";
     }
 
     if (!formData.email || !formData.email.trim()) {
@@ -70,7 +88,7 @@ function RenterBasicInformation() {
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
+      newErrors.confirmPassword = "Passwords must match";
     }
 
     setErrors(newErrors);
@@ -89,11 +107,23 @@ function RenterBasicInformation() {
 
     try {
       // Split fullName into firstName and lastName
-      const nameParts = formData.fullName.trim().split(/\s+/);
-      const firstName = nameParts[0];
-      const lastName = nameParts.slice(1).join(' ') || nameParts[0]; // If only one name, use it for both
+      // If single name (no space): use as full name for both firstName and lastName
+      // If two or more words: first word is firstName, rest is lastName
+      const trimmedName = formData.fullName.trim();
+      const nameParts = trimmedName.split(/\s+/).filter(part => part.length > 0);
+      
+      let firstName, lastName;
+      if (nameParts.length === 1) {
+        // Single name: use as full name
+        firstName = nameParts[0];
+        lastName = nameParts[0];
+      } else {
+        // Two or more words: first is firstName, rest is lastName
+        firstName = nameParts[0];
+        lastName = nameParts.slice(1).join(' ');
+      }
 
-      // Call signup API
+      // Call signup API with all form data
       const result = await signupUser({
         firstName,
         lastName,
@@ -101,6 +131,15 @@ function RenterBasicInformation() {
         password: formData.password,
         userType: 'renter',
         phone: formData.phoneNumber || undefined,
+        // Additional fields for UserInfo
+        address: formData.address || undefined,
+        city: formData.city || undefined,
+        state: formData.state || undefined,
+        country: formData.country || undefined,
+        postalCode: formData.postalCode || undefined,
+        occupation: formData.occupation || undefined,
+        monthlyIncome: formData.monthlyIncome ? parseFloat(formData.monthlyIncome) : undefined,
+        description: formData.description || undefined,
       });
 
       // Store user data and token (will be activated after OTP verification)
@@ -125,17 +164,44 @@ function RenterBasicInformation() {
       });
     } catch (error) {
       console.error('Signup error:', error);
-      const errorMessage = error.message || 'Failed to create account. Please try again.';
-      toast.error(errorMessage);
       
-      // Set specific field errors if available
-      if (error.data && error.data.errors) {
+      // Check for validation errors array
+      const validationErrors = error.validationErrors || error.response?.data?.errors;
+      
+      if (validationErrors && Array.isArray(validationErrors) && validationErrors.length > 0) {
+        // Get the first validation error message
+        const firstError = validationErrors[0];
+        let errorMessage = firstError.message || 'Validation failed';
+        
+        // Replace "phone" with "phone number" in error messages if it's a phone-related error
+        if (firstError.field === 'phone' || firstError.field === 'phoneNumber') {
+          errorMessage = errorMessage.replace(/\bphone\b/gi, 'phone number');
+        }
+        
+        // Display only the first specific error message
+        toast.error(errorMessage);
+        
+        // Map backend field names to form field names and set errors
         const fieldErrors = {};
-        error.data.errors.forEach(err => {
+        validationErrors.forEach((err) => {
           if (err.field === 'email') fieldErrors.email = err.message;
           if (err.field === 'password') fieldErrors.password = err.message;
+          if (err.field === 'firstName' || err.field === 'fullName') fieldErrors.fullName = err.message;
+          if (err.field === 'lastName') fieldErrors.fullName = err.message;
+          if (err.field === 'phone' || err.field === 'phoneNumber') {
+            // Replace "phone" with "phone number" in error messages
+            const message = err.message ? err.message.replace(/\bphone\b/gi, 'phone number') : err.message;
+            fieldErrors.phoneNumber = message;
+          }
         });
         setErrors(fieldErrors);
+      } else {
+        // Display generic error message
+        const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.message || 
+                           error.message || 
+                           'Failed to create account. Please try again.';
+        toast.error(errorMessage);
       }
     } finally {
       setLoading(false);
@@ -172,7 +238,7 @@ function RenterBasicInformation() {
               htmlFor="fullName"
               className="block text-base font-medium text-secondary mb-1"
             >
-              Full Name
+              Full Name <span className="text-errorColor">*</span>
             </label>
             <input
               type="text"
@@ -196,7 +262,7 @@ function RenterBasicInformation() {
               htmlFor="email"
               className="block text-base font-medium text-secondary mb-1"
             >
-              Email Address
+              Email Address <span className="text-errorColor">*</span>
             </label>
             <input
               type="email"
@@ -288,30 +354,6 @@ function RenterBasicInformation() {
             )}
           </div>
 
-          {/* Country */}
-          <div>
-            <label
-              htmlFor="country"
-              className="block text-base font-medium text-secondary mb-1"
-            >
-              Country
-            </label>
-            <input
-              type="text"
-              id="country"
-              name="country"
-              value={formData.country}
-              onChange={handleChange}
-              placeholder="Enter your country"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
-                errors.country ? "border-errorColor" : "border-lightGray"
-              }`}
-            />
-            {errors.country && (
-              <p className="mt-1 text-sm text-errorColor">{errors.country}</p>
-            )}
-          </div>
-
           {/* State */}
           <div>
             <label
@@ -333,6 +375,30 @@ function RenterBasicInformation() {
             />
             {errors.state && (
               <p className="mt-1 text-sm text-errorColor">{errors.state}</p>
+            )}
+          </div>
+
+          {/* Country */}
+          <div>
+            <label
+              htmlFor="country"
+              className="block text-base font-medium text-secondary mb-1"
+            >
+              Country
+            </label>
+            <input
+              type="text"
+              id="country"
+              name="country"
+              value={formData.country}
+              onChange={handleChange}
+              placeholder="Enter your country"
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
+                errors.country ? "border-errorColor" : "border-lightGray"
+              }`}
+            />
+            {errors.country && (
+              <p className="mt-1 text-sm text-errorColor">{errors.country}</p>
             )}
           </div>
 
@@ -394,7 +460,7 @@ function RenterBasicInformation() {
               htmlFor="monthlyIncome"
               className="block text-base font-medium text-secondary mb-1"
             >
-              Monthly Income ($)
+              Monthly Income (£)
             </label>
             <input
               type="number"
@@ -438,7 +504,7 @@ function RenterBasicInformation() {
               htmlFor="password"
               className="block text-base font-medium text-secondary mb-1"
             >
-              Create Password
+              Create Password <span className="text-errorColor">*</span>
             </label>
             <div className="relative">
               <input

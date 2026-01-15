@@ -51,7 +51,7 @@ function PropertyFilters({ onFilterChange, initialFilters = null }) {
   const [filters, setFilters] = useState(initialFilters || {
     propertyType: "all",
     amenities: [],
-    bhk: "all",
+    bhk: [],
     priceMin: 0,
     priceMax: 10000,
   });
@@ -75,6 +75,20 @@ function PropertyFilters({ onFilterChange, initialFilters = null }) {
       ? filters.amenities.filter((a) => a !== value)
       : [...filters.amenities, value];
     updateFilter("amenities", amenities);
+  };
+
+  const toggleBhk = (value) => {
+    // Handle "all" option - clear all selections
+    if (value === 'all') {
+      updateFilter("bhk", []);
+      return;
+    }
+    
+    // Toggle the selected BHK value
+    const bhk = filters.bhk.includes(value)
+      ? filters.bhk.filter((b) => b !== value)
+      : [...filters.bhk, value];
+    updateFilter("bhk", bhk);
   };
 
   return (
@@ -107,8 +121,9 @@ function PropertyFilters({ onFilterChange, initialFilters = null }) {
         <FilterGroup
           title="BHK Type"
           options={bhkOptions}
-          selectedValue={filters.bhk}
-          onSelect={(value) => updateFilter("bhk", value)}
+          isMultiSelect={true}
+          selectedValues={filters.bhk}
+          onSelect={toggleBhk}
         />
 
         <PriceRange

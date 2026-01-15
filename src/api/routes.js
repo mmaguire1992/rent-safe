@@ -22,6 +22,7 @@ export const properties = {
   updatePropertyStatus: (id) => `/properties/${id}/status`,
   uploadPropertyMedia: (id) => `/properties/${id}/media`,
   uploadMultiplePropertyMedia: (id) => `/properties/${id}/media/multiple`,
+  deletePropertyMedia: (id, mediaId) => `/properties/${id}/media/${mediaId}`,
 };
 
 // Auth Routes (for reference)
@@ -51,6 +52,7 @@ export const chat = {
   uploadMedia: '/chat/upload-media',
   getRecentRequests: '/chat/recent-requests',
   updateChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}`,
+  blockUnblockChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}/block`,
 };
 
 // Dashboard Routes
@@ -63,6 +65,7 @@ export const dashboard = {
 // Support Tickets Routes
 export const supportTickets = {
   create: '/support-tickets',
+  getAll: '/support-tickets',
   getById: (id) => `/support-tickets/${id}`,
   uploadMedia: (id) => `/support-tickets/${id}/media`,
   uploadMultipleMedia: (id) => `/support-tickets/${id}/media/multiple`,
@@ -77,3 +80,14 @@ export const wishlists = {
   getWishlistPropertyIds: '/wishlists/ids',
 };
 
+// Notifications Routes
+export const notifications = {
+  getNotifications: '/notifications',
+  markAsRead: '/notifications/mark-read',
+};
+
+// Subscriptions/Plans Routes
+export const subscriptions = {
+  getAllPlans: '/stripe/subscriptions/plans', // Public endpoint for getting plans
+  createCheckoutSession: '/stripe/subscriptions/checkout',
+};

@@ -15,15 +15,22 @@ const socialIcons = [FaFacebookF, FaLinkedinIn, FaInstagram, FaPinterestP];
 const Footer = () => {
   return (
     <footer className="bg-[#2B2F38] text-[#E6E8EC]">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 md:pt-20 py-6">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 md:pt-20 py-6 mt-4 md:mt-0">
         {/* Top grid */}
         <div className="grid gap-6 md:grid-cols-4 lg:grid-cols-6">
           {/* Brand / About */}
           <div className="md:col-span-4 col-span-2 lg:col-span-2 space-y-4">
+            {/* Mobile and Tablet Logo */}
+            <img
+              src="/images/dashboard/Container.png"
+              alt="Rent Safe"
+              className="h-auto w-[200px] object-contain block md:hidden"
+            />
+            {/* Desktop/Web Logo */}
             <img
               src="/images/website/footerLogo.png"
               alt="Rent Safe"
-              className="h-auto w-[200px] object-contain"
+              className="h-auto w-[200px] object-contain hidden md:block"
             />
             <p className="text-base font-nunito font-normal text-[#E6E8EC] leading-5 w-full lg:max-w-[320px]">
               Lorem Ipsum is simply dummy text of the printing and typesetting

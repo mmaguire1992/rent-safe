@@ -41,7 +41,7 @@ function OwnerProfile({
             </p>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center sm:justify-end gap-2 w-full lg:w-auto">
           {remainingContacts !== null && (
             <div className="bg-[#FFF5CC] border border-[#FFE699] rounded-lg px-3 py-2 sm:py-2.5 mb-0 flex items-center gap-2">
               <RemainingIcon />

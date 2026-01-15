@@ -38,7 +38,6 @@ function ProfileSettings() {
   const [otpEmail, setOtpEmail] = useState("");
   const [pendingPhoneUpdate, setPendingPhoneUpdate] = useState(null);
   const [pendingProfileUpdate, setPendingProfileUpdate] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
 
   // Fetch user info on mount and when component becomes visible
   // Always fetch to get latest data from server
@@ -120,8 +119,7 @@ function ProfileSettings() {
             postcode: data.postcode || '',
             country: data.country || '',
           },
-          // Note: businessName is not in the allowed fields list in backend
-          // If needed, it should be added to the backend service
+          businessName: data.businessName || '',
         },
       };
 
@@ -156,24 +154,55 @@ function ProfileSettings() {
       
       // Show success message
       toast.success('Profile updated successfully!');
-      setSuccessMessage('Profile updated successfully!');
-      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
       console.error('Error saving profile:', error);
+      
+      // When using Redux Toolkit's .unwrap(), the rejected value is the error itself
+      // Extract validation errors from different possible locations
+      let validationErrors = null;
+      
+      // Check if error itself has validationErrors (when rejected with object)
+      if (error && typeof error === 'object' && error.validationErrors && Array.isArray(error.validationErrors)) {
+        validationErrors = error.validationErrors;
+      }
+      // Check if it's nested in payload
+      else if (error?.payload?.validationErrors && Array.isArray(error.payload.validationErrors)) {
+        validationErrors = error.payload.validationErrors;
+      }
+      // Check direct axios response
+      else if (error?.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        validationErrors = error.response.data.errors;
+      }
+      
+      // Display only the first validation error (one toast at a time)
+      if (validationErrors && validationErrors.length > 0) {
+        const firstError = validationErrors[0];
+        // Show just the error message, not the field name for cleaner UX
+        toast.error(firstError.message || 'Validation failed');
+      } else {
       // Extract error message - could be string (from Redux) or object (from axios)
       let errorMessage = "Failed to update profile. Please try again.";
       
       if (typeof error === 'string') {
         errorMessage = error;
+        } else if (error && typeof error === 'object') {
+          // When Redux rejects with object, check message property
+          if (error.message && typeof error.message === 'string') {
+            errorMessage = error.message;
+          } else if (error?.payload) {
+            errorMessage = typeof error.payload === 'string' ? error.payload : (error.payload.message || error.payload.error || errorMessage);
       } else if (error?.response?.data?.error) {
         errorMessage = error.response.data.error;
       } else if (error?.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error?.message) {
         errorMessage = error.message;
+          }
       }
       
       toast.error(errorMessage);
+      }
+      
       throw error; // Re-throw to let component handle it
     }
   };
@@ -198,17 +227,36 @@ function ProfileSettings() {
         
         // Show success message
         toast.success('Phone number verified and profile updated successfully!');
-        setSuccessMessage('Phone number verified and profile updated successfully!');
-        setTimeout(() => setSuccessMessage(null), 5000);
       }
       setIsProfileOtpOpen(false);
     } catch (error) {
       console.error('Error verifying OTP:', error);
+      
+      // Extract validation errors from different possible locations
+      let validationErrors = null;
+      if (error?.validationErrors && Array.isArray(error.validationErrors)) {
+        validationErrors = error.validationErrors;
+      } else if (error?.payload?.validationErrors && Array.isArray(error.payload.validationErrors)) {
+        validationErrors = error.payload.validationErrors;
+      } else if (error?.payload && typeof error.payload === 'object' && Array.isArray(error.payload)) {
+        validationErrors = error.payload;
+      } else if (error?.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        validationErrors = error.response.data.errors;
+      }
+      
+      // Display only the first validation error (one toast at a time)
+      if (validationErrors && validationErrors.length > 0) {
+        const firstError = validationErrors[0];
+        // Show just the error message
+        toast.error(firstError.message || 'Validation failed');
+      } else {
       // Extract error message - could be string (from Redux) or object (from axios)
       let errorMessage = "Failed to verify OTP. Please try again.";
       
       if (typeof error === 'string') {
         errorMessage = error;
+        } else if (error?.payload) {
+          errorMessage = typeof error.payload === 'string' ? error.payload : (error.payload.message || error.payload.error || errorMessage);
       } else if (error?.response?.data?.error) {
         errorMessage = error.response.data.error;
       } else if (error?.response?.data?.message) {
@@ -218,6 +266,8 @@ function ProfileSettings() {
       }
       
       toast.error(errorMessage);
+      }
+      
       throw error; // Let the modal handle the error display
     }
   };
@@ -363,13 +413,6 @@ function ProfileSettings() {
             ))}
           </div>
           <div className="bg-white rounded-xl border border-lightGray p-4">
-            {/* Success Message */}
-            {successMessage && (
-              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-600 text-sm font-medium">{successMessage}</p>
-              </div>
-            )}
-
             {/* Loading State */}
             {loading && !userInfo && (
               <div className="flex items-center justify-center py-12">

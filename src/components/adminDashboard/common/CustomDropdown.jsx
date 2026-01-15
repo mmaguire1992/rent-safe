@@ -41,6 +41,14 @@ function CustomDropdown({
   };
 
   return (
+    <>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .custom-dropdown-icon-purple svg path {
+            stroke: #4A2FCC !important;
+          }
+        `
+      }} />
     <div className={`relative ${className}`} ref={dropdownRef}>
       {/* Dropdown Button */}
       <button
@@ -61,7 +69,7 @@ function CustomDropdown({
           {displayText}
         </span>
         <div
-          className={`transform transition-transform ${
+            className={`custom-dropdown-icon-purple transform transition-transform ${
             isOpen ? "rotate-180" : ""
           }`}
         >
@@ -89,6 +97,7 @@ function CustomDropdown({
         </div>
       )}
     </div>
+    </>
   );
 }
 

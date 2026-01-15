@@ -80,7 +80,7 @@ function OtpVerification() {
     const otpString = otp.join("");
 
     if (otpString.length !== 6) {
-      setError("This field is required.");
+      setError("OTP is required.");
       return;
     }
 

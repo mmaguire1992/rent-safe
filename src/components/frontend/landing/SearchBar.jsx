@@ -15,7 +15,7 @@ function SearchBar() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [propertyType, setPropertyType] = useState("apartment"); // Default to apartment
+  const [propertyType, setPropertyType] = useState(""); // Default to apartment
   const searchTimeoutRef = useRef(null);
 
   // Debounce search query - wait 500ms after user stops typing
@@ -75,7 +75,7 @@ function SearchBar() {
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 -mt-10 md:-mt-24 lg:-mt-34 relative z-10 pb-8">
-      <div className="bg-white rounded-2xl shadow-lg border border-border-search p-4 sm:p-5 md:p-6 flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
+      <div className="bg-white rounded-2xl shadow-lg border border-[#7356FF] p-4 sm:p-5 md:p-6 flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
         {/* Dropdown */}
         <div className="min-w-[160px]">
           <CustomDropdown
@@ -99,7 +99,7 @@ function SearchBar() {
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Enter an address, neighborhood, city, or ZIP code"
-              className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 text-sm sm:text-base border border-border rounded-lg focus:outline-none transition-colors text-text-primary placeholder:text-text-secondary"
+              className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 text-sm sm:text-base border border-border rounded-lg focus:outline-none transition-colors text-text-primary placeholder:text-[#5A5E67]"
             />
           </div>
           <div className="relative ml-2 md:ml-0 md:absolute md:right-4 md:top-1/2 md:-translate-y-1/2 text-text-secondary cursor-pointer">

@@ -17,11 +17,51 @@ import { FaPlus } from "react-icons/fa";
 import { GoPlus } from "react-icons/go";
 import ThreeDotsIcon from "@/svg/threeDotsIcon";
 import { fetchMyActiveProperties } from '@/redux/slices/propertySlice';
+import { useAuth } from "@/context/AuthContext";
+import VerificationSubscriptionModal from "@/components/common/VerificationSubscriptionModal";
+import { useVerificationSubscription } from "@/hooks/useVerificationSubscription";
 
 function ActiveProperties() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { myActiveProperties: allProperties, loading, error, pagination } = useSelector((state) => state.property);
+  const { user, userType } = useAuth();
+  const [showModal, setShowModal] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [needsSubscription, setNeedsSubscription] = useState(false);
+  const { checkStatus } = useVerificationSubscription();
+
+  const handleAddProperty = async () => {
+    // Only check for owners
+    if (userType !== 'owner') {
+      navigate("/dashboard/properties/add");
+      return;
+    }
+
+    try {
+      // Check verification and subscription status
+      const status = await checkStatus();
+      
+      // Set modal state based on what's needed
+      setNeedsVerification(status.needsVerification);
+      setNeedsSubscription(status.needsSubscription);
+      
+      // If user needs verification or subscription, show modal
+      if (status.needsVerification || status.needsSubscription) {
+        setShowModal(true);
+        return;
+      }
+      
+      // If verified and subscribed, proceed
+      navigate("/dashboard/properties/add");
+    } catch (error) {
+      console.error('Error checking verification and subscription:', error);
+      // On error, show modal to be safe
+      setNeedsVerification(true);
+      setNeedsSubscription(true);
+      setShowModal(true);
+    }
+  };
   
   const [currentPage, setCurrentPage] = useState(1);
   const [openDropdownId, setOpenDropdownId] = useState(null);
@@ -47,6 +87,11 @@ function ActiveProperties() {
     
     dispatch(fetchMyActiveProperties(params));
   }, [dispatch, currentPage, itemsPerPage, sortBy, sortOrder]);
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
 
   // Sort options
   const sortOptions = [
@@ -263,7 +308,7 @@ function ActiveProperties() {
             )}
           </div>
           <button
-            onClick={() => navigate("/dashboard/properties/add")}
+            onClick={handleAddProperty}
             className="bg-blueGradient text-white px-3 sm:px-3.5 md:px-4 h-[36px] sm:h-[38px] py-1.5 md:py-2 rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors flex items-center gap-1 sm:gap-1.5 md:gap-2 text-xs sm:text-sm md:text-base"
           >
             <span className="whitespace-nowrap">Add Property</span>
@@ -275,7 +320,7 @@ function ActiveProperties() {
             onClick={handleExportCSV}
             className="bg-white border border-[#4A2FCC] h-[36px] sm:h-[38px] text-[#4A2FCC] px-3 sm:px-4 md:px-6 py-1.5 md:py-2 rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors flex items-center gap-2 md:gap-3 text-xs sm:text-sm md:text-base"
           >
-            <span className="hidden sm:inline whitespace-nowrap">Export</span>
+            <span className="inline whitespace-nowrap">Export</span>
             <FiDownload className="text-sm md:text-base" />
           </button>
         </div>
@@ -636,6 +681,13 @@ function ActiveProperties() {
         </div>
       </div>
       )}
+
+      <VerificationSubscriptionModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        needsVerification={needsVerification}
+        needsSubscription={needsSubscription}
+      />
     </div>
   );
 }

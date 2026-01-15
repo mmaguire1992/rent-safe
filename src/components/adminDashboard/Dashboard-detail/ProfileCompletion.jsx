@@ -1,9 +1,14 @@
 import { FiX } from "react-icons/fi";
 
 function ProfileCompletion({
-  completionPercentage = 95,
-  pendingTask = "upload image",
+  completionPercentage = 0,
+  pendingTask = null,
 }) {
+  // Don't render if no pending task (profile is complete)
+  if (!pendingTask) {
+    return null;
+  }
+
   return (
     <div className="bg-[#EDFFF4] rounded-[20px] p-3 sm:p-4 my-3 sm:my-4">
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 sm:gap-4">
@@ -17,12 +22,7 @@ function ProfileCompletion({
             </p>
           </div>
 
-          <div className="w-full bg-[#E6E8EC] rounded-full h-2 overflow-hidden">
-            <div
-              className="bg-[#00893A] h-full rounded-full transition-all duration-300"
-              style={{ width: `${completionPercentage}%` }}
-            />
-          </div>
+
         </div>
         <div className="flex-shrink-0">
           <span className="text-[#00893A] font-bold text-base sm:text-lg md:text-xl">
@@ -30,6 +30,12 @@ function ProfileCompletion({
           </span>
         </div>
       </div>
+      <div className="w-full bg-[#E6E8EC] rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-[#00893A] h-full rounded-full transition-all duration-300"
+              style={{ width: `${completionPercentage}%` }}
+            />
+          </div>
     </div>
   );
 }

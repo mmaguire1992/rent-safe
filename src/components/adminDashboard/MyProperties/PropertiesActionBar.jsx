@@ -8,6 +8,9 @@ import BlueSearchIcon from "@/svg/blueSearchIcon";
 import { GoPlus } from "react-icons/go";
 import ButtonDropdown from "@/components/adminDashboard/common/buttonDropdown";
 import VerticalFilterIcon from "@/svg/verticalFilterIcon";
+import { useAuth } from "@/context/AuthContext";
+import VerificationSubscriptionModal from "@/components/common/VerificationSubscriptionModal";
+import { useVerificationSubscription } from "@/hooks/useVerificationSubscription";
 
 function PropertiesActionBar({
   searchQuery,
@@ -21,6 +24,44 @@ function PropertiesActionBar({
   navigate,
   onExport,
 }) {
+  const { user, userType } = useAuth();
+  const [showModal, setShowModal] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [needsSubscription, setNeedsSubscription] = useState(false);
+  const { checkStatus } = useVerificationSubscription();
+
+  const handleAddProperty = async () => {
+    // Only check for owners
+    if (userType !== 'owner') {
+      navigate("/dashboard/properties/add");
+      return;
+    }
+
+    try {
+      // Check verification and subscription status
+      const status = await checkStatus();
+      
+      // Set modal state based on what's needed
+      setNeedsVerification(status.needsVerification);
+      setNeedsSubscription(status.needsSubscription);
+      
+      // If user needs verification or subscription, show modal
+      if (status.needsVerification || status.needsSubscription) {
+        setShowModal(true);
+        return;
+      }
+      
+      // If verified and subscribed, proceed
+      navigate("/dashboard/properties/add");
+    } catch (error) {
+      console.error('Error checking verification and subscription:', error);
+      // On error, show modal to be safe
+      setNeedsVerification(true);
+      setNeedsSubscription(true);
+      setShowModal(true);
+    }
+  };
+
   const getStatusDisplayText = (value) => {
     if (value === "all") return "All";
     const option = statusOptions.find((opt) => opt.value === value);
@@ -210,7 +251,7 @@ function PropertiesActionBar({
             />
           </div>
           <button
-            onClick={() => navigate("/dashboard/properties/add")}
+            onClick={handleAddProperty}
             className="bg-blueGradient text-white px-3  h-[38px] md:px-4 py-1.5 md:py-2 rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors flex items-center gap-1 md:gap-2 text-sm md:text-base"
           >
             <span>Add Property</span>
@@ -228,6 +269,13 @@ function PropertiesActionBar({
           {/* Add Property Button */}
         </div>
       </div>
+
+      <VerificationSubscriptionModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        needsVerification={needsVerification}
+        needsSubscription={needsSubscription}
+      />
     </div>
   );
 }

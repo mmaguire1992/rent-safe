@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
+import { toast } from "react-toastify";
 import GrayCopyIcon from "@/svg/grayCopyIcon";
 import GrayPencilIcon from "@/svg/grayPencilIcon";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 function AIModal({
   showAIModal,
@@ -17,6 +19,7 @@ function AIModal({
   currentStep,
 }) {
   const [showAIGenerated, setShowAIGenerated] = useState(false);
+  useBodyScrollLock(showAIModal);
 
   // Reset showAIGenerated when modal opens
   useEffect(() => {
@@ -96,10 +99,19 @@ function AIModal({
               <div className="flex gap-1">
                 <button
                   className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-                  onClick={() => {
-                    navigator.clipboard.writeText(
-                      formData[stepConfig.field] || ""
-                    );
+                  onClick={async () => {
+                    try {
+                      const textToCopy = formData[stepConfig.field] || "";
+                      if (textToCopy) {
+                        await navigator.clipboard.writeText(textToCopy);
+                        toast.success("Copied to clipboard!");
+                      } else {
+                        toast.info("Nothing to copy");
+                      }
+                    } catch (error) {
+                      console.error('Failed to copy:', error);
+                      toast.error("Failed to copy");
+                    }
                   }}
                   title="Copy"
                 >
@@ -113,6 +125,9 @@ function AIModal({
                         ...formData,
                         [stepConfig.field]: aiDescription,
                       });
+                      toast.success("AI content copied to description!");
+                    } else {
+                      toast.info("No AI content to copy");
                     }
                   }}
                   title="Copy AI content to description"
@@ -157,12 +172,14 @@ function AIModal({
         </div>
 
         <div className="p-3 md:p-6  flex justify-end">
-          <button
-            onClick={handleGenerate}
-            className="bg-blueGradient shadow-[0px_2px_10px_0px_#00000033] text-white px-6 py-3 rounded-[10px] font-bold hover:bg-opacity-90 transition-opacity mr-3"
-          >
-            Generate
-          </button>
+          {!showAIGenerated && (
+            <button
+              onClick={handleGenerate}
+              className="bg-blueGradient shadow-[0px_2px_10px_0px_#00000033] text-white px-6 py-3 rounded-[10px] font-bold hover:bg-opacity-90 transition-opacity"
+            >
+              Generate
+            </button>
+          )}
           {showAIGenerated && (
             <button
               onClick={() => {

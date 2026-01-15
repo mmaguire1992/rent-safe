@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 import { FiX, FiUpload } from "react-icons/fi";
 
 function UploadImagesStep({ formData, setFormData, errors, setErrors }) {
@@ -42,14 +43,37 @@ function UploadImagesStep({ formData, setFormData, errors, setErrors }) {
   };
 
   const handleFiles = (files) => {
-    const imageFiles = Array.from(files).filter((file) => {
+    const allFiles = Array.from(files);
+    
+    // Strict validation: Only accept specific image types that API supports
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    
+    const validImageFiles = allFiles.filter((file) => {
       const fileType = file.type.toLowerCase();
-      // Only accept image files
-      return fileType.startsWith("image/");
+      // Check if file type is in the allowed list
+      return allowedImageTypes.includes(fileType);
     });
 
-    if (imageFiles.length > 0) {
-      const newImages = imageFiles.map((file) => ({
+    // Check for invalid files (not in allowed list)
+    const invalidFiles = allFiles.filter((file) => {
+      const fileType = file.type.toLowerCase();
+      return !allowedImageTypes.includes(fileType);
+    });
+
+    // Show error message for invalid files with specific details
+    if (invalidFiles.length > 0) {
+      const count = invalidFiles.length;
+      const fileText = count === 1 ? 'file' : 'files';
+      const fileNames = invalidFiles.map(f => f.name).slice(0, 3).join(', ');
+      const moreFiles = invalidFiles.length > 3 ? ` and ${invalidFiles.length - 3} more` : '';
+      toast.error(
+        `Invalid file format. ${count} ${fileText} rejected: ${fileNames}${moreFiles}. Only JPG, PNG, GIF, and WEBP images are allowed.`,
+        { autoClose: 5000 }
+      );
+    }
+
+    if (validImageFiles.length > 0) {
+      const newImages = validImageFiles.map((file) => ({
         file,
         url: URL.createObjectURL(file),
         uploading: true,
@@ -139,11 +163,13 @@ function UploadImagesStep({ formData, setFormData, errors, setErrors }) {
             id="image-input"
             className="hidden"
             multiple
-            accept="image/*"
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
             onChange={(e) => {
               if (e.target.files && e.target.files.length > 0) {
                 handleFiles(e.target.files);
               }
+              // Reset input to allow selecting same file again
+              e.target.value = '';
             }}
           />
           <label
@@ -157,7 +183,7 @@ function UploadImagesStep({ formData, setFormData, errors, setErrors }) {
               Drop your images here or browse
             </p>
             <p className="text-sm text-midGray font-medium">
-              JPG, PNG, GIF, and other image formats
+              JPG, PNG, GIF, and WEBP formats only
             </p>
           </label>
         </div>

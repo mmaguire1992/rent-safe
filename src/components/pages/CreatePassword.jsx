@@ -20,7 +20,23 @@ function CreatePassword() {
   const location = useLocation();
   
   // Get email and OTP from location state if coming from forgot password
-  const { email, otp, fromForgotPassword } = location.state || {};
+  // Also check sessionStorage as fallback (in case state is lost during navigation)
+  const stateData = location.state || {};
+  const sessionEmail = typeof window !== 'undefined' ? sessionStorage.getItem('resetPasswordEmail') : null;
+  const sessionOtp = typeof window !== 'undefined' ? sessionStorage.getItem('resetPasswordOtp') : null;
+  
+  const email = stateData.email || sessionEmail;
+  const otp = stateData.otp || sessionOtp;
+  const fromForgotPassword = stateData.fromForgotPassword || (!!email && !!otp);
+  
+  // Debug log to check state
+  console.log('CreatePassword component state:', { 
+    email, 
+    otp: otp ? '***' : undefined, 
+    fromForgotPassword,
+    hasStateData: !!location.state,
+    hasSessionData: !!(sessionEmail && sessionOtp)
+  });
 
   const validatePassword = (password) => {
     const errors = [];
@@ -62,7 +78,7 @@ function CreatePassword() {
 
     // Validate new password
     if (!formData.newPassword.trim()) {
-      newErrors.newPassword = "This field is required.";
+      newErrors.newPassword = "Please enter your new password";
     } else {
       const passwordErrors = validatePassword(formData.newPassword);
       if (passwordErrors.length > 0) {
@@ -72,33 +88,68 @@ function CreatePassword() {
 
     // Validate confirm password
     if (!formData.confirmPassword.trim()) {
-      newErrors.confirmPassword = "This field is required.";
+      newErrors.confirmPassword = "Please confirm your new password";
     } else if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
+      newErrors.confirmPassword = "Passwords must match";
     }
 
     setErrors(newErrors);
 
     // If no errors, proceed with password creation/reset
     if (Object.keys(newErrors).length === 0) {
-      // If coming from forgot password, call reset password API
-      if (fromForgotPassword && email && otp) {
+      // Always call reset password API if we have email and OTP (from forgot password flow)
+      if (email && otp) {
         setLoading(true);
         try {
+          console.log('Calling resetPassword API with:', { email, otp: '***', passwordLength: formData.newPassword.length });
           await resetPassword(email, otp, formData.newPassword);
+          
+          // Clear sessionStorage after successful reset
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('resetPasswordEmail');
+            sessionStorage.removeItem('resetPasswordOtp');
+          }
+          
           toast.success("Password reset successfully!");
           navigate("/password-success");
         } catch (error) {
           console.error('Reset password error:', error);
-          const errorMessage = error.message || 'Failed to reset password. Please try again.';
+          const errorMessage = error.message || error.data?.message || 'Failed to reset password. Please try again.';
+          
+          // Check if it's an OTP-related error
+          const isOtpError = errorMessage.toLowerCase().includes('otp') || 
+                           errorMessage.toLowerCase().includes('invalid') ||
+                           errorMessage.toLowerCase().includes('expired');
+          
+          if (isOtpError) {
+            // Clear sessionStorage on OTP error
+            if (typeof window !== 'undefined') {
+              sessionStorage.removeItem('resetPasswordEmail');
+              sessionStorage.removeItem('resetPasswordOtp');
+            }
+            
+            // OTP error - redirect back to forgot password with error
+            toast.error(errorMessage);
+            navigate("/forgot-password", {
+              state: { 
+                email,
+                error: errorMessage 
+              }
+            });
+          } else {
+            // Password or other error - show in form
           toast.error(errorMessage);
-          // Set error on confirm password field
           setErrors({ confirmPassword: errorMessage });
+          }
         } finally {
           setLoading(false);
         }
       } else {
-        // Regular password creation flow
+        // No email/otp - regular password creation flow (should not happen for forgot password)
+        console.warn('CreatePassword: Missing email or OTP for password reset', { 
+          email: !!email, 
+          otp: !!otp 
+        });
         navigate("/password-success");
       }
     }

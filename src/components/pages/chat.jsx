@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from '@/lib/react-router-compat';
+import { useSearchParams, useNavigate } from '@/lib/react-router-compat';
 import PropertiesHeader from "@/components/frontend/common/PropertiesHeader";
 import Footer from "@/components/frontend/common/footer";
 import { FiSearch } from "react-icons/fi";
@@ -11,24 +11,29 @@ import MediumCheckedIcon from "@/svg/mediumCheckedIcon";
 import ChatBlueStartIcon from "@/svg/chatBlueStartIcon";
 import { getChatrooms, getChatroomMessages, uploadChatMedia, deleteChatroom, blockUnblockChatroom } from "@/api/chat";
 import { getCurrentUser } from "@/api/users";
+import { getWishlistPropertyIds } from "@/api/wishlists";
 import { useSocket, SOCKET_EVENTS } from "@/hooks/useSocket";
 import { toast } from "react-toastify";
+import { isAuthenticated } from "@/utils/auth";
+import RedCrossIcon from "@/svg/redCrossIcon";
 
 function ChatMessage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const chatroomIdFromUrl = searchParams?.get('chatroomId');
   
   const [chatrooms, setChatrooms] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [messageText, setMessageText] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [favoriteCount, setFavoriteCount] = useState(0);
   const messagesEndRef = useRef(null);
   const messagesTopRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -45,44 +50,51 @@ function ChatMessage() {
     on,
   } = useSocket();
 
-  // Fetch current user
+  // Fetch all initial data in parallel for better performance
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const user = await getCurrentUser();
-        setCurrentUser(user);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      }
-    };
-    fetchUser();
-  }, []);
-
-  // Fetch chatrooms
-  useEffect(() => {
-    const fetchChatrooms = async () => {
+    const fetchInitialData = async () => {
       try {
         setLoading(true);
-        const data = await getChatrooms();
-        // Normalize lastMessage to string if it's an object
-        const normalizedChatrooms = (data || []).map(chatroom => {
-          if (chatroom.lastMessage && typeof chatroom.lastMessage === 'object') {
-            return {
-              ...chatroom,
-              lastMessage: chatroom.lastMessage.text || chatroom.lastMessage || '',
-            };
-          }
-          return chatroom;
-        });
-        setChatrooms(normalizedChatrooms);
+        
+        // Fetch all data in parallel
+        const [user, chatroomsData, wishlistData] = await Promise.allSettled([
+          getCurrentUser().catch(() => null),
+          getChatrooms().catch(() => []),
+          isAuthenticated() ? getWishlistPropertyIds().catch(() => []) : Promise.resolve([])
+        ]);
+        
+        // Set user
+        if (user.status === 'fulfilled' && user.value) {
+          setCurrentUser(user.value);
+        }
+        
+        // Set chatrooms
+        if (chatroomsData.status === 'fulfilled' && chatroomsData.value) {
+          const normalizedChatrooms = (chatroomsData.value || []).map(chatroom => {
+            if (chatroom.lastMessage && typeof chatroom.lastMessage === 'object') {
+              return {
+                ...chatroom,
+                lastMessage: chatroom.lastMessage.text || chatroom.lastMessage || '',
+              };
+            }
+            return chatroom;
+          });
+          setChatrooms(normalizedChatrooms);
+        }
+        
+        // Set wishlist count
+        if (wishlistData.status === 'fulfilled' && wishlistData.value) {
+          setFavoriteCount(wishlistData.value?.length || 0);
+        }
       } catch (error) {
-        console.error('Error fetching chatrooms:', error);
-        toast.error('Failed to load messages');
+        console.error('Error fetching initial data:', error);
+        toast.error('Failed to load page');
       } finally {
         setLoading(false);
       }
     };
-    fetchChatrooms();
+    
+    fetchInitialData();
   }, []);
 
   // Handle chatroomId from URL
@@ -383,6 +395,23 @@ function ChatMessage() {
     const messageUserId = String(msg.userId?._id || msg.userId?.id || msg.userId || '');
     const isCurrentUser = currentUserId && messageUserId && currentUserId === messageUserId;
     
+    // Get verification status from message user (for renters - show cross icon if not verified)
+    const messageUser = msg.userId;
+    // Check verification status - handle populated userInfoId
+    let isVerified = false;
+    if (messageUser) {
+      if (messageUser.userType === 'owner') {
+        // Owners are always considered verified for display
+        isVerified = true;
+      } else if (messageUser.userType === 'renter') {
+        // For renters, check verification status from userInfoId
+        isVerified = messageUser?.userInfoId?.verificationStatus === 'verified' || false;
+      } else {
+        // If no userType or unknown type, assume verified (backward compatibility)
+        isVerified = true;
+      }
+    }
+    
     return {
       id: msg._id || msg.id,
       message: msg.textDecrypted || msg.textEncrypted || msg.text || '',
@@ -398,6 +427,9 @@ function ChatMessage() {
       type: msg.type || 'text',
       isRead: msg.isRead,
       isDelivered: msg.isDelivered,
+      // Verification status for renter messages (to show cross icon if not verified)
+      isVerified: isVerified,
+      senderUserType: messageUser?.userType || null,
       // Media fields
       fileUrl: msg.fileUrl || null,
       fileName: msg.fileName || null,
@@ -470,6 +502,8 @@ function ChatMessage() {
   const handleFileSelect = async (file) => {
     if (!selectedConversation || !isConnected) return;
 
+    // Removed verification check for renters - renters can send files regardless of verification status
+
     const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
     if (!chatroomId || chatroomId === 'undefined' || chatroomId === 'null') return;
 
@@ -527,6 +561,8 @@ function ChatMessage() {
 
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedConversation || !isConnected) return;
+    
+    // Removed verification check for renters - renters can send messages regardless of verification status
     
     // Don't allow sending if blocked
     if (selectedConversation.isBlockedByCurrentUser || selectedConversation.isCurrentUserBlocked) {
@@ -779,14 +815,18 @@ function ChatMessage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary">
-      <PropertiesHeader />
-      <main className="container mx-auto py-4 sm:py-6 lg:py-10 px-4 sm:px-6 lg:px-8">
+      <PropertiesHeader 
+        favoriteCount={favoriteCount}
+        onHeartClick={() => navigate('/properties?saved=true')}
+        isSavedView={false}
+      />
+      <main className="container mx-auto py-4 sm:py-6 lg:py-10 px-4 sm:px-6 lg:px-8 animate-fadeIn">
         <div className="block">
           {/* Mobile: Show back button when conversation is selected */}
           {selectedConversation && (
             <button
               onClick={handleBackToMessageList}
-              className="md:hidden flex items-center gap-2 mb-4 text-secondary hover:text-primary transition-colors"
+              className="md:hidden flex items-center gap-2 mb-4 px-3 py-2 rounded-xl text-secondary hover:text-[#6B4EFF] hover:bg-purple-50 transition-all duration-200 group"
             >
               <svg
                 width="20"
@@ -794,6 +834,7 @@ function ChatMessage() {
                 viewBox="0 0 20 20"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
+                className="transition-transform duration-200 group-hover:-translate-x-1"
               >
                 <path
                   d="M12.5 15L7.5 10L12.5 5"
@@ -807,26 +848,29 @@ function ChatMessage() {
             </button>
           )}
 
-          <h1 className="text-xl sm:text-2xl font-bold text-secondary mb-4">
-            Messages {!isConnected && <span className="text-xs text-red-500">(Disconnected)</span>}
-          </h1>
+          <div className="mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-secondary mb-2">
+              Messages {!isConnected && <span className="text-xs font-normal text-red-500 ml-2">(Disconnected)</span>}
+            </h1>
+            <p className="text-sm text-[#62748E] font-normal">Connect with property owners and manage your conversations</p>
+          </div>
 
           <div
-            className={`flex gap-0 bg-white rounded-[20px] ${
-              !selectedConversation && "border border-lightGray"
-            }`}
+            className={`flex gap-0 bg-white rounded-3xl shadow-sm transition-all duration-300 ${
+              !selectedConversation && "border border-gray-100"
+            } overflow-hidden`}
           >
             {/* Left Panel - Message List */}
             <div
               className={`${
                 selectedConversation ? "hidden md:flex" : "flex"
-              } w-full md:w-96 lg:w-[400px] rounded-tl-[20px] rounded-bl-[20px] md:rounded-tr-none md:rounded-br-none rounded-[20px] md:rounded-[0] bg-white border-r border-lightGray md:border-r flex flex-col`}
+              } w-full md:w-96 lg:w-[400px] bg-white border-r border-gray-100 flex flex-col transition-all duration-300`}
             >
               {/* Header */}
-              <div className="p-3 sm:p-4 border-b border-lightGray">
+              <div className="p-5 border-b border-gray-100 bg-gradient-to-b from-gray-50/50 to-white">
                 {/* Search Bar */}
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-base sm:text-lg md:text-xl">
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lg md:text-xl z-10">
                     <BlueSearchIcon />
                   </span>
 
@@ -835,23 +879,33 @@ function ChatMessage() {
                     placeholder="Search Messages"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 sm:pl-10 pr-3 h-11 sm:h-12 py-2 border border-lightGray rounded-xl focus:outline-none focus:ring-0 text-sm sm:text-base"
+                    className="w-full pl-11 md:pl-12 pr-4 h-12 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#6B4EFF]/20 focus:border-[#6B4EFF] text-sm md:text-base bg-white transition-all duration-200 placeholder:text-gray-400"
                   />
                 </div>
               </div>
 
               {/* Message List */}
-              <div className="flex-1 overflow-y-auto max-h-[calc(100vh-280px)] sm:max-h-[calc(100vh-300px)] md:max-h-[calc(100vh-200px)]">
+              <div className="flex-1 overflow-y-auto max-h-[calc(100vh-280px)] sm:max-h-[calc(100vh-300px)] md:max-h-[calc(100vh-200px)] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
                 {loading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6B4EFF]"></div>
+                  <div className="flex items-center justify-center py-16">
+                    <div className="relative">
+                      <div className="animate-spin rounded-full h-10 w-10 border-3 border-[#6B4EFF]/20"></div>
+                      <div className="animate-spin rounded-full h-10 w-10 border-t-3 border-[#6B4EFF] absolute top-0 left-0"></div>
+                    </div>
                   </div>
                 ) : filteredChatrooms.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-                    <ChatBlueStartIcon />
-                    <p className="text-darkGray text-base font-normal font-nunito mt-4">
+                  <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+                    <div className="mb-4 opacity-60">
+                      <ChatBlueStartIcon />
+                    </div>
+                    <p className="text-gray-600 text-base font-medium font-nunito">
                       {searchQuery ? 'No messages found' : 'No messages yet'}
                     </p>
+                    {!searchQuery && (
+                      <p className="text-gray-400 text-sm font-normal font-nunito mt-2">
+                        Start a conversation with property owners
+                      </p>
+                    )}
                   </div>
                 ) : (
                   filteredChatrooms.map((chatroom) => {
@@ -871,6 +925,14 @@ function ChatMessage() {
                       ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase()
                       : 'U';
                     
+                    // Check verification status for renters
+                    const otherUserType = otherUser?.userType || null;
+                    const isOtherUserVerified = otherUser?.userInfoId?.verificationStatus === 'verified' || 
+                                                 otherUser?.userInfo?.verificationStatus === 'verified' ||
+                                                 false;
+                    const showVerificationIcon = otherUserType === 'renter';
+                    const isVerified = isOtherUserVerified;
+                    
                     const chatroomId = chatroom._id || chatroom.id;
                     const isSelected = selectedConversation?.id === chatroomId;
 
@@ -878,35 +940,54 @@ function ChatMessage() {
                       <div
                         key={chatroomId}
                         onClick={() => handleSelectConversation(chatroom)}
-                        className={`p-3 sm:p-4 bg-[#F8F8F8] border-b border-lightGray cursor-pointer hover:bg-gray-50 transition-colors ${
-                          isSelected ? "bg-purple-50" : ""
+                        className={`p-4 cursor-pointer transition-all duration-200 border-b border-gray-50 ${
+                          isSelected 
+                            ? "bg-gradient-to-r from-purple-50 to-indigo-50 border-l-4 border-l-[#6B4EFF]" 
+                            : "bg-white hover:bg-gray-50"
                         }`}
                       >
-                        <div className="flex items-start gap-2 sm:gap-3">
+                        <div className="flex items-start gap-3">
                           <div className="relative flex-shrink-0">
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white flex items-center justify-center text-[#6B4EFF] font-bold text-sm sm:text-base border border-lightGray">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-[#6B4EFF] font-bold text-base shadow-sm transition-all duration-200 ${
+                              isSelected 
+                                ? "bg-gradient-to-br from-purple-100 to-indigo-100 border-2 border-[#6B4EFF]/30" 
+                                : "bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200"
+                            }`}>
                               {initials}
                             </div>
+                            {/* Show verification icon for renters: cross if not verified, checkmark if verified */}
+                            {showVerificationIcon && (
+                              <span className="absolute -bottom-1 -right-1 bg-white rounded-full shadow-sm border-2 border-white">
+                                {isVerified ? (
+                                  <MediumCheckedIcon />
+                                ) : (
+                                  <RedCrossIcon />
+                                )}
+                              </span>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <h3 className="font-normal font-nunito text-[#0F172B] text-sm sm:text-base truncate">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <h3 className={`font-semibold font-nunito text-base truncate transition-colors duration-200 ${
+                                isSelected ? "text-[#6B4EFF]" : "text-[#0F172B]"
+                              }`}>
                                 {name}
                               </h3>
                             </div>
-                            <p className="text-sm sm:text-base font-normal font-nunito text-[#45556C] truncate mb-1">
+                            <p className="text-sm font-normal font-nunito text-[#45556C] truncate mb-2">
                               {typeof chatroom.lastMessage === 'string' 
                                 ? chatroom.lastMessage 
                                 : (chatroom.lastMessage?.text || 'No messages yet')}
                             </p>
                             <div>
-                              <span className="text-xs sm:text-sm text-[#62748E] font-normal font-nunito">
+                              <span className="text-xs text-[#62748E] font-medium font-nunito">
                                 {chatroom.lastMessageAt 
                                   ? new Date(chatroom.lastMessageAt).toLocaleDateString('en-US', { 
                                       month: 'short', 
                                       day: 'numeric',
                                       hour: 'numeric',
-                                      minute: '2-digit'
+                                      minute: '2-digit',
+                                      hour12: true
                                     })
                                   : ''}
                               </span>
@@ -926,15 +1007,18 @@ function ChatMessage() {
                 selectedConversation
                   ? "flex"
                   : "hidden md:flex"
-              } flex-col bg-white rounded-tr-[20px] rounded-br-[20px] md:rounded-tl-none md:rounded-bl-none rounded-[20px] md:rounded-[0] overflow-y-auto flex-1`}
+              } flex-col bg-gradient-to-br from-gray-50/30 to-white overflow-y-auto flex-1 transition-all duration-300`}
             >
               {selectedConversation ? (
                 <>
                   {messagesLoading && chatMessages.length === 0 ? (
-                    <div className="flex-1 flex items-center justify-center bg-[#F9F9FC]">
+                    <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50/50 to-white">
                       <div className="text-center">
-                        <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-[#6B4EFF] border-t-transparent mb-4"></div>
-                        <p className="text-[#62748E] text-base font-normal font-nunito">Loading messages...</p>
+                        <div className="relative inline-block mb-4">
+                          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#6B4EFF]/10"></div>
+                          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-[#6B4EFF] absolute top-0 left-0"></div>
+                        </div>
+                        <p className="text-[#62748E] text-base font-medium font-nunito">Loading messages...</p>
                       </div>
                     </div>
                   ) : (
@@ -969,16 +1053,16 @@ function ChatMessage() {
                 </>
               ) : (
                 /* Empty State - Hidden on mobile when no conversation selected */
-                <div className="hidden md:flex flex-1 items-center bg-[#F9F9FC] justify-center">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mx-auto mb-4">
+                <div className="hidden md:flex flex-1 items-center bg-gradient-to-br from-gray-50/50 to-white justify-center">
+                  <div className="text-center px-6">
+                    <div className="flex items-center justify-center mx-auto mb-6 opacity-60">
                       <ChatBlueStartIcon />
                     </div>
-                    <h3 className="text-lg lg:text-2xl font-bold text-[#4A2FCC] mb-2">
+                    <h3 className="text-xl lg:text-2xl font-bold text-[#4A2FCC] mb-3">
                       No conversation selected
                     </h3>
-                    <p className="text-darkGray text-base font-normal font-nunito">
-                      Select a conversation to start messaging
+                    <p className="text-gray-600 text-base font-normal font-nunito max-w-md">
+                      Select a conversation from the list to start messaging with property owners
                     </p>
                   </div>
                 </div>

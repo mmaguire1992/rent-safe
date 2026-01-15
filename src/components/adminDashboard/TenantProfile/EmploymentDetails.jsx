@@ -32,7 +32,7 @@ function EmploymentDetails({ employment, proofOfIncome }) {
                   Job Title
                 </p>
                 <p className="font-normal text-secondary text-base font-nunito">
-                  {employment.jobTitle}
+                  {employment.jobTitle && employment.jobTitle !== 'N/A' && String(employment.jobTitle).trim() !== '' ? employment.jobTitle : '-'}
                 </p>
               </div>
             </div>
@@ -45,7 +45,7 @@ function EmploymentDetails({ employment, proofOfIncome }) {
                   Company
                 </p>
                 <p className="font-normal text-secondary text-base font-nunito">
-                  {employment.company}
+                  {employment.company && employment.company !== 'N/A' && String(employment.company).trim() !== '' ? employment.company : '-'}
                 </p>
               </div>
             </div>
@@ -58,7 +58,7 @@ function EmploymentDetails({ employment, proofOfIncome }) {
                   Start Date
                 </p>
                 <p className="font-normal text-secondary text-base font-nunito">
-                  {employment.startDate}
+                  {employment.startDate && employment.startDate !== 'N/A' && String(employment.startDate).trim() !== '' ? employment.startDate : '-'}
                 </p>
               </div>
             </div>
@@ -71,7 +71,7 @@ function EmploymentDetails({ employment, proofOfIncome }) {
                   Employment Type
                 </p>
                 <p className="font-normal text-secondary text-base font-nunito">
-                  {employment.employmentType}
+                  {employment.employmentType && employment.employmentType !== 'N/A' && String(employment.employmentType).trim() !== '' ? employment.employmentType : '-'}
                 </p>
               </div>
             </div>
@@ -84,7 +84,7 @@ function EmploymentDetails({ employment, proofOfIncome }) {
                   Annual Salary
                 </p>
                 <p className="font-normal text-[#4A2FCC] text-base font-nunito">
-                  {employment.annualSalary}
+                  {employment.annualSalary && employment.annualSalary !== 'N/A' && String(employment.annualSalary).trim() !== '' ? employment.annualSalary : '-'}
                 </p>
               </div>
             </div>
@@ -98,7 +98,7 @@ function EmploymentDetails({ employment, proofOfIncome }) {
                   Work Location
                 </p>
                 <p className="font-normal text-secondary text-base font-nunito">
-                  {employment.workLocation}
+                  {employment.workLocation && employment.workLocation !== 'N/A' && String(employment.workLocation).trim() !== '' ? employment.workLocation : '-'}
                 </p>
               </div>
             </div>
@@ -119,7 +119,7 @@ function EmploymentDetails({ employment, proofOfIncome }) {
                 Type
               </p>
               <p className="font-normal text-secondary text-base font-nunito">
-                {proofOfIncome.type}
+                {proofOfIncome.type && proofOfIncome.type !== 'N/A' && String(proofOfIncome.type).trim() !== '' ? proofOfIncome.type : '-'}
               </p>
             </div>
             <div>
@@ -127,7 +127,7 @@ function EmploymentDetails({ employment, proofOfIncome }) {
                 Date
               </p>
               <p className="font-normal text-secondary text-base font-nunito">
-                {proofOfIncome.date}
+                {proofOfIncome.date && proofOfIncome.date !== 'N/A' && String(proofOfIncome.date).trim() !== '' ? proofOfIncome.date : '-'}
               </p>
             </div>
             <div>
@@ -135,7 +135,7 @@ function EmploymentDetails({ employment, proofOfIncome }) {
                 Gross Monthly
               </p>
               <p className="font-normal text-secondary text-base font-nunito">
-                {proofOfIncome.grossMonthly}
+                {proofOfIncome.grossMonthly && proofOfIncome.grossMonthly !== 'N/A' && String(proofOfIncome.grossMonthly).trim() !== '' ? proofOfIncome.grossMonthly : '-'}
               </p>
             </div>
             <div>
@@ -143,7 +143,7 @@ function EmploymentDetails({ employment, proofOfIncome }) {
                 Net Monthly
               </p>
               <p className="font-normal text-secondary text-base font-nunito">
-                {proofOfIncome.netMonthly}
+                {proofOfIncome.netMonthly && proofOfIncome.netMonthly !== 'N/A' && String(proofOfIncome.netMonthly).trim() !== '' ? proofOfIncome.netMonthly : '-'}
               </p>
             </div>
           </div>

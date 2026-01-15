@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from '@/lib/react-router-compat';
 import AuthLayout from "@/components/AuthLayout";
 import CustomCheckbox from "@/components/adminDashboard/common/CustomCheckbox";
-import { BsEye, BsEyeSlash } from "react-icons/bs";
+import EyeIcon from "@/svg/eyeIcon";
+import EyeSlashIcon from "@/svg/eyeSlashIcon";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-toastify";
 
@@ -19,6 +20,19 @@ function Login() {
   const [loginError, setLoginError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+
+  // Show a one-time toast if we were redirected here due to account deactivation/inactive status
+  useEffect(() => {
+    try {
+      const msg = sessionStorage.getItem('authRedirectToast');
+      if (msg) {
+        sessionStorage.removeItem('authRedirectToast');
+        toast.error(msg);
+      }
+    } catch (_) {
+      // no-op
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -79,32 +93,6 @@ function Login() {
       
       // Show toast notification
       toast.error(errorMessage);
-      
-      // Check if error is related to user not found or invalid email
-      const isUserNotFound = errorMessage.toLowerCase().includes('user not found') || 
-                            errorMessage.toLowerCase().includes('email not found') ||
-                            errorMessage.toLowerCase().includes('no user found');
-      
-      // Check if error is related to invalid password
-      const isInvalidPassword = errorMessage.toLowerCase().includes('invalid password') ||
-                               errorMessage.toLowerCase().includes('incorrect password') ||
-                               errorMessage.toLowerCase().includes('wrong password');
-      
-      // Highlight email field if user not found
-      if (isUserNotFound) {
-        setErrors((prev) => ({
-          ...prev,
-          email: "No account found with this email address.",
-        }));
-      }
-      
-      // Highlight password field if password is invalid
-      if (isInvalidPassword) {
-        setErrors((prev) => ({
-          ...prev,
-          password: "Incorrect password.",
-        }));
-      }
     } finally {
       setIsLoading(false);
     }
@@ -115,7 +103,7 @@ function Login() {
       <div className="block">
         {/* Logo */}
         <div className="mb-6">
-          <img src="/images/dashboard/mainLogo.png" alt="Logo" className="justify-center" />
+          <img src="/images/dashboard/mainLogoBK.png" alt="Logo" className="justify-center" />
         </div>
 
         {/* Welcome Message */}
@@ -181,9 +169,9 @@ function Login() {
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary"
                 >
                   {showPassword ? (
-                    <BsEye className="text-xl" />
+                    <EyeIcon />
                   ) : (
-                    <BsEyeSlash className="text-xl" />
+                    <EyeSlashIcon />
                   )}
                 </button>
               </div>

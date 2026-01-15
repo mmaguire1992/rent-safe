@@ -287,13 +287,13 @@ export async function getMyActiveProperties(params = {}) {
  * @param {string} id - Property ID
  * @returns {Promise<Object>} - Property data
  */
-export async function getPropertyById(id) {
+export async function getPropertyById(id, requireAuth = false) {
   try {
     if (!id) {
       throw new Error('Property ID is required');
     }
     
-    const responseData = await useGetApi(propertyRoutes.getPropertyById(id), false);
+    const responseData = await useGetApi(propertyRoutes.getPropertyById(id), requireAuth);
     
     if (responseData && responseData.success && responseData.data) {
       return responseData.data;
@@ -301,6 +301,11 @@ export async function getPropertyById(id) {
     
     // Fallback if response structure is different
     if (responseData && !responseData.success) {
+      return responseData;
+    }
+    
+    // If responseData is the property object directly
+    if (responseData && (responseData._id || responseData.id)) {
       return responseData;
     }
     
@@ -415,3 +420,27 @@ export async function uploadMultiplePropertyMedia(propertyId, formData) {
   }
 }
 
+/**
+ * Delete property media
+ * @param {string} propertyId - Property ID
+ * @param {string} mediaId - Media ID
+ * @returns {Promise<Object>} - Deletion response
+ */
+export async function deletePropertyMedia(propertyId, mediaId) {
+  try {
+    if (!propertyId || !mediaId) {
+      throw new Error('Property ID and Media ID are required');
+    }
+    
+    const responseData = await useDeleteApi(propertyRoutes.deletePropertyMedia(propertyId, mediaId), true);
+    
+    if (responseData && responseData.success) {
+      return responseData;
+    }
+    
+    return responseData;
+  } catch (error) {
+    console.error('Error in deletePropertyMedia:', error);
+    throw error;
+  }
+}

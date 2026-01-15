@@ -1,7 +1,7 @@
 import BlueCreditIcon from "@/svg/blueCreditIcon";
 import SectionHeader from "./SectionHeader";
 
-function CreditCheckSection({ formData, handleChange }) {
+function CreditCheckSection({ formData, handleChange, errors = {} }) {
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
       <SectionHeader icon={BlueCreditIcon} title="Credit Check" />
@@ -16,8 +16,15 @@ function CreditCheckSection({ formData, handleChange }) {
           value={formData.creditScore}
           onChange={handleChange}
           placeholder="Type your credit score"
-          className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+            errors.creditScore ? 'border-errorColor' : 'border-lightGray'
+          }`}
         />
+        {errors.creditScore && (
+          <p className="mt-1 text-sm text-errorColor">{errors.creditScore}</p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

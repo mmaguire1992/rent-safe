@@ -1,10 +1,10 @@
 import Badge from "./Badge";
 import Button from "./Button";
 import ShielIcon from "@/svg/websiteSvg/shielIcon";
-import HouseIcon from "@/svg/websiteSvg/houseIcon";
-import BuildingIcon from "@/svg/websiteSvg/buildingIcon";
-import CrownIcon from "@/svg/websiteSvg/crownIcon";
-import AgencyIcon from "@/svg/websiteSvg/agencyIcon";
+import HouseIconBlue from "@/svg/websiteSvg/houseIconBlue";
+import StandardPlanIcon from "@/svg/websiteSvg/standardPlanIcon";
+import PremiumPlanIcon from "@/svg/websiteSvg/premiumPlanIcon";
+import AgencySolutionIcon from "@/svg/websiteSvg/agencySolutionIcon";
 import StarIcon from "@/svg/websiteSvg/starIcon";
 
 
@@ -14,7 +14,7 @@ function OwnersAgentsSection() {
       id: 1,
       title: "Pay Per Listing",
       description: "Single properties",
-      icon: <HouseIcon />,
+      icon: <HouseIconBlue />,
       iconBg: "bg-white",
       iconColor: "text-[#4A2FCC]",
       isPopular: false,
@@ -23,7 +23,7 @@ function OwnersAgentsSection() {
       id: 2,
       title: "Standard Plan",
       description: "Up to 10 listings",
-      icon: <BuildingIcon />,
+      icon: <StandardPlanIcon />,
       iconBg: "bg-blueGradient2",
       iconColor: "text-white",
       isPopular: true,
@@ -32,7 +32,7 @@ function OwnersAgentsSection() {
       id: 3,
       title: "Premium Plan",
       description: "Up to 25 listings",
-      icon: <CrownIcon />,
+      icon: <PremiumPlanIcon />,
       iconBg: "bg-white",
       iconColor: "text-[#4A2FCC]",
       isPopular: false,
@@ -41,7 +41,7 @@ function OwnersAgentsSection() {
       id: 4,
       title: "Agency Solution",
       description: "Unlimited listings",
-      icon: <AgencyIcon />,
+      icon: <AgencySolutionIcon />,
       iconBg: "bg-white",
       iconColor: "text-[#4A2FCC]",
       isPopular: false,

@@ -5,13 +5,13 @@ import { useNavigate, useLocation } from '@/lib/react-router-compat';
 import { IoClose } from "react-icons/io5";
 import { FiChevronUp, FiChevronDown } from "react-icons/fi";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
-import WhiteLogo from "../../../assests/images/whiteLogo.png";
 import WhiteLogout from "@/svg/whiteLogout";
 import WhiteHomeIcon from "@/svg/whiteHomeIcon";
 import WhitePropertiesIcon from "../../../svg/whitePropertiesIcon";
 import WhiteMessageIcon from "../../../svg/whiteMessageIcon";
 import { useAuth } from "@/context/AuthContext";
 import { getCurrentUser } from "@/api/users";
+import { toast } from "react-toastify";
 
 function MobileSidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
@@ -48,9 +48,34 @@ function MobileSidebar({ isOpen, onClose }) {
     };
 
     fetchProfileImage();
+
+    // Listen for profile image updates
+    const handleProfileImageUpdate = async () => {
+      // Re-fetch user data to get the latest profile image
+      try {
+        const userData = await getCurrentUser();
+        if (userData?.userInfo?.profileImage) {
+          // Add cache-busting parameter to force image refresh
+          const imageUrl = userData.userInfo.profileImage + (userData.userInfo.profileImage.includes('?') ? '&' : '?') + '_t=' + Date.now();
+          setProfileImage(imageUrl);
+        } else {
+          setProfileImage(null);
+        }
+      } catch (err) {
+        console.error('Error refreshing profile image:', err);
+      }
+    };
+
+    window.addEventListener('profileImageUpdated', handleProfileImageUpdate);
+
+    return () => {
+      window.removeEventListener('profileImageUpdated', handleProfileImageUpdate);
+    };
   }, [isAuthenticated]);
 
-  const handleNavigation = (path) => {
+  const handleNavigation = async (path) => {
+    // Removed verification check for renters - renters can access chat regardless of verification status
+    
     navigate(path);
     onClose();
   };
@@ -100,7 +125,7 @@ function MobileSidebar({ isOpen, onClose }) {
           {/* Header with Logo */}
           <div className="flex items-center justify-between px-6 pt-6 pb-4">
             <div className="flex items-center gap-3">
-              <img src={WhiteLogo} alt="Rent Safe" className="" />
+              <img src="/images/whiteLogo.png" alt="Rent Safe" className="" />
             </div>
             <button
               onClick={onClose}
@@ -168,7 +193,7 @@ function MobileSidebar({ isOpen, onClose }) {
                 Property History
               </button>
               <button
-                onClick={() => handleNavigation("/rent-support")}
+                onClick={() => handleNavigation("/support")}
                 className="w-full text-left px-4 py-2 text-sm font-normal font-nunito text-white hover:bg-white/10 rounded-lg transition-colors"
               >
                 Support

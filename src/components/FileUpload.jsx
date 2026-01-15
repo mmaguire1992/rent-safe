@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from "react";
+import { toast } from "react-toastify";
 import UploadIcon from "@/svg/uploadIcon";
 import DeleteIcon from "@/svg/deleteIcon";
 import PdfIcon from "@/svg/pdfIcon";
@@ -65,6 +66,10 @@ function FileUpload({
       '.webp': 'image/webp',
     };
     
+    // Track invalid files for error messages
+    const invalidFiles = [];
+    const oversizedFiles = [];
+    
     // Filter valid files
     const validFiles = allFiles
       .filter((file) => {
@@ -77,23 +82,38 @@ function FileUpload({
         
         const isValid = isValidExtension && isValidMimeType;
         if (!isValid) {
-          console.warn(`File ${file.name} has invalid type. Accepted: ${acceptedTypes}`);
+          invalidFiles.push(file.name);
         }
         return isValid;
       })
       .filter((file) => {
         const isValidSize = file.size <= maxSize;
         if (!isValidSize) {
-          console.warn(`File ${file.name} exceeds maximum size of ${maxSize / (1024 * 1024)}MB`);
+          oversizedFiles.push(file.name);
         }
         return isValidSize;
       })
       .slice(0, maxFiles - uploadedFiles.length);
 
-    // Show warning if some files were rejected
-    const rejectedCount = allFiles.length - validFiles.length;
-    if (rejectedCount > 0) {
-      console.warn(`${rejectedCount} file(s) were rejected. Please ensure files are valid images or documents and under ${maxSize / (1024 * 1024)}MB.`);
+    // Show toast error messages for invalid files
+    if (invalidFiles.length > 0) {
+      const count = invalidFiles.length;
+      const fileText = count === 1 ? 'file' : 'files';
+      toast.error(`Invalid file format. ${count} ${fileText} rejected. Accepted formats: ${acceptedTypes}`);
+    }
+    
+    if (oversizedFiles.length > 0) {
+      const count = oversizedFiles.length;
+      const fileText = count === 1 ? 'file' : 'files';
+      toast.error(`File too large. ${count} ${fileText} rejected. Maximum size: ${maxSize / (1024 * 1024)}MB`);
+    }
+    
+    // Check if max files limit reached
+    const remainingSlots = maxFiles - uploadedFiles.length;
+    if (validFiles.length > remainingSlots && remainingSlots > 0) {
+      toast.warning(`Only ${remainingSlots} more file(s) can be uploaded. Maximum ${maxFiles} files allowed.`);
+    } else if (remainingSlots === 0) {
+      toast.warning(`Maximum ${maxFiles} files allowed. Please remove some files before adding new ones.`);
     }
 
     if (validFiles.length > 0 && onFilesChange) {

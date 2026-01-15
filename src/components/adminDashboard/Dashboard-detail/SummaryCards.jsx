@@ -82,7 +82,7 @@ function SummaryCards({ summaryCards }) {
         return (
           <div
             key={index}
-            className="rounded-lg p-5 md:p-6  bg-cover bg-center bg-no-repeat min-h-[170px] card_summary_box"
+            className="rounded-lg p-5 md:p-6 bg-cover bg-center bg-no-repeat min-h-[170px] card_summary_box"
             style={{
               backgroundImage: 'url("/images/dashboard/boxgraybg.png")',
               backgroundSize: "100% 170px",
@@ -91,7 +91,13 @@ function SummaryCards({ summaryCards }) {
           >
             <div className="flex items-center justify-start gap-4 mb-3 md:mb-4">
               <div
-                className={`${card.color} p-2 md:p-3 rounded-[10px] ${card.iconColor}`}
+                className={`p-2 md:p-3 rounded-[10px] ${card.iconColor}`}
+                style={{
+                  backgroundColor: card.title === "Total Rented Properties" ? '#CFE4FF' : 
+                                  card.title === "Monthly Leads" ? '#FFE4CC' : 
+                                  card.title === "Total Active Properties" ? '#DFFFE6' :
+                                  card.title === "Remaining Listing Count" ? '#FFDDEE' : undefined,
+                }}
               >
                 <Icon className="text-xl md:text-2xl" />
               </div>

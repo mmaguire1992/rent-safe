@@ -8,7 +8,9 @@ import Pagination from "@/components/adminDashboard/common/Pagination";
 import PropertiesActionBar from "@/components/adminDashboard/MyProperties/PropertiesActionBar";
 import PropertiesTable from "@/components/adminDashboard/MyProperties/PropertiesTable";
 import PropertiesMobileCards from "@/components/adminDashboard/MyProperties/PropertiesMobileCards";
+import HouseIcon from "@/svg/websiteSvg/houseIcon";
 import { fetchMyProperties } from '@/redux/slices/propertySlice';
+import { getMyProperties } from '@/api/properties';
 import { toast } from 'react-toastify';
 
 function MyProperties() {
@@ -66,6 +68,11 @@ function MyProperties() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, typeFilter, searchQuery, sortBy]);
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
 
   // Transform properties to match table component expectations
   // No client-side filtering - all done on backend
@@ -154,13 +161,29 @@ function MyProperties() {
   };
 
   // Export properties to CSV
-  const handleExportCSV = () => {
-    if (!allProperties || allProperties.length === 0) {
-      toast.error('No properties to export');
-      return;
-    }
-
+  const handleExportCSV = async () => {
     try {
+      // Show loading toast
+      toast.info('Preparing export...', { autoClose: 1000 });
+
+      // Fetch ALL properties with current filters (no pagination limit)
+      const exportParams = {
+        page: 1,
+        limit: 10000, // Very high limit to get all properties
+        search: searchQuery && searchQuery.trim() ? searchQuery.trim() : '',
+        status: statusFilter && statusFilter !== 'all' ? statusFilter : '',
+        propertyType: typeFilter && typeFilter !== 'all' ? typeFilter : '',
+        sortBy: sortBy || 'recent',
+      };
+
+      const exportData = await getMyProperties(exportParams);
+      const propertiesToExport = exportData?.properties || [];
+
+      if (!propertiesToExport || propertiesToExport.length === 0) {
+        toast.error('No properties to export');
+        return;
+      }
+
       // Define CSV headers
       const headers = [
         'Title',
@@ -182,7 +205,7 @@ function MyProperties() {
       ];
 
       // Convert properties to CSV rows
-      const csvRows = allProperties.map((property) => {
+      const csvRows = propertiesToExport.map((property) => {
         // Build address parts
         const address = property.address || {};
         const city = address.city || '';
@@ -332,7 +355,14 @@ function MyProperties() {
                 </div>
               ) : currentProperties.length === 0 ? (
                 <div className="p-8 text-center">
-                  <p className="text-darkGray text-sm sm:text-base">No properties found. Try adjusting your filters or add a new property.</p>
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="mb-4 flex items-center justify-center overflow-visible">
+                      <div className="text-[#9FA3AA] scale-150" style={{ overflow: 'visible' }}>
+                        <HouseIcon isFilled={false} />
+                      </div>
+                    </div>
+                    <p className="text-darkGray text-sm sm:text-base">No properties found. Try adjusting your filters or add a new property.</p>
+                  </div>
                 </div>
               ) : (
                 <>

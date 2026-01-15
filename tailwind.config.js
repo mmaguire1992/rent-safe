@@ -23,7 +23,7 @@ module.exports = {
         lightBlueGradient:
           "linear-gradient(135deg, rgba(232, 226, 255, 0.3) 0%, rgba(255, 255, 255, 0.9) 57.87%, rgba(249, 249, 252, 0.99) 100%)",
         badgeGradient:
-          "linear-gradient(90deg, rgba(232, 226, 255, 0.6) 0%, rgba(107, 78, 255, 0.1) 100%)",
+          "linear-gradient(90deg, #E8E2FF99 -7%, #6b4eff38 100%)",
         blueGradient1: "linear-gradient(180deg, #6B4EFF 0%, #9B7EFF 100%)",
         blueGradient2:
           "linear-gradient(280.87deg, #6B4EFF 0.28%, #4A2FCC 99.72%);",

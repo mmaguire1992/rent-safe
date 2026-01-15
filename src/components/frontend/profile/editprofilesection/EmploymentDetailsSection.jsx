@@ -9,6 +9,7 @@ function EmploymentDetailsSection({
   handleDateChange,
   handleDropdownChange,
   employmentTypeOptions,
+  errors = {},
 }) {
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
@@ -76,8 +77,15 @@ function EmploymentDetailsSection({
             value={formData.annualSalary}
             onChange={handleChange}
             placeholder="Enter your annual salary"
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            inputMode="numeric"
+            pattern="[0-9.]*"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              errors.annualSalary ? 'border-errorColor' : 'border-lightGray'
+            }`}
           />
+          {errors.annualSalary && (
+            <p className="mt-1 text-sm text-errorColor">{errors.annualSalary}</p>
+          )}
         </div>
 
         <div>

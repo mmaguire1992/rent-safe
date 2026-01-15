@@ -1,5 +1,5 @@
-import RentSupportPage from '@/components/pages/RentSupport'
+import SupportPage from '@/components/pages/Support/SupportPage'
 
-export default function SupportPage() {
-  return <RentSupportPage />
+export default function SupportPageRoute() {
+  return <SupportPage />
 }

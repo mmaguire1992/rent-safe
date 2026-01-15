@@ -5,12 +5,37 @@ import { FiMapPin, FiHome, FiCircle } from "react-icons/fi";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { loadGoogleMaps } from "@/utils/googleMaps";
 
+// Amenity Icons
 import BlueCarIcon from "@/svg/blueCarIcon";
 import BlueWIFIIcon from "@/svg/blueWIFIIcon";
 import BlueGardenIcon from "@/svg/blueGardenIcon";
 import BlueHeatingIcon from "@/svg/blueHeatingIcon";
+import GrayBedIcon from "@/svg/grayBedIcon";
+import BlueHouseIcon from "@/svg/blueHouseIcon";
+import ApartmentIcon from "@/svg/apartmentIcon";
+import GrayBuildingIcon from "@/svg/grayBuildingIcon";
+import BlueWardrobeIcon from "@/svg/blueWardrobeIcon";
+import BlueFireplaceIcon from "@/svg/blueFireplaceIcon";
+import BlueWashingMachineIcon from "@/svg/blueWashingMachineIcon";
+import BlueDishwasherIcon from "@/svg/blueDishwasherIcon";
+import BlueMicrowaveIcon from "@/svg/blueMicrowaveIcon";
+import BlueOvenIcon from "@/svg/blueOvenIcon";
+import BlueFridgeIcon from "@/svg/blueFridgeIcon";
+import BlueFlooringIcon from "@/svg/blueFlooringIcon";
+import BlueSmokeAlarmIcon from "@/svg/blueSmokeAlarmIcon";
+import BlueCCTVIcon from "@/svg/blueCCTVIcon";
+import BlueRecyclingIcon from "@/svg/blueRecyclingIcon";
+import BlueSprinklerIcon from "@/svg/blueSprinklerIcon";
+import BlueCertificateIcon from "@/svg/blueCertificateIcon";
+import BlueEVChargingIcon from "@/svg/blueEVChargingIcon";
+import BlueTVIcon from "@/svg/blueTVIcon";
+import BlueDryerIcon from "@/svg/blueDryerIcon";
+
+// Utility Icons
 import OrangeElectrityIcon from "@/svg/orangeElectrityIcon";
 import OrangeGasIcon from "@/svg/orangeGasIcon";
+import OrangeWaterIcon from "@/svg/orangeWaterIcon";
+import OrangeInternetIcon from "@/svg/orangeInternetIcon";
 import SingleFemaleIcon from "@/svg/singleFemaleIcon";
 import RedMaleIcon from "@/svg/redMaleIcon";
 import CoupleIcon from "@/svg/coupleIcon";
@@ -31,7 +56,6 @@ import {
   preferredRenterTypeOptions,
 } from "@/constant";
 import BlueLocationIcon from "@/svg/blueLocationIcon";
-import GrayBedIcon from "@/svg/grayBedIcon";
 import GrayBathIcon from "@/svg/grayBathIcon";
 
 function ReviewStep({ formData }) {
@@ -69,20 +93,106 @@ function ReviewStep({ formData }) {
 
   // Get amenity icon
   const getAmenityIcon = (amenity) => {
-    const amenityLower = amenity.toLowerCase();
+    if (!amenity) return DummyAmenityIcon;
+    
+    // Normalize amenity string: handle both display names and backend formats
+    const amenityLower = amenity.toLowerCase().replace(/_/g, ' ').trim();
+    
+    // Parking variations: "parking", "residents' parking", "residents parking"
     if (amenityLower.includes("parking")) return BlueCarIcon;
-    if (amenityLower.includes("wifi") || amenityLower.includes("wi-fi"))
+    
+    // WiFi variations: "wifi", "wi-fi", "wifi included"
+    if (amenityLower.includes("wifi") || amenityLower.includes("wi-fi") || amenityLower.includes("wi fi")) {
       return BlueWIFIIcon;
+    }
+    
+    // Garden variations: "garden"
     if (amenityLower.includes("garden")) return BlueGardenIcon;
+    
+    // Heating variations: "heating", "central heating", "underfloor heating", "heating controls"
     if (amenityLower.includes("heating")) return BlueHeatingIcon;
+    
+    // Bed variations: "bed", "beds"
+    if (amenityLower.includes("bed")) return GrayBedIcon;
+    
+    // Wardrobe variations
+    if (amenityLower.includes("wardrobe")) return BlueWardrobeIcon;
+    
+    // Fireplace variations
+    if (amenityLower.includes("fireplace")) return BlueFireplaceIcon;
+    
+    // Washing machine variations
+    if (amenityLower.includes("washing machine") || amenityLower.includes("washing")) return BlueWashingMachineIcon;
+    
+    // Dishwasher variations
+    if (amenityLower.includes("dishwasher")) return BlueDishwasherIcon;
+    
+    // Microwave variations
+    if (amenityLower.includes("microwave")) return BlueMicrowaveIcon;
+    
+    // Oven/Hob variations
+    if (amenityLower.includes("oven") || amenityLower.includes("hob")) return BlueOvenIcon;
+    
+    // Fridge variations
+    if (amenityLower.includes("fridge") || amenityLower.includes("freezer")) return BlueFridgeIcon;
+    
+    // Dryer variations
+    if (amenityLower.includes("dryer") || amenityLower.includes("washer-dryer")) return BlueDryerIcon;
+    
+    // Flooring variations: "wooden flooring", "carpet flooring", "flooring"
+    if (amenityLower.includes("flooring") || amenityLower.includes("floor")) return BlueFlooringIcon;
+    
+    // Smoke alarm variations
+    if (amenityLower.includes("smoke alarm") || amenityLower.includes("smoke")) return BlueSmokeAlarmIcon;
+    
+    // CCTV variations
+    if (amenityLower.includes("cctv") || amenityLower.includes("camera")) return BlueCCTVIcon;
+    
+    // Recycling variations
+    if (amenityLower.includes("recycling") || amenityLower.includes("bin")) return BlueRecyclingIcon;
+    
+    // Sprinkler variations
+    if (amenityLower.includes("sprinkler")) return BlueSprinklerIcon;
+    
+    // Certificate variations: "gas safety certificate", "electrical safety certificate", "certificate"
+    if (amenityLower.includes("certificate") || amenityLower.includes("safety")) return BlueCertificateIcon;
+    
+    // EV charging variations
+    if (amenityLower.includes("ev charging") || amenityLower.includes("charging point")) return BlueEVChargingIcon;
+    
+    // TV point variations
+    if (amenityLower.includes("tv point") || amenityLower.includes("tv")) return BlueTVIcon;
+    
+    // House/Home/Garage variations
+    if (amenityLower.includes("garage") || amenityLower.includes("house") || amenityLower.includes("home")) {
+      return BlueHouseIcon;
+    }
+    
+    // Building/Apartment/Lift variations
+    if (amenityLower.includes("apartment") || amenityLower.includes("building") || amenityLower.includes("lift")) {
+      return ApartmentIcon;
+    }
+    
+    // Storage/Pantry variations
+    if (amenityLower.includes("storage") || amenityLower.includes("pantry") || amenityLower.includes("bicycle storage")) {
+      return GrayBuildingIcon;
+    }
+    
     // Return dummy icon for amenities without specific icon
     return DummyAmenityIcon;
   };
 
   // Get utility icon
   const getUtilityIcon = (utility) => {
-    if (utility.value === "electricity") return OrangeElectrityIcon;
-    if (utility.value === "gas") return OrangeGasIcon;
+    // Handle both object format {value, label} and string format
+    const utilityValue = typeof utility === 'string' 
+      ? utility.toLowerCase() 
+      : (utility?.value || utility?.label || '').toLowerCase();
+    
+    if (utilityValue === "electricity") return OrangeElectrityIcon;
+    if (utilityValue === "gas") return OrangeGasIcon;
+    if (utilityValue === "water") return OrangeWaterIcon;
+    if (utilityValue === "internet") return OrangeInternetIcon;
     // Return dummy icon for utilities without specific icon
     return DummyUtilityIcon;
   };
@@ -388,10 +498,12 @@ function ReviewStep({ formData }) {
               <div className="flex items-start md:items-center gap-4 md:flex-wrap flex-col md:flex-row">
                 {formData.amenities.map((amenity, index) => {
                   const Icon = getAmenityIcon(amenity);
+                  // Ensure Icon is always a component (not null)
+                  const IconComponent = Icon || DummyAmenityIcon;
                   return (
                     <div key={index} className="flex items-center gap-3">
                       <span className="bg-[#E8E2FF] w-[36px] h-[36px] rounded-[10px] flex items-center justify-center">
-                        <Icon />
+                        <IconComponent />
                       </span>
                       <span className="text-base font-normal font-nunito text-secondary">
                         {amenity}
@@ -413,18 +525,26 @@ function ReviewStep({ formData }) {
                 {formData.utilities
                   .filter((u) => u)
                   .map((utility, index) => {
+                    // Handle both string and object formats
+                    const utilityValue = typeof utility === 'string' ? utility : utility?.value || utility?.label;
                     const utilityObj =
-                      utilitiesList.find((u) => u.value === utility) ||
-                      utilitiesList.find((u) => u.label === utility);
+                      utilitiesList.find((u) => u.value === utilityValue || u.value === utility) ||
+                      utilitiesList.find((u) => u.label === utilityValue || u.label === utility) ||
+                      (typeof utility === 'string' ? { value: utility.toLowerCase(), label: utility } : utility);
+                    
                     if (!utilityObj) return null;
                     const Icon = getUtilityIcon(utilityObj);
+                    // Ensure Icon is always a component (not null)
+                    const IconComponent = Icon || DummyUtilityIcon;
+                    const displayLabel = utilityObj.label || utilityObj.value || utility;
+                    
                     return (
                       <div key={index} className="flex items-center gap-2">
                         <span className="bg-[#FFF5CC] w-[36px] h-[36px] rounded-[10px] flex items-center justify-center">
-                          <Icon />
+                          <IconComponent />
                         </span>
                         <span className="text-base font-normal font-nunito text-secondary">
-                          {utilityObj.label}
+                          {displayLabel}
                         </span>
                       </div>
                     );
@@ -545,28 +665,23 @@ function ReviewStep({ formData }) {
               Preferred Renter Type
             </h4>
             <div className="flex items-start md:items-center gap-2 md:gap-6  md:flex-wrap flex-col md:flex-row">
-              {preferredRenterTypeOptions.map((option) => {
+              {/* Only show selected preferred renter types */}
+              {formData.preferredRenterTypes.map((selectedValue) => {
+                const option = preferredRenterTypeOptions.find(opt => opt.value === selectedValue);
+                if (!option) return null;
+                
                 const Icon = getPreferredRenterIcon(option.value);
-                const isSelected = formData.preferredRenterTypes && formData.preferredRenterTypes.includes(option.value);
                 return (
                   <div
                     key={option.value}
-                    className={`flex items-center gap-2 py-1 md:py-3 transition-colors ${
-                      isSelected ? "opacity-100" : "opacity-40"
-                    }`}
+                    className="flex items-center gap-2 py-1 md:py-3 transition-colors"
                   >
                     {Icon && (
-                      <span className={`w-[36px] h-[36px] rounded-[10px] flex items-center justify-center ${
-                        isSelected ? "bg-[#FFDDEE]" : "bg-gray-100"
-                      }`}>
+                      <span className="w-[36px] h-[36px] rounded-[10px] flex items-center justify-center bg-[#FFDDEE]">
                         <Icon />
                       </span>
                     )}
-                    <span
-                      className={`text-base font-normal font-nunito ${
-                        isSelected ? "text-secondary font-semibold" : "text-darkGray"
-                      }`}
-                    >
+                    <span className="text-base font-normal font-nunito text-secondary">
                       {option.label}
                     </span>
                   </div>

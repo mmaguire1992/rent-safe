@@ -23,6 +23,7 @@ function EditProfileSection() {
   const [proofOfAddressDocuments, setProofOfAddressDocuments] = useState([]);
   const [paySlipDocuments, setPaySlipDocuments] = useState([]);
   const [otherDocuments, setOtherDocuments] = useState([]);
+  const [documentSectionDocuments, setDocumentSectionDocuments] = useState([]);
   
   // Function to reload user profile and documents
   const reloadUserDataAndDocuments = async () => {
@@ -100,33 +101,38 @@ function EditProfileSection() {
             return docGroup && docGroup.docs ? docGroup.docs : [];
           };
           
-          // Load identity documents (identity_proof, passport, driving_license, national_id)
-          let identityDocs = [];
-          const identityDocTypes = ['identity_proof', 'passport', 'driving_license', 'national_id'];
-          identityDocTypes.forEach(docType => {
-            const docs = getDocumentsByType(docType);
-            identityDocs = [...identityDocs, ...docs];
-          });
-          setIdentityDocuments(identityDocs);
-          
-          // Load proof of address documents
-          const proofOfAddressDocs = getDocumentsByType('proof_of_address');
-          setProofOfAddressDocuments(proofOfAddressDocs);
-          
-          // Load pay slip documents
-          const paySlipDocs = getDocumentsByType('pay_slip');
-          setPaySlipDocuments(paySlipDocs);
-          
-          // Load other documents (for guarantor section)
-          const otherDocs = getDocumentsByType('other');
-          setOtherDocuments(otherDocs);
-          
-          console.log('Reloaded documents:', {
-            identity: identityDocs.length,
-            proofOfAddress: proofOfAddressDocs.length,
-            paySlip: paySlipDocs.length,
-            other: otherDocs.length,
-          });
+            // Load identity documents (only identity_proof, not passport/driving_license/national_id)
+            const identityDocs = getDocumentsByType('identity_proof');
+            setIdentityDocuments(identityDocs);
+            
+            // Load documents section documents (passport, driving_license, national_id)
+            let docSectionDocs = [];
+            const docSectionTypes = ['passport', 'driving_license', 'national_id'];
+            docSectionTypes.forEach(docType => {
+              const docs = getDocumentsByType(docType);
+              docSectionDocs = [...docSectionDocs, ...docs];
+            });
+            setDocumentSectionDocuments(docSectionDocs);
+            
+            // Load proof of address documents
+            const proofOfAddressDocs = getDocumentsByType('proof_of_address');
+            setProofOfAddressDocuments(proofOfAddressDocs);
+            
+            // Load pay slip documents
+            const paySlipDocs = getDocumentsByType('pay_slip');
+            setPaySlipDocuments(paySlipDocs);
+            
+            // Load other documents (for guarantor section)
+            const otherDocs = getDocumentsByType('other');
+            setOtherDocuments(otherDocs);
+            
+            console.log('Reloaded documents:', {
+              identity: identityDocs.length,
+              documentSection: docSectionDocs.length,
+              proofOfAddress: proofOfAddressDocs.length,
+              paySlip: paySlipDocs.length,
+              other: otherDocs.length,
+            });
         }
       }
     } catch (error) {
@@ -245,12 +251,198 @@ function EditProfileSection() {
     },
   ]);
 
+  const [errors, setErrors] = useState({});
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Fields that should only accept numbers
+    const numericFields = ['creditScore', 'annualSalary', 'grossMonthly', 'netMonthly', 'monthlyIncome'];
+    // Phone number fields - should only accept numbers and formatting characters
+    const phoneFields = ['phoneNumber', 'identityPhone', 'guarantorPhone'];
+    // Postcode fields - UK postcodes can contain letters and numbers
+    const postcodeFields = ['postcode', 'currentPostcode'];
+    
+    let processedValue = value;
+    
+    if (numericFields.includes(name)) {
+      // Check if original value contains non-numeric characters
+      if (value && /[^0-9.]/.test(value)) {
+        const fieldLabel = name === 'creditScore' ? 'Credit score' : 
+                          name === 'annualSalary' ? 'Annual salary' :
+                          name === 'grossMonthly' ? 'Gross monthly' :
+                          name === 'netMonthly' ? 'Net monthly' :
+                          'Monthly income';
+        setErrors((prev) => ({
+          ...prev,
+          [name]: `${fieldLabel} must contain only numbers`,
+        }));
+      } else {
+        // Clear error if valid
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+      // Allow only numbers and decimal point (for salary/income fields)
+      if (name === 'creditScore') {
+        processedValue = value.replace(/[^0-9]/g, '');
+      } else {
+        // For salary/income fields, allow numbers and one decimal point
+        processedValue = value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+      }
+    } else if (phoneFields.includes(name)) {
+      // Check if original value contains alphabetic characters
+      if (value && /[a-zA-Z]/.test(value)) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: 'Phone number must contain only numbers and formatting characters (+, -, spaces, parentheses)',
+        }));
+      } else {
+        // Clear error if valid
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+      // Allow only numbers and common phone formatting characters
+      processedValue = value.replace(/[^0-9+\-().\s]/g, '');
+    } else if (postcodeFields.includes(name)) {
+      // Allow only letters, numbers and spaces (UK postcode style). Disallow other special chars.
+      if (value && /[^a-zA-Z0-9\s]/.test(value)) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: 'Postcode can contain only letters and numbers',
+        }));
+      } else {
+        // Clear error if valid
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+      // Keep only letters/numbers/spaces and normalize to uppercase
+      processedValue = value.replace(/[^a-zA-Z0-9\s]/g, '').toUpperCase();
+    }
+    
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: processedValue };
+      // Keep designation and jobTitle in sync
+      if (name === 'designation') {
+        updated.jobTitle = processedValue;
+      } else if (name === 'jobTitle') {
+        updated.designation = processedValue;
+      }
+      
+      // Validate gross vs net salary
+      if (name === 'grossMonthly' || name === 'netMonthly') {
+        const grossValue = name === 'grossMonthly' ? processedValue : updated.grossMonthly;
+        const netValue = name === 'netMonthly' ? processedValue : updated.netMonthly;
+        
+        // Only validate if both values are provided and are valid numbers
+        if (grossValue && netValue) {
+          const grossNum = parseFloat(grossValue);
+          const netNum = parseFloat(netValue);
+          
+          if (!isNaN(grossNum) && !isNaN(netNum)) {
+            if (grossNum < netNum) {
+              setErrors((prev) => ({
+                ...prev,
+                grossMonthly: 'Gross monthly salary cannot be less than net monthly salary',
+                netMonthly: 'Net monthly salary cannot be greater than gross monthly salary',
+              }));
+            } else {
+              // Clear errors if validation passes
+              setErrors((prev) => {
+                const newErrors = { ...prev };
+                // Only clear the specific validation error
+                if (newErrors.grossMonthly === 'Gross monthly salary cannot be less than net monthly salary') {
+                  delete newErrors.grossMonthly;
+                }
+                if (newErrors.netMonthly === 'Net monthly salary cannot be greater than gross monthly salary') {
+                  delete newErrors.netMonthly;
+                }
+                return newErrors;
+              });
+            }
+          }
+        } else {
+          // Clear validation errors if one field is empty
+          setErrors((prev) => {
+            const newErrors = { ...prev };
+            if (newErrors.grossMonthly === 'Gross monthly salary cannot be less than net monthly salary') {
+              delete newErrors.grossMonthly;
+            }
+            if (newErrors.netMonthly === 'Net monthly salary cannot be greater than gross monthly salary') {
+              delete newErrors.netMonthly;
+            }
+            return newErrors;
+          });
+        }
+      }
+      
+      return updated;
+    });
   };
 
   const handleDateChange = (name, value) => {
+    // Defensive validation for date fields (even though UI calendar constrains selection)
+    if (name === 'dateOfBirth' && value) {
+      const selected = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      selected.setHours(0, 0, 0, 0);
+
+      // Must not be in the future
+      if (!isNaN(selected.getTime()) && selected.getTime() > today.getTime()) {
+        setErrors((prev) => ({ ...prev, dateOfBirth: 'Date of birth cannot be a future date' }));
+      } else {
+        // Must be at least 18 years old
+        const eighteenYearsAgo = new Date(today);
+        eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
+        eighteenYearsAgo.setHours(0, 0, 0, 0);
+
+        if (!isNaN(selected.getTime()) && selected.getTime() > eighteenYearsAgo.getTime()) {
+          setErrors((prev) => ({ ...prev, dateOfBirth: 'DOB cannot be less than 18 years' }));
+        } else {
+          setErrors((prev) => {
+            const next = { ...prev };
+            if (next.dateOfBirth === 'Date of birth cannot be a future date') delete next.dateOfBirth;
+            if (next.dateOfBirth === 'DOB cannot be less than 18 years') delete next.dateOfBirth;
+            return next;
+          });
+        }
+      }
+    }
+
+    if (name === 'documentExpire' && value) {
+      setFormData((prev) => {
+        const next = { ...prev, [name]: value };
+
+        // Expiry date must never be in the past (Passport / Driving License / ID Card)
+        const selected = new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        selected.setHours(0, 0, 0, 0);
+
+        if (!isNaN(selected.getTime()) && selected.getTime() < today.getTime()) {
+          setErrors((prevErr) => ({ ...prevErr, documentExpire: 'Expiry date cannot be in the past' }));
+        } else {
+          setErrors((prevErr) => {
+            const nextErr = { ...prevErr };
+            if (nextErr.documentExpire === 'Expiry date cannot be in the past') delete nextErr.documentExpire;
+            return nextErr;
+          });
+        }
+
+        return next;
+      });
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -330,7 +522,7 @@ function EditProfileSection() {
             county: address.county || "",
             country: address.country || "",
             postcode: address.postcode || "",
-            designation: "",
+            designation: employment.jobTitle || "",
             monthlyIncome: employment.monthlyIncome || "",
             
             // Credit Check
@@ -401,14 +593,18 @@ function EditProfileSection() {
               return docGroup && docGroup.docs ? docGroup.docs : [];
             };
             
-            // Load identity documents (identity_proof, passport, driving_license, national_id)
-            let identityDocs = [];
-            const identityDocTypes = ['identity_proof', 'passport', 'driving_license', 'national_id'];
-            identityDocTypes.forEach(docType => {
-              const docs = getDocumentsByType(docType);
-              identityDocs = [...identityDocs, ...docs];
-            });
+            // Load identity documents (only identity_proof, not passport/driving_license/national_id)
+            const identityDocs = getDocumentsByType('identity_proof');
             setIdentityDocuments(identityDocs);
+            
+            // Load documents section documents (passport, driving_license, national_id)
+            let docSectionDocs = [];
+            const docSectionTypes = ['passport', 'driving_license', 'national_id'];
+            docSectionTypes.forEach(docType => {
+              const docs = getDocumentsByType(docType);
+              docSectionDocs = [...docSectionDocs, ...docs];
+            });
+            setDocumentSectionDocuments(docSectionDocs);
             
             // Load proof of address documents
             const proofOfAddressDocs = getDocumentsByType('proof_of_address');
@@ -443,19 +639,42 @@ function EditProfileSection() {
 
   const handleRemoveProfilePicture = async () => {
     try {
+      // Check if the image is from backend (URL string) or frontend preview (File or blob URL)
+      const isBackendImage = formData.profileImage && 
+                            typeof formData.profileImage === 'string' && 
+                            !formData.profileImage.startsWith('blob:') &&
+                            (formData.profileImage.startsWith('http://') || formData.profileImage.startsWith('https://'));
+      
+      const isFileObject = formData.profileImage instanceof File;
+      const isBlobPreview = typeof formData.profileImage === 'string' && formData.profileImage.startsWith('blob:');
+      
+      // Only call API if it's a backend image (uploaded to S3)
+      if (isBackendImage) {
+        // Image is from backend - call API to delete from S3
       await deleteProfilePicture();
       toast.success('Profile picture removed successfully');
       
-      // Clear profile image from form data
-      setFormData((prev) => ({ ...prev, profileImage: null }));
-      
       // Refresh user data to get updated profile
       const updatedUserData = await getCurrentUser();
+      const newProfileImage = updatedUserData?.userInfo?.profileImage || null;
       if (updatedUserData?.userInfo) {
         setFormData((prev) => ({ 
           ...prev, 
-          profileImage: updatedUserData.userInfo?.profileImage || null 
+          profileImage: newProfileImage 
         }));
+      }
+        
+      // Dispatch custom event to notify header/sidebar to refresh profile image
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('profileImageUpdated'));
+      }, 100);
+      } else if (isFileObject || isBlobPreview) {
+        // Image is just a frontend preview - just remove from state
+        setFormData((prev) => ({ ...prev, profileImage: null }));
+        toast.success('Profile picture preview removed');
+      } else {
+        // No image to remove
+        setFormData((prev) => ({ ...prev, profileImage: null }));
       }
     } catch (error) {
       console.error('Error removing profile picture:', error);
@@ -512,6 +731,11 @@ function EditProfileSection() {
         const updatedUserData = await getCurrentUser();
         if (updatedUserData?.userInfo?.profileImage) {
           setFormData((prev) => ({ ...prev, profileImage: updatedUserData.userInfo.profileImage }));
+          // Dispatch custom event to notify header/sidebar to refresh profile image
+          // Use a small delay to ensure the server has processed the upload
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('profileImageUpdated'));
+          }, 100);
         }
       }
       
@@ -541,7 +765,7 @@ function EditProfileSection() {
             livingPeriod: formData.residencyLength || "",
           },
           employment: {
-            jobTitle: formData.jobTitle || "",
+            jobTitle: formData.designation || formData.jobTitle || "",
             company: formData.company || "",
             employmentType: formData.employmentType || undefined,
             annualSalary: formData.annualSalary ? parseFloat(formData.annualSalary) : undefined,
@@ -570,8 +794,25 @@ function EditProfileSection() {
       
     } catch (error) {
       console.error('Error saving profile:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to save profile';
+      
+      // Extract validation errors from different possible locations
+      const validationErrors = error.validationErrors || 
+                              error.response?.data?.errors || 
+                              (Array.isArray(error.response?.data?.errors) ? error.response.data.errors : null);
+      
+      // Display only the first validation error (one toast at a time)
+      if (validationErrors && Array.isArray(validationErrors) && validationErrors.length > 0) {
+        const firstError = validationErrors[0];
+        // Show just the error message, not the field name for cleaner UX
+        toast.error(firstError.message || 'Validation failed');
+      } else {
+        // Display generic error message
+        const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.message || 
+                           error.message || 
+                           'Failed to save profile';
       toast.error(errorMessage);
+      }
     } finally {
       setSaving(false);
     }
@@ -593,9 +834,10 @@ function EditProfileSection() {
         handleChange={handleChange}
         handleImageUpload={handleImageUpload}
         onRemoveProfilePicture={handleRemoveProfilePicture}
+        errors={errors}
       />
 
-      <CreditCheckSection formData={formData} handleChange={handleChange} />
+      <CreditCheckSection formData={formData} handleChange={handleChange} errors={errors} />
 
       <IdentityInformationSection
         formData={formData}
@@ -603,6 +845,7 @@ function EditProfileSection() {
         handleDateChange={handleDateChange}
         existingDocuments={identityDocuments}
         onDocumentsUpdated={reloadDocuments}
+        errors={errors}
       />
 
       <CurrentAddressSection 
@@ -610,6 +853,7 @@ function EditProfileSection() {
         handleChange={handleChange}
         existingDocuments={proofOfAddressDocuments}
         onDocumentsUpdated={reloadUserDataAndDocuments}
+        errors={errors}
       />
 
       <EmploymentDetailsSection
@@ -618,6 +862,7 @@ function EditProfileSection() {
         handleDateChange={handleDateChange}
         handleDropdownChange={handleDropdownChange}
         employmentTypeOptions={employmentTypeOptions}
+        errors={errors}
       />
 
       <ProofOfIncomeSection
@@ -628,6 +873,7 @@ function EditProfileSection() {
         incomeTypeOptions={incomeTypeOptions}
         existingDocuments={paySlipDocuments}
         onDocumentsUpdated={reloadUserDataAndDocuments}
+        errors={errors}
       />
 
       <DocumentsSection
@@ -637,6 +883,8 @@ function EditProfileSection() {
         handleDropdownChange={handleDropdownChange}
         documentTypeOptions={documentTypeOptions}
         onDocumentsUpdated={reloadUserDataAndDocuments}
+        existingDocuments={documentSectionDocuments}
+        errors={errors}
       />
 
       <ReferencesSection

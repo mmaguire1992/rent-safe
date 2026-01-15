@@ -4,7 +4,11 @@ import SuccessfullyCheck from "@/svg/successfullyCheck";
 import GreenCheckedIcon from "../../../svg/greenCheckedIcon";
 import GreenCheckIcon from "../../../svg/greenCheckIcon";
 import GreenRoundCheckIcon from "../../../svg/websiteSvg/greenRoundCheckIcon";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+
 function ContactOwnerModal({ isOpen, onClose, onVerify, onCancel }) {
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   return (

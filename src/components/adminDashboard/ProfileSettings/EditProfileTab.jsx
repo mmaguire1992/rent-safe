@@ -112,6 +112,13 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
     if (fileList && fileList.length > 0) {
       const file = fileList[0];
       
+      // Validate that it's actually a File object
+      if (!(file instanceof File)) {
+        toast.error('Invalid file: Please select a valid image file.');
+        if (files?.target) files.target.value = '';
+        return;
+      }
+      
       // Validate file type
       const validTypes = ['image/heic', 'image/webp', 'image/png', 'image/jpeg', 'image/jpg'];
       const fileType = file.type.toLowerCase();
@@ -144,6 +151,18 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
 
   const handleRemoveProfilePicture = async () => {
     try {
+      // Check if the image is from backend (URL string) or frontend preview (File or blob URL)
+      const isBackendImage = imagePreview && 
+                            typeof imagePreview === 'string' && 
+                            !imagePreview.startsWith('blob:') &&
+                            (imagePreview.startsWith('http://') || imagePreview.startsWith('https://'));
+      
+      const isFileObject = profileImage instanceof File;
+      const isBlobPreview = imagePreview && typeof imagePreview === 'string' && imagePreview.startsWith('blob:');
+      
+      // Only call API if it's a backend image (uploaded to S3)
+      if (isBackendImage) {
+        // Image is from backend - call API to delete from S3
       await deleteProfilePicture();
       toast.success('Profile picture removed successfully');
       
@@ -154,8 +173,27 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
       // Refresh user data to get updated profile
       const updatedUserData = await getCurrentUser();
       if (updatedUserData?.userInfo) {
-        // Update profileData if parent component provides a callback
-        // For now, just clear the local state
+          // Update with latest data from backend
+          const newProfileImage = updatedUserData.userInfo.profileImage || null;
+          if (typeof newProfileImage === 'string') {
+            setProfileImage(null);
+            setImagePreview(newProfileImage);
+          } else {
+            setProfileImage(null);
+            setImagePreview(null);
+          }
+        }
+      } else if (isFileObject || isBlobPreview) {
+        // Image is just a frontend preview - just remove from state (don't call API)
+        setProfileImage(null);
+        // Revoke blob URL to free memory
+        if (isBlobPreview && imagePreview) {
+          URL.revokeObjectURL(imagePreview);
+        }
+        setImagePreview(null);
+        toast.success('Profile picture preview removed');
+      } else {
+        // No image to remove
         setProfileImage(null);
         setImagePreview(null);
       }
@@ -170,6 +208,13 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    
+    // Ensure we're passing a File object, not a blob URL
+    if (profileImage && typeof profileImage === 'string' && profileImage.startsWith('blob:')) {
+      toast.error('Invalid file: Please select the image file again.');
+      return;
+    }
+    
     onSave({ ...formData, profileImage });
   };
 
@@ -259,7 +304,11 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
             name="fullName"
             value={formData.fullName}
             onChange={handleInputChange}
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              fieldErrors.fullName
+                ? "border-errorColor focus:border-errorColor"
+                : "border-lightGray"
+            }`}
             placeholder="Enter your full name"
           />
           {fieldErrors.fullName ? (
@@ -301,7 +350,11 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
               name="phoneNumber"
               value={formData.phoneNumber}
               onChange={handleInputChange}
-              className="flex-1 px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+              className={`flex-1 px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+                fieldErrors.phoneNumber
+                  ? "border-errorColor focus:border-errorColor"
+                  : "border-lightGray"
+              }`}
               placeholder="Enter your phone number"
             />
             {isMounted && !profileData?.isPhoneVerified && (

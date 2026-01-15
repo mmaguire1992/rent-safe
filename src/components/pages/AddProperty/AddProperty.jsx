@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from '@/lib/react-router-compat';
 import { useDispatch, useSelector } from 'react-redux';
 import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
@@ -15,25 +15,38 @@ import AmenitiesUtilitiesStep from "@/components/adminDashboard/AddProperty/Amen
 import UploadImagesStep from "@/components/adminDashboard/AddProperty/UploadImagesStep";
 import RenterDescriptionStep from "@/components/adminDashboard/AddProperty/RenterDescriptionStep";
 import ReviewStep from "@/components/adminDashboard/AddProperty/ReviewStep";
+import VerificationSubscriptionModal from "@/components/common/VerificationSubscriptionModal";
 import { addPropertySteps, amenitiesList } from "@/constant";
 import { createNewProperty } from '@/redux/slices/propertySlice';
 import { uploadMultiplePropertyMedia } from '@/api/properties';
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { useAuth } from "@/context/AuthContext";
+import { getCurrentUser } from "@/api/users";
+import { getCurrentSubscription } from "@/api/subscriptions";
 
 function AddProperty() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { creating, error: propertyError } = useSelector((state) => state.property);
+  const { user, userType } = useAuth();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [showAIModal, setShowAIModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [needsSubscription, setNeedsSubscription] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  // Store fetched data to pass to modal (prevents duplicate API calls)
+  const [userData, setUserData] = useState(null);
+  const [subscriptionData, setSubscriptionData] = useState(null);
   const [aiDescription, setAiDescription] = useState("");
   const [createdPropertyId, setCreatedPropertyId] = useState(null);
   const [submitError, setSubmitError] = useState(null);
   const [isDescriptionAIGenerated, setIsDescriptionAIGenerated] = useState(false);
   const [stepErrors, setStepErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false); // Track entire submission process (property + media)
   const [formData, setFormData] = useState({
     propertyTitle: "",
     propertyType: "",
@@ -59,6 +72,62 @@ function AddProperty() {
     additionalRequirements: "",
     coordinates: [], // [longitude, latitude]
   });
+
+  // Check verification and subscription status on mount
+  useEffect(() => {
+    const checkAccess = async () => {
+      // Only check for owners
+      if (userType !== 'owner') {
+        setCheckingAccess(false);
+        return;
+      }
+
+      try {
+        // Fetch fresh user data (includes subscriptionId)
+        const fetchedUserData = await getCurrentUser();
+        setUserData(fetchedUserData);
+        
+        // Check verification status from userData
+        const isVerified = fetchedUserData?.userInfo?.verificationStatus === 'verified';
+        setNeedsVerification(!isVerified);
+
+        // Check subscription status
+        let subscription = null;
+        let hasActiveSubscription = false;
+        try {
+          subscription = await getCurrentSubscription();
+          setSubscriptionData(subscription);
+          // Check if subscription exists and is active with remaining properties
+          // Handle both 'active' and 'activate' status (backend may use 'activate')
+          const isActiveStatus = subscription.status === 'active' || subscription.status === 'activate';
+          if (subscription && 
+              isActiveStatus && 
+              subscription.remainingProperties !== undefined && 
+              subscription.remainingProperties > 0) {
+            hasActiveSubscription = true;
+          }
+        } catch (error) {
+          // If 404, no subscription exists
+          if (error.response?.status !== 404) {
+            console.error('Error checking subscription:', error);
+          }
+          setSubscriptionData(null);
+        }
+        setNeedsSubscription(!hasActiveSubscription);
+
+        // Show modal if user needs verification or subscription
+        if (!isVerified || !hasActiveSubscription) {
+          setShowVerificationModal(true);
+        }
+      } catch (error) {
+        console.error('Error checking verification and subscription:', error);
+      } finally {
+        setCheckingAccess(false);
+      }
+    };
+
+    checkAccess();
+  }, [userType, user?.id]);
 
   // Helper function to map frontend amenities to backend format
   const mapAmenityToBackend = (amenity) => {
@@ -204,7 +273,7 @@ function AddProperty() {
       utilitiesIncluded: utilitiesIncluded,
       idealRenterProfile: idealRenterProfile || undefined,
       descriptionSource: isDescriptionAIGenerated ? "ai" : "manual",
-      status: "draft", // Default to draft
+      status: "pending_approval", // Default to pending approval
       address: {
         address: data.address.trim(),
         city: data.city.trim(),
@@ -221,7 +290,8 @@ function AddProperty() {
   
   // Validate step 1 (Basic Information)
   const validateStep1 = () => {
-    const errors = {};
+    const errors = { ...stepErrors }; // Preserve existing errors from BasicInfoStep
+    
     if (!formData.propertyTitle || !formData.propertyTitle.trim()) {
       errors.propertyTitle = "Property Title is required";
     }
@@ -231,12 +301,43 @@ function AddProperty() {
     if (!formData.propertyDescription || !formData.propertyDescription.trim()) {
       errors.propertyDescription = "Property Description is required";
     }
-    if (!formData.bedrooms || formData.bedrooms === "" || parseInt(formData.bedrooms) < 0) {
+    
+    // Validate bedrooms - check original input if available, otherwise check cleaned value
+    const bedroomsOriginal = formData.bedroomsOriginal || formData.bedrooms;
+    if (!formData.bedrooms || formData.bedrooms === "") {
       errors.bedrooms = "Bedrooms is required";
+    } else {
+      // Check if original input had invalid characters (before cleaning)
+      const originalValue = bedroomsOriginal.toString().trim();
+      if (originalValue !== "" && !/^\d+$/.test(originalValue)) {
+        errors.bedrooms = "Please enter a valid bedroom number";
+      } else {
+        // Check if cleaned value is valid
+        const isValidNumber = /^\d+$/.test(formData.bedrooms.toString().trim());
+        if (!isValidNumber || parseInt(formData.bedrooms) < 0) {
+          errors.bedrooms = "Please enter a valid bedroom number";
+        }
+      }
     }
-    if (!formData.bathrooms || formData.bathrooms === "" || parseInt(formData.bathrooms) < 0) {
+    
+    // Validate bathrooms - check original input if available, otherwise check cleaned value
+    const bathroomsOriginal = formData.bathroomsOriginal || formData.bathrooms;
+    if (!formData.bathrooms || formData.bathrooms === "") {
       errors.bathrooms = "Bathrooms is required";
+    } else {
+      // Check if original input had invalid characters (before cleaning)
+      const originalValue = bathroomsOriginal.toString().trim();
+      if (originalValue !== "" && !/^\d+$/.test(originalValue)) {
+        errors.bathrooms = "Please enter a valid bathroom number";
+      } else {
+        // Check if cleaned value is valid
+        const isValidNumber = /^\d+$/.test(formData.bathrooms.toString().trim());
+        if (!isValidNumber || parseInt(formData.bathrooms) < 0) {
+          errors.bathrooms = "Please enter a valid bathroom number";
+        }
+      }
     }
+    
     return errors;
   };
 
@@ -368,30 +469,34 @@ function AddProperty() {
   const handleSubmit = async () => {
     try {
       setSubmitError(null);
+      setIsSubmitting(true); // Start loading state
       
       // Validate required fields
       if (!formData.propertyTitle || !formData.propertyType || !formData.propertyDescription) {
         setSubmitError("Please fill in all required fields in Basic Information step.");
         setCurrentStep(1);
+        setIsSubmitting(false);
         return;
       }
       
       if (!formData.address || !formData.city || !formData.postcode) {
         setSubmitError("Please fill in all required fields in Location step.");
         setCurrentStep(2);
+        setIsSubmitting(false);
         return;
       }
       
       if (!formData.monthlyRent) {
         setSubmitError("Please fill in monthly rent in Rent Details step.");
         setCurrentStep(3);
+        setIsSubmitting(false);
         return;
       }
 
       // Transform form data to API format
       const apiData = transformFormDataToAPI(formData);
       
-      // Dispatch Redux action to create property
+      // Step 1: Create property first
       const result = await dispatch(createNewProperty(apiData)).unwrap();
       
       // Get property ID from response
@@ -404,72 +509,86 @@ function AddProperty() {
 
       setCreatedPropertyId(propertyId);
 
-      // Upload media files if any images/videos are selected
+      // Step 2: Upload media files if any images/videos are selected
+      let mediaUploadSuccess = true;
+      let mediaUploadError = null;
+      
       if (formData.images && formData.images.length > 0) {
         try {
-          // Filter only image and video files
+          // Filter only valid image files (strict validation)
+          const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
           const mediaFiles = formData.images
             .map((img) => img.file)
             .filter((file) => {
               if (!file || !(file instanceof File)) return false;
               const fileType = file.type.toLowerCase();
-              return fileType.startsWith("image/") || fileType.startsWith("video/");
+              // Only accept specific image types that API supports
+              return allowedImageTypes.includes(fileType);
             });
 
-          if (mediaFiles.length > 0) {
-            // Separate images and videos
-            const imageFiles = mediaFiles.filter((file) =>
-              file.type.toLowerCase().startsWith("image/")
-            );
-            const videoFiles = mediaFiles.filter((file) =>
-              file.type.toLowerCase().startsWith("video/")
-            );
+          // Check if any files were filtered out
+          const invalidFiles = formData.images
+            .map((img) => img.file)
+            .filter((file) => {
+              if (!file || !(file instanceof File)) return true;
+              const fileType = file.type.toLowerCase();
+              return !allowedImageTypes.includes(fileType);
+            });
 
-            // Upload images first (if any)
-            if (imageFiles.length > 0) {
+          if (invalidFiles.length > 0) {
+            const fileNames = invalidFiles.map(f => f.name).join(', ');
+            throw new Error(`Invalid file types: ${fileNames}. Only JPG, PNG, GIF, and WEBP images are allowed.`);
+          }
+
+          if (mediaFiles.length > 0) {
+            // Upload images
               const imageFormData = new FormData();
-              imageFiles.forEach((file) => {
+            mediaFiles.forEach((file) => {
                 imageFormData.append("files", file);
               });
               imageFormData.append("mediaType", "image");
               // Set first image as primary
               imageFormData.append("isPrimary", "true");
+            
               await uploadMultiplePropertyMedia(propertyId, imageFormData);
-            }
-
-            // Upload videos (if any)
-            if (videoFiles.length > 0) {
-              const videoFormData = new FormData();
-              videoFiles.forEach((file) => {
-                videoFormData.append("files", file);
-              });
-              videoFormData.append("mediaType", "video");
-              // Don't set primary for videos if images exist
-              if (imageFiles.length === 0) {
-                videoFormData.append("isPrimary", "true");
-              }
-              await uploadMultiplePropertyMedia(propertyId, videoFormData);
-            }
+            mediaUploadSuccess = true;
           }
         } catch (mediaError) {
           console.error("Error uploading media:", mediaError);
-          // Don't fail the entire submission if media upload fails
-          // Property is already created, just show a warning
+          mediaUploadSuccess = false;
+          mediaUploadError = mediaError?.response?.data?.error || 
+                           mediaError?.message || 
+                           "Failed to upload media files";
+          
+          // If media upload fails, show error but don't prevent success modal
+          // User can upload media later
           setSubmitError(
-            "Property created successfully, but some media files failed to upload. You can upload them later."
+            `Property created successfully, but media upload failed: ${mediaUploadError}. You can upload media later from the property edit page.`
           );
         }
       }
 
-      // Show success modal
+      // Step 3: Only show success modal after both property creation AND media upload complete
+      // If media upload failed, still show success but with a note
+      if (mediaUploadSuccess || !formData.images || formData.images.length === 0) {
+        // All good - show success modal
+        setShowSuccessModal(true);
+      } else {
+        // Property created but media failed - still show success but with warning
+        // The error message is already set above
     setShowSuccessModal(true);
+      }
     } catch (error) {
       console.error("Error creating property:", error);
       setSubmitError(
+        error?.response?.data?.error ||
         error?.message || 
         error?.error?.message || 
         "Failed to create property. Please try again."
       );
+    } finally {
+      // Always stop loading state when done (success or error)
+      setIsSubmitting(false);
     }
   };
   const handleAddCharge = () => {
@@ -599,9 +718,37 @@ function AddProperty() {
     }
   };
 
+  // Show loading state while checking access
+  if (checkingAccess) {
+    return (
+      <DashboardLayout>
+        <div className="block">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#6B4EFF] border-t-transparent mb-4"></div>
+              <p className="text-darkGray">Checking access...</p>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="block">
+        <VerificationSubscriptionModal
+          isOpen={showVerificationModal}
+          onClose={() => {
+            setShowVerificationModal(false);
+            // Redirect back to dashboard if user closes modal
+            navigate('/dashboard');
+          }}
+          needsVerification={needsVerification}
+          needsSubscription={needsSubscription}
+          userData={userData}
+          subscriptionData={subscriptionData}
+        />
         {/* Page Header */}
         <div className="mb-3">
           <h1 className="text-xl md:text-2xl font-bold text-secondary mb-0">
@@ -615,18 +762,7 @@ function AddProperty() {
         <ProgressIndicator steps={steps} currentStep={currentStep} />
 
         <div className="bg-white rounded-[20px] border border-lightGray p-4">
-          {renderStepContent()}
-
-          {/* Error Display */}
-          {(submitError || propertyError) && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">
-                {submitError || propertyError?.message || "An error occurred. Please try again."}
-              </p>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between mt-6   ">
+          <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => setShowCancelModal(true)}
               className="px-4 md:px-6 py-1.5 font-nunito border border-[#F1F1F1] rounded-[10px] text-base text-secondary font-bold bg-[#F1F1F1] transition-colors"
@@ -652,14 +788,35 @@ function AddProperty() {
               ) : (
                 <button
                   onClick={handleSubmit}
-                  disabled={creating}
-                  className="px-4 md:px-6 md:py-3 py-2 bg-[#6B4EFF] text-white rounded-lg font-semibold hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSubmitting || creating}
+                  className="px-4 md:px-6 md:py-3 py-2 bg-[#6B4EFF] text-white rounded-lg font-semibold hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 justify-center"
                 >
-                  {creating ? "Submitting..." : "Submit"}
+                  {isSubmitting || creating ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Creating Property & Uploading Media...</span>
+                    </>
+                  ) : (
+                    "Submit"
+                  )}
                 </button>
               )}
             </div>
           </div>
+
+          {renderStepContent()}
+
+          {/* Error Display */}
+          {(submitError || propertyError) && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">
+                {submitError || propertyError?.message || "An error occurred. Please try again."}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

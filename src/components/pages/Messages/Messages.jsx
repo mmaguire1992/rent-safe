@@ -9,10 +9,13 @@ import SendOfferModal from "@/components/adminDashboard/TenantProfile/SendOfferM
 import BlueSearchIcon from "@/svg/blueSearchIcon";
 import MediumCheckedIcon from "@/svg/mediumCheckedIcon";
 import ChatBlueStartIcon from "@/svg/chatBlueStartIcon";
+import RedCrossIcon from "@/svg/redCrossIcon";
 import { getChatrooms, getChatroomMessages, uploadChatMedia, updateChatroom } from "@/api/chat";
 import { getCurrentUser, getUserById } from "@/api/users";
 import { useSocket, SOCKET_EVENTS } from "@/hooks/useSocket";
 import { toast } from "react-toastify";
+import { useSelector } from 'react-redux';
+import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtils';
 
 function Messages() {
   const [chatrooms, setChatrooms] = useState([]);
@@ -28,6 +31,7 @@ function Messages() {
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const user = useSelector((state) => state.auth?.user);
   // Initialize activeTab from localStorage or default to "all"
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -47,6 +51,7 @@ function Messages() {
   const typingTimeoutRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const selectedConversationRef = useRef(null);
+  const hasManuallySelectedRef = useRef(false);
 
   const {
     isConnected,
@@ -59,7 +64,7 @@ function Messages() {
     on,
   } = useSocket();
 
-  // Fetch current user
+  // Fetch current user (fresh data for verification check)
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -91,7 +96,7 @@ function Messages() {
               lastMessage: null,
             };
           }
-          
+
           if (typeof chatroom.lastMessage === 'string') {
             return {
               ...chatroom,
@@ -101,14 +106,14 @@ function Messages() {
               },
             };
           }
-          
+
           if (typeof chatroom.lastMessage === 'object') {
             // Ensure it has a text property - check multiple possible fields
-            const text = chatroom.lastMessage.text || 
-                        chatroom.lastMessage.textDecrypted || 
-                        chatroom.lastMessage.textEncrypted || 
-                        '';
-            
+            const text = chatroom.lastMessage.text ||
+              chatroom.lastMessage.textDecrypted ||
+              chatroom.lastMessage.textEncrypted ||
+              '';
+
             return {
               ...chatroom,
               lastMessage: {
@@ -120,7 +125,7 @@ function Messages() {
               },
             };
           }
-          
+
           return {
             ...chatroom,
             lastMessage: null,
@@ -137,9 +142,9 @@ function Messages() {
     fetchChatrooms();
   }, []);
 
-  // Auto-select conversation if there's only one
+  // Auto-select conversation if there's only one (only on initial load)
   useEffect(() => {
-    if (chatrooms.length === 1 && !selectedConversation && currentUser && !loading) {
+    if (chatrooms.length === 1 && !selectedConversation && currentUser && !loading && !hasManuallySelectedRef.current) {
       const chatroom = chatrooms[0];
       // Normalize IDs for comparison
       const currentUserId = String(currentUser?._id || currentUser?.id || '');
@@ -258,7 +263,7 @@ function Messages() {
           return [...filtered, formattedMessage];
         });
         scrollToBottom();
-        
+
         // Update chatroom list with last message (for sender's own messages)
         const chatroomIdStr = String(message.chatroomId || message.chatroom?._id || message.chatroom?.id || '');
         if (chatroomIdStr && chatroomIdStr !== 'undefined' && chatroomIdStr !== 'null') {
@@ -280,9 +285,40 @@ function Messages() {
     // Listen for new chatrooms
     const unsubscribeNewChatroom = on(SOCKET_EVENTS.NEW_CHATROOM, (data) => {
       if (data && data.data) {
-        // Refresh chatrooms list
+        // Refresh chatrooms list with proper normalization
         getChatrooms().then(data => {
-          setChatrooms(data || []);
+          const normalizedChatrooms = (data || []).map(chatroom => {
+            if (!chatroom.lastMessage) {
+              return { ...chatroom, lastMessage: null };
+            }
+            if (typeof chatroom.lastMessage === 'string') {
+              return {
+                ...chatroom,
+                lastMessage: {
+                  text: chatroom.lastMessage,
+                  createdAt: chatroom.lastMessageAt,
+                },
+              };
+            }
+            if (typeof chatroom.lastMessage === 'object') {
+              const text = chatroom.lastMessage.text ||
+                chatroom.lastMessage.textDecrypted ||
+                chatroom.lastMessage.textEncrypted ||
+                '';
+              return {
+                ...chatroom,
+                lastMessage: {
+                  text: text,
+                  createdAt: chatroom.lastMessage.createdAt || chatroom.lastMessageAt,
+                  userId: chatroom.lastMessage.userId,
+                  type: chatroom.lastMessage.type || 'text',
+                  fileUrl: chatroom.lastMessage.fileUrl || null,
+                },
+              };
+            }
+            return { ...chatroom, lastMessage: null };
+          });
+          setChatrooms(normalizedChatrooms);
         }).catch(console.error);
       }
     });
@@ -462,6 +498,23 @@ function Messages() {
     const messageUserId = String(msg.userId?._id || msg.userId?.id || msg.userId || '');
     const isCurrentUser = currentUserId && messageUserId && currentUserId === messageUserId;
 
+    // Get verification status from message user (for renters - show cross icon if not verified)
+    const messageUser = msg.userId;
+    // Check verification status - handle populated userInfoId
+    let isVerified = false;
+    if (messageUser) {
+      if (messageUser.userType === 'owner') {
+        // Owners are always considered verified for display
+        isVerified = true;
+      } else if (messageUser.userType === 'renter') {
+        // For renters, check verification status from userInfoId
+        isVerified = messageUser?.userInfoId?.verificationStatus === 'verified' || false;
+      } else {
+        // If no userType or unknown type, assume verified (backward compatibility)
+        isVerified = true;
+      }
+    }
+
     return {
       id: msg._id || msg.id,
       message: msg.textDecrypted || msg.textEncrypted || msg.text || '',
@@ -477,6 +530,9 @@ function Messages() {
       type: msg.type || 'text',
       isRead: msg.isRead,
       isDelivered: msg.isDelivered,
+      // Verification status for renter messages (to show cross icon if not verified)
+      isVerified: isVerified,
+      senderUserType: messageUser?.userType || null,
       // Media fields
       fileUrl: msg.fileUrl || null,
       fileName: msg.fileName || null,
@@ -488,6 +544,9 @@ function Messages() {
   };
 
   const handleSelectConversation = (chatroom) => {
+    // Mark that user has manually selected a conversation
+    hasManuallySelectedRef.current = true;
+    
     // Normalize IDs for comparison
     const currentUserId = String(currentUser?._id || currentUser?.id || '');
     const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
@@ -497,25 +556,25 @@ function Messages() {
 
     // Determine block status using timestamp fields (handles mutual blocking)
     const isCurrentUserUserId = currentUserId === String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
-    
+
     // Check if current user blocked the other user (using timestamp fields)
-    const blockedAtByCurrentUser = isCurrentUserUserId 
-      ? chatroom.blockedAtByUserId 
+    const blockedAtByCurrentUser = isCurrentUserUserId
+      ? chatroom.blockedAtByUserId
       : chatroom.blockedAtByMemberId;
-    const unblockedAtByCurrentUser = isCurrentUserUserId 
-      ? chatroom.unblockedAtByUserId 
+    const unblockedAtByCurrentUser = isCurrentUserUserId
+      ? chatroom.unblockedAtByUserId
       : chatroom.unblockedAtByMemberId;
     const isBlockedByCurrentUser = blockedAtByCurrentUser && !unblockedAtByCurrentUser;
-    
+
     // Check if current user is blocked by the other user (using timestamp fields)
-    const blockedAtByOtherUser = isCurrentUserUserId 
-      ? chatroom.blockedAtByMemberId 
+    const blockedAtByOtherUser = isCurrentUserUserId
+      ? chatroom.blockedAtByMemberId
       : chatroom.blockedAtByUserId;
-    const unblockedAtByOtherUser = isCurrentUserUserId 
-      ? chatroom.unblockedAtByMemberId 
+    const unblockedAtByOtherUser = isCurrentUserUserId
+      ? chatroom.unblockedAtByMemberId
       : chatroom.unblockedAtByUserId;
     const isCurrentUserBlocked = blockedAtByOtherUser && !unblockedAtByOtherUser;
-    
+
     // Legacy field for backward compatibility (but we use timestamp-based logic above)
     const isBlocked = isBlockedByCurrentUser || isCurrentUserBlocked;
 
@@ -546,6 +605,17 @@ function Messages() {
   const handleFileSelect = async (file) => {
     if (!selectedConversation || !isConnected) return;
 
+    // Check user verification status - use currentUser (fresh data) if available, otherwise use user from Redux
+    const userForVerification = currentUser || user;
+    if (!userForVerification) {
+      toast.error('User data not available. Please refresh the page.');
+      return;
+    }
+    if (!isUserVerified(userForVerification)) {
+      toast.error(getVerificationMessage('chat with other users'));
+      return;
+    }
+
     const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
     if (!chatroomId || chatroomId === 'undefined' || chatroomId === 'null') return;
 
@@ -563,6 +633,32 @@ function Messages() {
 
       // Upload file to S3
       const uploadResult = await uploadChatMedia(chatroomId, file, messageType);
+
+      // Check if the same file (same fileName and fileSize) already exists in chat messages
+      // Compare with existing messages to detect if old and new screenshots are the same
+      const currentUserId = String(currentUser?._id || currentUser?.id || '');
+      const existingSameImage = chatMessages.find(msg => {
+        // Only check messages from current user (owner)
+        if (msg.sender !== "you") {
+          return false;
+        }
+
+        // Check if message has the same file name and size, and same message type
+        // This detects when old and new screenshots are the same
+        const sameFileName = msg.fileName && uploadResult.fileName &&
+          msg.fileName.toLowerCase() === uploadResult.fileName.toLowerCase();
+        const sameFileSize = msg.fileSize && uploadResult.fileSize &&
+          msg.fileSize === uploadResult.fileSize;
+        const sameType = (msg.type === messageType || (msg.type === 'image' && messageType === 'image'));
+
+        return sameType && sameFileName && sameFileSize;
+      });
+
+      // If old and new screenshots are the same, only show toast and don't add message to chat
+      if (existingSameImage) {
+        toast.info('Same image already sent. No changes made.');
+        return;
+      }
 
       // Add temporary message for instant feedback
       const uniqueId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -603,7 +699,18 @@ function Messages() {
 
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedConversation || !isConnected) return;
-    
+
+    // Check user verification status - use currentUser (fresh data) if available, otherwise use user from Redux
+    const userForVerification = currentUser || user;
+    if (!userForVerification) {
+      toast.error('User data not available. Please refresh the page.');
+      return;
+    }
+    if (!isUserVerified(userForVerification)) {
+      toast.error(getVerificationMessage('chat with other users'));
+      return;
+    }
+
     // Don't allow sending if blocked
     if (selectedConversation.isBlockedByCurrentUser || selectedConversation.isCurrentUserBlocked) {
       return;
@@ -665,6 +772,9 @@ function Messages() {
     if (!chatroomIdStr || chatroomIdStr === 'undefined' || chatroomIdStr === 'null') return;
 
     setChatrooms(prev => {
+      // Ensure we don't lose the list during updates
+      if (!prev || prev.length === 0) return prev;
+      
       return prev.map(chatroom => {
         const currentId = String(chatroom._id || chatroom.id || '');
         if (currentId === chatroomIdStr) {
@@ -672,18 +782,18 @@ function Messages() {
           const messageUserId = String(message.userId?._id || message.userId?.id || message.userId || '');
           const currentUserId = String(currentUser?._id || currentUser?.id || '');
           const isFromOtherUser = messageUserId && currentUserId && messageUserId !== currentUserId;
-          
+
           // Only increment unread if:
           // 1. Message is from other user (not current user)
           // 2. Conversation is NOT currently selected
           const shouldIncrementUnread = isFromOtherUser && !isSelected;
-          
+
           // Calculate new unread count
           const currentUnreadCount = chatroom.unreadCount || 0;
-          const newUnreadCount = shouldIncrementUnread 
-            ? currentUnreadCount + 1 
+          const newUnreadCount = shouldIncrementUnread
+            ? currentUnreadCount + 1
             : currentUnreadCount;
-          
+
           return {
             ...chatroom,
             lastMessage: {
@@ -720,13 +830,85 @@ function Messages() {
 
   const updateChatroomInList = (updatedChatroom) => {
     setChatrooms(prev => {
+      // Ensure we don't lose the list during updates - always return at least the current list
+      if (!prev || prev.length === 0) {
+        // If no previous list, normalize and return the new chatroom
+        const normalizedChatroom = { ...updatedChatroom };
+        if (normalizedChatroom.lastMessage) {
+          if (typeof normalizedChatroom.lastMessage === 'string') {
+            normalizedChatroom.lastMessage = {
+              text: normalizedChatroom.lastMessage,
+              createdAt: normalizedChatroom.lastMessageAt,
+            };
+          } else if (typeof normalizedChatroom.lastMessage === 'object') {
+            const text = normalizedChatroom.lastMessage.text ||
+              normalizedChatroom.lastMessage.textDecrypted ||
+              normalizedChatroom.lastMessage.textEncrypted ||
+              '';
+            normalizedChatroom.lastMessage = {
+              text: text,
+              createdAt: normalizedChatroom.lastMessage.createdAt || normalizedChatroom.lastMessageAt,
+              userId: normalizedChatroom.lastMessage.userId,
+              type: normalizedChatroom.lastMessage.type || 'text',
+              fileUrl: normalizedChatroom.lastMessage.fileUrl || null,
+            };
+          }
+        }
+        return [normalizedChatroom];
+      }
+      
       const exists = prev.find(c => (c._id || c.id) === (updatedChatroom._id || updatedChatroom.id));
       if (exists) {
+        // Normalize the updated chatroom's lastMessage
+        const normalizedChatroom = { ...updatedChatroom };
+        if (normalizedChatroom.lastMessage) {
+          if (typeof normalizedChatroom.lastMessage === 'string') {
+            normalizedChatroom.lastMessage = {
+              text: normalizedChatroom.lastMessage,
+              createdAt: normalizedChatroom.lastMessageAt,
+            };
+          } else if (typeof normalizedChatroom.lastMessage === 'object') {
+            const text = normalizedChatroom.lastMessage.text ||
+              normalizedChatroom.lastMessage.textDecrypted ||
+              normalizedChatroom.lastMessage.textEncrypted ||
+              '';
+            normalizedChatroom.lastMessage = {
+              text: text,
+              createdAt: normalizedChatroom.lastMessage.createdAt || normalizedChatroom.lastMessageAt,
+              userId: normalizedChatroom.lastMessage.userId,
+              type: normalizedChatroom.lastMessage.type || 'text',
+              fileUrl: normalizedChatroom.lastMessage.fileUrl || null,
+            };
+          }
+        }
+        
         return prev.map(c =>
-          (c._id || c.id) === (updatedChatroom._id || updatedChatroom.id) ? updatedChatroom : c
+          (c._id || c.id) === (normalizedChatroom._id || normalizedChatroom.id) ? normalizedChatroom : c
         );
       } else {
-        return [updatedChatroom, ...prev];
+        // Normalize new chatroom before adding
+        const normalizedChatroom = { ...updatedChatroom };
+        if (normalizedChatroom.lastMessage) {
+          if (typeof normalizedChatroom.lastMessage === 'string') {
+            normalizedChatroom.lastMessage = {
+              text: normalizedChatroom.lastMessage,
+              createdAt: normalizedChatroom.lastMessageAt,
+            };
+          } else if (typeof normalizedChatroom.lastMessage === 'object') {
+            const text = normalizedChatroom.lastMessage.text ||
+              normalizedChatroom.lastMessage.textDecrypted ||
+              normalizedChatroom.lastMessage.textEncrypted ||
+              '';
+            normalizedChatroom.lastMessage = {
+              text: text,
+              createdAt: normalizedChatroom.lastMessage.createdAt || normalizedChatroom.lastMessageAt,
+              userId: normalizedChatroom.lastMessage.userId,
+              type: normalizedChatroom.lastMessage.type || 'text',
+              fileUrl: normalizedChatroom.lastMessage.fileUrl || null,
+            };
+          }
+        }
+        return [normalizedChatroom, ...prev];
       }
     });
   };
@@ -752,28 +934,28 @@ function Messages() {
         const userId = selectedConversation.otherUser._id || selectedConversation.otherUser.id;
         if (userId) {
           const userData = await getUserById(userId);
-          
+
           // Format user data to match TenantProfileDetail expected structure
           const formattedTenantData = {
             name: userData.userInfo?.name?.first && userData.userInfo?.name?.last
               ? `${userData.userInfo.name.first} ${userData.userInfo.name.last}`.trim()
               : userData.firstName && userData.lastName
-              ? `${userData.firstName} ${userData.lastName}`.trim()
-              : userData.email || 'N/A',
+                ? `${userData.firstName} ${userData.lastName}`.trim()
+                : userData.email || 'N/A',
             profileImage: userData.userInfo?.profileImage || '/default-avatar.png',
-            verified: userData.isEmailVerified || userData.userInfo?.verificationStatus === 'verified',
+            verified: userData.userInfo?.verificationStatus === 'verified' || false,
             description: userData.userInfo?.bio || '',
             designation: userData.userInfo?.employment?.jobTitle || 'N/A',
             location: userData.userInfo?.address
               ? [userData.userInfo.address.city, userData.userInfo.address.country]
-                  .filter(Boolean)
-                  .join(', ') || 'N/A'
+                .filter(Boolean)
+                .join(', ') || 'N/A'
               : 'N/A',
-            monthlyIncome: userData.userInfo?.employment?.monthlyIncome 
-              ? `£${userData.userInfo.employment.monthlyIncome.toLocaleString()}` 
-              : userData.userInfo?.proofOfIncome?.grossMonthly 
-              ? `£${userData.userInfo.proofOfIncome.grossMonthly.toLocaleString()}`
-              : 'N/A',
+            monthlyIncome: userData.userInfo?.employment?.monthlyIncome
+              ? `£${userData.userInfo.employment.monthlyIncome.toLocaleString()}`
+              : userData.userInfo?.proofOfIncome?.grossMonthly
+                ? `£${userData.userInfo.proofOfIncome.grossMonthly.toLocaleString()}`
+                : 'N/A',
             creditScore: userData.userInfo?.creditScore || 0,
             creditMax: 850,
             creditRating: userData.userInfo?.creditRating || 'N/A',
@@ -782,9 +964,9 @@ function Messages() {
               fullName: userData.userInfo?.name?.first && userData.userInfo?.name?.last
                 ? `${userData.userInfo.name.first} ${userData.userInfo.name.last}`.trim()
                 : userData.firstName && userData.lastName
-                ? `${userData.firstName} ${userData.lastName}`.trim()
-                : 'N/A',
-              dateOfBirth: userData.userInfo?.dateOfBirth 
+                  ? `${userData.firstName} ${userData.lastName}`.trim()
+                  : 'N/A',
+              dateOfBirth: userData.userInfo?.dateOfBirth
                 ? new Date(userData.userInfo.dateOfBirth).toLocaleDateString()
                 : 'N/A',
               nationalInsurance: userData.userInfo?.nationalInsurance || 'N/A',
@@ -802,7 +984,7 @@ function Messages() {
               jobTitle: userData.userInfo?.employment?.jobTitle || 'N/A',
               employmentType: userData.userInfo?.employment?.employmentType || 'N/A',
               company: userData.userInfo?.employment?.company || 'N/A',
-              annualSalary: userData.userInfo?.employment?.annualSalary 
+              annualSalary: userData.userInfo?.employment?.annualSalary
                 ? `£${userData.userInfo.employment.annualSalary.toLocaleString()}`
                 : 'N/A',
               startDate: userData.userInfo?.employment?.startDate
@@ -815,10 +997,10 @@ function Messages() {
               date: userData.userInfo?.proofOfIncome?.date
                 ? new Date(userData.userInfo.proofOfIncome.date).toLocaleDateString()
                 : 'N/A',
-              grossMonthly: userData.userInfo?.proofOfIncome?.grossMonthly 
+              grossMonthly: userData.userInfo?.proofOfIncome?.grossMonthly
                 ? `£${userData.userInfo.proofOfIncome.grossMonthly.toLocaleString()}`
                 : 'N/A',
-              netMonthly: userData.userInfo?.proofOfIncome?.netMonthly 
+              netMonthly: userData.userInfo?.proofOfIncome?.netMonthly
                 ? `£${userData.userInfo.proofOfIncome.netMonthly.toLocaleString()}`
                 : 'N/A',
             },
@@ -887,6 +1069,8 @@ function Messages() {
     setSelectedConversation(null);
     setShowProfileDetail(false);
     setTenantProfileData(null);
+    // Reset manual selection flag when going back
+    hasManuallySelectedRef.current = false;
   };
 
   const handleDeleteChatroom = (chatroomId) => {
@@ -905,7 +1089,7 @@ function Messages() {
     try {
       setIsProcessing(true);
       await updateChatroom(chatroomId, 'unblock');
-      
+
       // Refresh chatrooms list
       const data = await getChatrooms();
       const normalizedChatrooms = (data || []).map(chatroom => {
@@ -934,7 +1118,7 @@ function Messages() {
         return { ...chatroom, lastMessage: null };
       });
       setChatrooms(normalizedChatrooms);
-      
+
       // Update selected conversation if it's the unblocked one
       if (selectedConversation && (selectedConversation.id === chatroomId || selectedConversation.chatroomId === chatroomId)) {
         const updatedChatroom = normalizedChatrooms.find(c => (c._id || c.id) === chatroomId);
@@ -955,11 +1139,11 @@ function Messages() {
     try {
       setIsProcessing(true);
       await updateChatroom(confirmChatroomId, confirmAction);
-      
+
       if (confirmAction === 'delete') {
         // Remove chatroom from list
         setChatrooms(prev => prev.filter(c => (c._id || c.id) !== confirmChatroomId));
-        
+
         // If deleted chatroom is currently selected, clear selection
         if (selectedConversation && (selectedConversation.id === confirmChatroomId || selectedConversation.chatroomId === confirmChatroomId)) {
           setSelectedConversation(null);
@@ -996,7 +1180,7 @@ function Messages() {
           return { ...chatroom, lastMessage: null };
         });
         setChatrooms(normalizedChatrooms);
-        
+
         // Update selected conversation if it's the blocked one
         if (selectedConversation && (selectedConversation.id === confirmChatroomId || selectedConversation.chatroomId === confirmChatroomId)) {
           const updatedChatroom = normalizedChatrooms.find(c => (c._id || c.id) === confirmChatroomId);
@@ -1005,7 +1189,7 @@ function Messages() {
           }
         }
       }
-      
+
       setShowConfirmModal(false);
       setConfirmAction(null);
       setConfirmChatroomId(null);
@@ -1064,378 +1248,453 @@ function Messages() {
   const allMessagesCount = chatrooms.length;
   const messageRequestsCount = chatrooms.filter(c => c.unreadCount && c.unreadCount > 0).length;
 
+  // Check verification status - use currentUser (fresh data) if available, otherwise use user from Redux
+  const userForVerification = currentUser || user;
+  const isVerified = isUserVerified(userForVerification);
+
+  // Check if user has chat history
+  const hasChatHistory = chatrooms && chatrooms.length > 0;
+
+  // Show verification page only if: not verified AND no chat history
+  // If not verified BUT has chat history, allow viewing but sending is blocked in handleSendMessage
+  const showVerificationPage = !isVerified && !hasChatHistory;
+
+  // Show loading if user or chatrooms are not loaded yet
+  const isInitialLoading = loading || !currentUser;
+
+  if (isInitialLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="relative inline-block mb-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#6B4EFF]/20"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-[#6B4EFF] absolute top-0 left-0"></div>
+            </div>
+            <p className="text-[#62748E] text-base font-medium font-nunito">Loading messages...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
-      <div className="block">
-        {/* Mobile: Show back button when conversation is selected */}
-        {selectedConversation && (
-          <button
-            onClick={handleBackToMessageList}
-            className="md:hidden flex items-center gap-2 mb-4 text-secondary hover:text-primary transition-colors"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+      <>
+        <div className="block">
+          {/* Mobile: Show back button when conversation is selected */}
+          {selectedConversation && (
+            <button
+              onClick={handleBackToMessageList}
+              className="md:hidden flex items-center gap-2 mb-4 px-3 py-2 rounded-xl text-secondary hover:text-[#6B4EFF] hover:bg-purple-50 transition-all duration-200 group"
             >
-              <path
-                d="M12.5 15L7.5 10L12.5 5"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span className="text-base font-semibold font-nunito">Back</span>
-          </button>
-        )}
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="transition-transform duration-200 group-hover:-translate-x-1"
+              >
+                <path
+                  d="M12.5 15L7.5 10L12.5 5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className="text-base font-semibold font-nunito">Back</span>
+            </button>
+          )}
 
-        <h1 className="text-xl xl:text-2xl font-bold text-secondary mb-4">
-          Messages {!isConnected && <span className="text-xs text-red-500">(Disconnected)</span>}
-        </h1>
+          <div className="mb-6">
+            <h1 className="text-2xl xl:text-3xl font-bold text-secondary mb-2">
+              Messages {!isConnected && <span className="text-xs font-normal text-red-500 ml-2">(Disconnected)</span>}
+            </h1>
+            <p className="text-sm text-[#62748E] font-normal">Connect with potential renters and manage your conversations</p>
+          </div>
 
-        {/* Tabs */}
-        <div className="flex gap-4 mb-4">
-          <button
-            onClick={() => {
-              const newTab = "all";
-              setActiveTab(newTab);
-              localStorage.setItem('messagesActiveTab', newTab);
-              setSelectedConversation(null);
-            }}
-            className={`relative pb-2 px-2 font-semibold text-base xl:text-lg font-nunito flex items-center gap-2 transition-colors border-b-2 ${activeTab === "all"
-                ? "text-[#6B4EFF] border-[#6B4EFF]"
-                : "text-darkGray border-transparent"
-              }`}
-          >
-            All Messages
-            <span
-              className={`${activeTab === "all"
-                  ? "text-white bg-[#6B4EFF]"
+          {/* Tabs */}
+          <div className="flex gap-2 mb-6 bg-gray-50 p-1 rounded-2xl w-fit">
+            <button
+              onClick={() => {
+                const newTab = "all";
+                setActiveTab(newTab);
+                localStorage.setItem('messagesActiveTab', newTab);
+                setSelectedConversation(null);
+                setShowProfileDetail(false);
+                setTenantProfileData(null);
+              }}
+              className={`relative px-5 py-2.5 font-semibold text-sm xl:text-base font-nunito flex items-center gap-2 transition-all duration-300 rounded-xl ${activeTab === "all"
+                ? "text-white bg-gradient-to-r from-[#6B4EFF] to-[#8B6FFF] shadow-md shadow-purple-200"
+                : "text-darkGray hover:text-[#6B4EFF] hover:bg-white"
+                }`}
+            >
+              All Messages
+              <span
+                className={`${activeTab === "all"
+                  ? "text-white bg-white/20"
                   : "text-[#4A2FCC] bg-[#E8E2FF]"
-                } relative text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center`}
+                  } text-xs font-semibold rounded-full min-w-[24px] h-6 px-2 flex items-center justify-center transition-all duration-300`}
+              >
+                {allMessagesCount}
+              </span>
+            </button>
+            <button
+              onClick={() => {
+                const newTab = "requests";
+                setActiveTab(newTab);
+                localStorage.setItem('messagesActiveTab', newTab);
+                setSelectedConversation(null);
+                setShowProfileDetail(false);
+                setTenantProfileData(null);
+              }}
+              className={`relative px-5 py-2.5 font-semibold text-sm xl:text-base font-nunito flex items-center gap-2 transition-all duration-300 rounded-xl ${activeTab === "requests"
+                ? "text-white bg-gradient-to-r from-[#6B4EFF] to-[#8B6FFF] shadow-md shadow-purple-200"
+                : "text-darkGray hover:text-[#6B4EFF] hover:bg-white"
+                }`}
             >
-              {allMessagesCount}
-            </span>
-          </button>
-          <button
-            onClick={() => {
-              const newTab = "requests";
-              setActiveTab(newTab);
-              localStorage.setItem('messagesActiveTab', newTab);
-              setSelectedConversation(null);
-            }}
-            className={`relative pb-2 font-semibold px-2 text-base xl:text-lg font-nunito flex items-center gap-2 transition-colors border-b-2 ${activeTab === "requests"
-                ? "text-[#6B4EFF] border-[#6B4EFF]"
-                : "text-darkGray border-transparent"
-              }`}
-          >
-            Message Requests
-            <span
-              className={`${activeTab === "requests"
-                  ? "text-white bg-[#6B4EFF]"
+              Message Requests
+              <span
+                className={`${activeTab === "requests"
+                  ? "text-white bg-white/20"
                   : "text-[#4A2FCC] bg-[#E8E2FF]"
-                } relative text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center`}
-            >
-              {messageRequestsCount}
-            </span>
-          </button>
-        </div>
+                  } text-xs font-semibold rounded-full min-w-[24px] h-6 px-2 flex items-center justify-center transition-all duration-300`}
+              >
+                {messageRequestsCount}
+              </span>
+            </button>
+          </div>
 
-        <div
-          className={`flex gap-0 bg-white rounded-[20px] ${!showProfileDetail && "border border-lightGray"
-            }`}
-        >
-          {/* Left Panel - Message List */}
-          {!showProfileDetail && (
-            <div
-              className={`${selectedConversation ? "hidden md:flex" : "flex"
-                } w-full md:w-96 lg:w-[400px] rounded-tl-[20px] rounded-bl-[20px] md:rounded-tr-none md:rounded-br-none rounded-[20px] md:rounded-[0] bg-white border-r border-lightGray md:border-r flex flex-col`}
-            >
-              {/* Header */}
-              <div className="p-4 border-b border-lightGray">
-                {/* Search Bar */}
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lg md:text-xl">
-                    <BlueSearchIcon />
-                  </span>
+          <div
+            className={`flex gap-0 bg-white rounded-3xl shadow-sm ${!showProfileDetail && "border border-gray-100"
+              } overflow-hidden`}
+          >
+            {/* Left Panel - Message List - Always visible on desktop, hidden on mobile when conversation selected */}
+            {!showProfileDetail && (
+              <div
+                key="message-list-panel"
+                className={`w-full md:w-96 lg:w-[400px] bg-white border-r border-gray-100 flex flex-col transition-all duration-200 ${
+                  selectedConversation ? "hidden md:flex" : "flex"
+                }`}
+              >
+                {/* Header */}
+                <div className="p-5 border-b border-gray-100 bg-gradient-to-b from-gray-50/50 to-white">
+                  {/* Search Bar */}
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lg md:text-xl z-10">
+                      <BlueSearchIcon />
+                    </span>
 
-                  <input
-                    type="text"
-                    placeholder="Search Messages"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 md:pl-10 pr-3 h-12 md:pr-4 py-1.5 md:py-2 border border-lightGray rounded-xl focus:outline-none focus:ring-0 text-sm md:text-base"
-                  />
+                    <input
+                      type="text"
+                      placeholder="Search Messages"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-11 md:pl-12 pr-4 h-12 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#6B4EFF]/20 focus:border-[#6B4EFF] text-sm md:text-base bg-white transition-all duration-200 placeholder:text-gray-400"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Message List */}
-              <div className="flex-1 overflow-y-auto max-h-[calc(100vh-200px)]">
-                {loading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6B4EFF]"></div>
-                  </div>
-                ) : filteredChatrooms.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-                    <ChatBlueStartIcon />
-                    <p className="text-darkGray text-base font-normal font-nunito mt-4">
-                      {searchQuery
-                        ? 'No messages found'
-                        : activeTab === "requests"
-                          ? 'No message requests'
-                          : 'No messages yet'}
-                    </p>
-                  </div>
-                ) : (
-                  filteredChatrooms.map((chatroom) => {
-                    // Normalize IDs for comparison to correctly identify the other user
-                    const currentUserId = String(currentUser?._id || currentUser?.id || '');
-                    const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
-                    const otherUser = currentUserId && chatroomUserId && currentUserId === chatroomUserId
-                      ? chatroom.memberId
-                      : chatroom.userId;
+                {/* Message List */}
+                <div className="flex-1 overflow-y-auto max-h-[calc(100vh-200px)] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                  {loading ? (
+                    <div className="flex items-center justify-center py-16">
+                      <div className="relative">
+                        <div className="animate-spin rounded-full h-10 w-10 border-3 border-[#6B4EFF]/20"></div>
+                        <div className="animate-spin rounded-full h-10 w-10 border-t-3 border-[#6B4EFF] absolute top-0 left-0"></div>
+                      </div>
+                    </div>
+                  ) : filteredChatrooms.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+                      <div className="mb-4 opacity-60">
+                        <ChatBlueStartIcon />
+                      </div>
+                      <p className="text-gray-600 text-base font-medium font-nunito">
+                        {searchQuery
+                          ? 'No messages found'
+                          : activeTab === "requests"
+                            ? 'No message requests'
+                            : 'No messages yet'}
+                      </p>
+                      {!searchQuery && activeTab === "all" && (
+                        <p className="text-gray-400 text-sm font-normal font-nunito mt-2">
+                          Start a conversation with potential renters
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    filteredChatrooms.map((chatroom) => {
+                      // Normalize IDs for comparison to correctly identify the other user
+                      const currentUserId = String(currentUser?._id || currentUser?.id || '');
+                      const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
+                      const otherUser = currentUserId && chatroomUserId && currentUserId === chatroomUserId
+                        ? chatroom.memberId
+                        : chatroom.userId;
 
-                    const name = otherUser
-                      ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email
-                      : 'Unknown User';
+                      const name = otherUser
+                        ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email
+                        : 'Unknown User';
 
-                    const initials = otherUser
-                      ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase()
-                      : 'U';
+                      const initials = otherUser
+                        ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase()
+                        : 'U';
 
-                    const chatroomId = chatroom._id || chatroom.id;
-                    const isSelected = selectedConversation?.id === chatroomId;
-                    const unreadCount = chatroom.unreadCount || 0;
+                      // Check verification status for renters
+                      const otherUserType = otherUser?.userType || null;
+                      const isOtherUserVerified = otherUser?.userInfoId?.verificationStatus === 'verified' ||
+                        otherUser?.userInfo?.verificationStatus === 'verified' ||
+                        false;
+                      const showVerificationIcon = otherUserType === 'renter';
+                      const isVerified = isOtherUserVerified;
 
-                    return (
-                      <div
-                        key={chatroomId}
-                        onClick={() => handleSelectConversation(chatroom)}
-                        className={`p-4 bg-[#F8F8F8] border-b border-lightGray cursor-pointer hover:bg-gray-50 transition-colors ${isSelected ? "bg-purple-50" : ""
-                          }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="relative flex-shrink-0">
-                            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#6B4EFF] font-bold border border-lightGray">
-                              {initials}
-                            </div>
-                            {unreadCount > 0 && (
-                              <span className="absolute -bottom-0 -right-1 text-green-600 bg-white rounded-full">
-                                <MediumCheckedIcon />
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <h3 className="font-normal font-nunito text-[#0F172B] text-base truncate">
-                                {name}
-                              </h3>
-                              {unreadCount > 0 && (
-                                <span className="text-white bg-[#009966] w-6 h-6 rounded-full flex items-center justify-center text-sm font-normal flex-shrink-0 ml-2">
-                                  {unreadCount}
+                      const chatroomId = chatroom._id || chatroom.id;
+                      const isSelected = selectedConversation?.id === chatroomId;
+                      const unreadCount = chatroom.unreadCount || 0;
+
+                      return (
+                        <div
+                          key={chatroomId}
+                          onClick={() => handleSelectConversation(chatroom)}
+                          className={`p-4 cursor-pointer transition-all duration-200 border-b border-gray-50 ${isSelected 
+                            ? "bg-gradient-to-r from-purple-50 to-indigo-50 border-l-4 border-l-[#6B4EFF]" 
+                            : "bg-white hover:bg-gray-50"
+                            }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="relative flex-shrink-0">
+                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-[#6B4EFF] font-bold text-base shadow-sm transition-all duration-200 ${
+                                isSelected 
+                                  ? "bg-gradient-to-br from-purple-100 to-indigo-100 border-2 border-[#6B4EFF]/30" 
+                                  : "bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200"
+                              }`}>
+                                {initials}
+                              </div>
+                              {/* Show verification icon for renters: cross if not verified, checkmark if verified */}
+                              {showVerificationIcon && (
+                                <span className="absolute -bottom-1 -right-1 bg-white rounded-full shadow-sm border-2 border-white">
+                                  {isVerified ? (
+                                    <MediumCheckedIcon />
+                                  ) : (
+                                    <RedCrossIcon />
+                                  )}
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm font-normal font-nunito text-[#45556C] mb-1 truncate">
-                              {(() => {
-                                const lastMsg = chatroom.lastMessage;
-                                
-                                // If no lastMessage but lastMessageAt exists, there's a message but we don't have the data
-                                if (!lastMsg && chatroom.lastMessageAt) {
-                                  return 'Message';
-                                }
-                                
-                                if (!lastMsg) return 'No messages yet';
-                                if (typeof lastMsg === 'string') return lastMsg;
-                                if (typeof lastMsg === 'object') {
-                                  // Check if it's a media message FIRST (has fileUrl or type indicates media)
-                                  const isMediaMessage = lastMsg.fileUrl || 
-                                                        (lastMsg.type && lastMsg.type !== 'text' && lastMsg.type !== 'system');
-                                  
-                                  if (isMediaMessage) {
-                                    // If there's text (caption), show it, otherwise show media type indicator
-                                    const text = lastMsg.text || '';
-                                    if (text.trim()) {
-                                      return text;
-                                    }
-                                    // Show appropriate media indicator
-                                    if (lastMsg.type === 'image') {
-                                      return '📷 Image';
-                                    } else if (lastMsg.type === 'video') {
-                                      return '🎥 Video';
-                                    } else if (lastMsg.type === 'document') {
-                                      return '📄 Document';
-                                    }
-                                    return '📎 Attachment';
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-1.5">
+                                <h3 className={`font-semibold font-nunito text-base truncate transition-colors duration-200 ${
+                                  isSelected ? "text-[#6B4EFF]" : "text-[#0F172B]"
+                                }`}>
+                                  {name}
+                                </h3>
+                                {unreadCount > 0 && (
+                                  <span className="text-white bg-gradient-to-r from-[#009966] to-[#00B877] min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ml-2 shadow-sm">
+                                    {unreadCount}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm font-normal font-nunito text-[#45556C] mb-2 truncate">
+                                {(() => {
+                                  const lastMsg = chatroom.lastMessage;
+
+                                  // If no lastMessage but lastMessageAt exists, there's a message but we don't have the data
+                                  if (!lastMsg && chatroom.lastMessageAt) {
+                                    return 'Message';
                                   }
-                                  // Regular text message - show text if available
-                                  const text = lastMsg.text || lastMsg.textDecrypted || lastMsg.textEncrypted || '';
-                                  return text.trim() || 'No messages yet';
-                                }
-                                return 'No messages yet';
-                              })()}
-                            </p>
-                            <div>
-                              <span className="text-sm text-[#62748E] font-normal font-nunito">
-                                {chatroom.lastMessageAt
-                                  ? new Date(chatroom.lastMessageAt).toLocaleString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    hour: 'numeric',
-                                    minute: '2-digit',
-                                    hour12: true
-                                  })
-                                  : ''}
-                              </span>
+
+                                  if (!lastMsg) return 'No messages yet';
+                                  if (typeof lastMsg === 'string') return lastMsg;
+                                  if (typeof lastMsg === 'object') {
+                                    // Check if it's a media message FIRST (has fileUrl or type indicates media)
+                                    const isMediaMessage = lastMsg.fileUrl ||
+                                      (lastMsg.type && lastMsg.type !== 'text' && lastMsg.type !== 'system');
+
+                                    if (isMediaMessage) {
+                                      // If there's text (caption), show it, otherwise show media type indicator
+                                      const text = lastMsg.text || '';
+                                      if (text.trim()) {
+                                        return text;
+                                      }
+                                      // Show appropriate media indicator
+                                      if (lastMsg.type === 'image') {
+                                        return '📷 Image';
+                                      } else if (lastMsg.type === 'video') {
+                                        return '🎥 Video';
+                                      } else if (lastMsg.type === 'document') {
+                                        return '📄 Document';
+                                      }
+                                      return '📎 Attachment';
+                                    }
+                                    // Regular text message - show text if available
+                                    const text = lastMsg.text || lastMsg.textDecrypted || lastMsg.textEncrypted || '';
+                                    return text.trim() || 'No messages yet';
+                                  }
+                                  return 'No messages yet';
+                                })()}
+                              </p>
+                              <div>
+                                <span className="text-xs text-[#62748E] font-medium font-nunito">
+                                  {chatroom.lastMessageAt
+                                    ? new Date(chatroom.lastMessageAt).toLocaleString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: 'numeric',
+                                      minute: '2-digit',
+                                      hour12: true
+                                    })
+                                    : ''}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
-                )}
+                      );
+                    })
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Right Panel - Chat View or Profile Detail */}
-          <div
-            className={`${selectedConversation || showProfileDetail
+            {/* Right Panel - Chat View or Profile Detail */}
+            <div
+              className={`${selectedConversation || showProfileDetail
                 ? "flex"
                 : "hidden md:flex"
-              } flex-col bg-white rounded-tr-[20px] rounded-br-[20px] md:rounded-tl-none md:rounded-bl-none rounded-[20px] md:rounded-[0] overflow-y-auto ${showProfileDetail ? "w-full" : "flex-1"
-              }`}
-          >
-            {showProfileDetail && tenantProfileData ? (
-              <TenantProfileDetail
-                tenantData={tenantProfileData}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                onBack={handleBackToChat}
-                onSendOffer={handleSendOffer}
-                allMessagesCount={allMessagesCount}
-                messageRequestsCount={messageRequestsCount}
-              />
-            ) : selectedConversation ? (
-              <>
-                {messagesLoading && chatMessages.length === 0 ? (
-                  <div className="flex-1 flex items-center justify-center bg-[#F9F9FC]">
-                    <div className="text-center">
-                      <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-[#6B4EFF] border-t-transparent mb-4"></div>
-                      <p className="text-[#62748E] text-base font-normal font-nunito">Loading messages...</p>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <ChatView
-                      selectedConversation={selectedConversation}
-                      chatMessages={chatMessages}
-                      messageText={messageText}
-                      setMessageText={(text) => {
-                        setMessageText(text);
-                        handleTyping();
-                      }}
-                      onSendMessage={handleSendMessage}
-                      onSendOffer={handleSendOffer}
-                      onProfileClick={handleProfileClick}
-                      messagesEndRef={messagesEndRef}
-                      messagesTopRef={messagesTopRef}
-                      onScroll={handleScroll}
-                      loadingMoreMessages={loadingMoreMessages}
-                      hasMoreMessages={hasMoreMessages}
-                      messagesContainerRef={messagesContainerRef}
-                      onFileSelect={handleFileSelect}
-                      onDeleteChatroom={handleDeleteChatroom}
-                      onBlockChatroom={handleBlockChatroom}
-                      onUnblockChatroom={handleUnblockChatroom}
-                      isBlocked={selectedConversation?.isBlocked || false}
-                      isBlockedByCurrentUser={selectedConversation?.isBlockedByCurrentUser || false}
-                      isCurrentUserBlocked={selectedConversation?.isCurrentUserBlocked || false}
-                    />
-                  </>
-                )}
-              </>
-            ) : (
-              /* Empty State - Hidden on mobile when no conversation selected, or if there's only one conversation */
-              filteredChatrooms.length > 1 && (
-                <div className="hidden md:flex flex-1 items-center bg-[#F9F9FC] justify-center">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mx-auto mb-4">
-                      <ChatBlueStartIcon />
-                    </div>
-                    <h3 className="text-lg lg:text-2xl font-bold text-[#4A2FCC] mb-2">
-                      No conversation selected
-                    </h3>
-                    <p className="text-darkGray text-base font-normal font-nunito">
-                      {activeTab === "requests"
-                        ? "Select a message request to respond"
-                        : "Engage with potential renters"}
-                    </p>
-                  </div>
-                </div>
-              )
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Send Offer Modal */}
-      <SendOfferModal
-        isOpen={isOfferModalOpen}
-        onClose={() => setIsOfferModalOpen(false)}
-        formData={offerFormData}
-        setFormData={setOfferFormData}
-        onSend={handleOfferSubmit}
-      />
-
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-[20px] p-6 max-w-[500px] w-full mx-4 relative">
-            <button
-              onClick={handleCloseModal}
-              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              disabled={isProcessing}
+                } flex-col bg-gradient-to-br from-gray-50/30 to-white overflow-y-auto ${showProfileDetail ? "w-full" : "flex-1"
+                }`}
             >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            <h2 className="text-xl font-bold font-nunito text-secondary text-left mb-4">
-              {confirmAction === 'delete' ? 'Delete Chatroom' : confirmAction === 'block' ? 'Block User' : ''}
-            </h2>
-
-            <p className="text-base font-normal font-nunito text-darkGray text-left mb-6">
-              {confirmAction === 'delete' 
-                ? 'Are you sure you want to delete this chatroom? This action cannot be undone.'
-                : confirmAction === 'block'
-                ? 'Are you sure you want to block this user? You will not be able to send messages to them.'
-                : ''}
-            </p>
-
-            <div className="flex gap-3">
-              <button
-                onClick={handleCloseModal}
-                disabled={isProcessing}
-                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-[10px] font-bold hover:bg-gray-300 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmAction}
-                disabled={isProcessing}
-                className="flex-1 px-6 py-3 bg-blueGradient text-white rounded-[10px] font-bold shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors disabled:opacity-50"
-              >
-                {isProcessing ? 'Processing...' : (confirmAction === 'delete' ? 'Delete' : confirmAction === 'block' ? 'Block' : 'Confirm')}
-              </button>
+              {showProfileDetail && tenantProfileData ? (
+                <TenantProfileDetail
+                  tenantData={tenantProfileData}
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  onBack={handleBackToChat}
+                  onSendOffer={handleSendOffer}
+                  allMessagesCount={allMessagesCount}
+                  messageRequestsCount={messageRequestsCount}
+                />
+              ) : selectedConversation ? (
+                <>
+                  {messagesLoading && chatMessages.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50/50 to-white">
+                      <div className="text-center">
+                        <div className="relative inline-block mb-4">
+                          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#6B4EFF]/10"></div>
+                          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-[#6B4EFF] absolute top-0 left-0"></div>
+                        </div>
+                        <p className="text-[#62748E] text-base font-medium font-nunito">Loading messages...</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <ChatView
+                        selectedConversation={selectedConversation}
+                        chatMessages={chatMessages}
+                        messageText={messageText}
+                        setMessageText={(text) => {
+                          setMessageText(text);
+                          handleTyping();
+                        }}
+                        onSendMessage={handleSendMessage}
+                        onSendOffer={handleSendOffer}
+                        onProfileClick={handleProfileClick}
+                        messagesEndRef={messagesEndRef}
+                        messagesTopRef={messagesTopRef}
+                        onScroll={handleScroll}
+                        loadingMoreMessages={loadingMoreMessages}
+                        hasMoreMessages={hasMoreMessages}
+                        messagesContainerRef={messagesContainerRef}
+                        onFileSelect={handleFileSelect}
+                        onDeleteChatroom={handleDeleteChatroom}
+                        onBlockChatroom={handleBlockChatroom}
+                        onUnblockChatroom={handleUnblockChatroom}
+                        isBlocked={selectedConversation?.isBlocked || false}
+                        isBlockedByCurrentUser={selectedConversation?.isBlockedByCurrentUser || false}
+                        isCurrentUserBlocked={selectedConversation?.isCurrentUserBlocked || false}
+                      />
+                    </>
+                  )}
+                </>
+              ) : (
+                /* Empty State - Hidden on mobile when no conversation selected, or if there's only one conversation */
+                filteredChatrooms.length > 1 && (
+                  <div className="hidden md:flex flex-1 items-center bg-gradient-to-br from-gray-50/50 to-white justify-center">
+                    <div className="text-center px-6">
+                      <div className="flex items-center justify-center mx-auto mb-6 opacity-60">
+                        <ChatBlueStartIcon />
+                      </div>
+                      <h3 className="text-xl lg:text-2xl font-bold text-[#4A2FCC] mb-3">
+                        No conversation selected
+                      </h3>
+                      <p className="text-gray-600 text-base font-normal font-nunito max-w-md">
+                        {activeTab === "requests"
+                          ? "Select a message request to respond and start a conversation"
+                          : "Select a conversation from the list to start engaging with potential renters"}
+                      </p>
+                    </div>
+                  </div>
+                )
+              )}
             </div>
           </div>
         </div>
-      )}
+        {/* Send Offer Modal */}
+        <SendOfferModal
+          isOpen={isOfferModalOpen}
+          onClose={() => setIsOfferModalOpen(false)}
+          formData={offerFormData}
+          setFormData={setOfferFormData}
+          onSend={handleOfferSubmit}
+        />
+
+        {/* Confirmation Modal */}
+        {showConfirmModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-[20px] p-6 max-w-[500px] w-full mx-4 relative">
+              <button
+                onClick={handleCloseModal}
+                className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                disabled={isProcessing}
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <h2 className="text-xl font-bold font-nunito text-secondary text-left mb-4">
+                {confirmAction === 'delete' ? 'Delete Chatroom' : confirmAction === 'block' ? 'Block User' : ''}
+              </h2>
+
+              <p className="text-base font-normal font-nunito text-darkGray text-left mb-6">
+                {confirmAction === 'delete'
+                  ? 'Are you sure you want to delete this chatroom? This action cannot be undone.'
+                  : confirmAction === 'block'
+                    ? 'Are you sure you want to block this user? You will not be able to send messages to them.'
+                    : ''}
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseModal}
+                  disabled={isProcessing}
+                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-[10px] font-bold hover:bg-gray-300 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmAction}
+                  disabled={isProcessing}
+                  className="flex-1 px-6 py-3 bg-blueGradient text-white rounded-[10px] font-bold shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {isProcessing ? 'Processing...' : (confirmAction === 'delete' ? 'Delete' : confirmAction === 'block' ? 'Block' : 'Confirm')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     </DashboardLayout>
   );
 }

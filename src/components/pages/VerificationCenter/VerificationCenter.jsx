@@ -7,6 +7,7 @@ import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayo
 import Breadcrumb from "@/components/adminDashboard/common/Breadcrumb";
 import VerificationProgressTracker from "@/components/adminDashboard/VerificationCenter/VerificationProgressTracker";
 import DocumentRejectedSection from "@/components/adminDashboard/VerificationCenter/DocumentRejectedSection";
+import RejectedDocumentsSection from "@/components/adminDashboard/VerificationCenter/RejectedDocumentsSection";
 import VerifiedDocumentsSection from "@/components/adminDashboard/VerificationCenter/VerifiedDocumentsSection";
 import UnderReviewDocumentsSection from "@/components/adminDashboard/VerificationCenter/UnderReviewDocumentsSection";
 import UploadVerificationDocuments from "@/components/adminDashboard/VerificationCenter/UploadVerificationDocuments";
@@ -18,6 +19,7 @@ import {
 } from "@/redux/slices/verificationSlice";
 import { documentTypeOptions } from "@/constant";
 import { downloadDocument, deleteDocument } from "@/api/verification";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 // Map backend docType to frontend document type options
 // Convert underscores to hyphens: "tax_document" → "tax-document"
@@ -158,17 +160,6 @@ function VerificationCenter() {
     return 2; // Default to under review
   }, [transformedDocuments]);
 
-  // Get rejected document (first one for display)
-  const rejectedDocument = transformedDocuments.rejected.length > 0 
-    ? {
-        id: transformedDocuments.rejected[0].id,
-        name: transformedDocuments.rejected[0].name,
-        docType: transformedDocuments.rejected[0].docType,
-        docTypeLabel: transformedDocuments.rejected[0].docTypeLabel,
-        reason: transformedDocuments.rejected[0].reason || 'Document was rejected. Please re-upload with clearer images.',
-      }
-    : null;
-
   // State for reupload tracking
   const [reuploadingDocumentId, setReuploadingDocumentId] = useState(null);
   const [reuploadingDocType, setReuploadingDocType] = useState(null);
@@ -177,11 +168,14 @@ function VerificationCenter() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState(null);
 
-  const handleReupload = () => {
+  // Lock body scroll when modal is open
+  useBodyScrollLock(deleteModalOpen);
+
+  const handleReupload = (doc) => {
     // Store the rejected document's ID and docType for reupload
-    if (rejectedDocument) {
-      setReuploadingDocumentId(rejectedDocument.id);
-      setReuploadingDocType(rejectedDocument.docType);
+    if (doc) {
+      setReuploadingDocumentId(doc.id);
+      setReuploadingDocType(doc.docType);
     }
     // Scroll to upload section
     const uploadSection = document.querySelector('[data-upload-section]');
@@ -263,6 +257,12 @@ function VerificationCenter() {
       
       if (!documentType || !files || files.length === 0) {
         toast.error('Please select a document type and upload at least one file');
+        return;
+      }
+
+      // When re-uploading, only allow 1 file
+      if (reuploadingDocumentId && files.length > 1) {
+        toast.warning('You can only re-upload one file at a time.');
         return;
       }
 
@@ -407,20 +407,35 @@ function VerificationCenter() {
       }
 
       // Step 2: Store document metadata in database
-      const documentsToStore = uploadResult.uploadResults.map((result) => ({
-        fileUrl: result.url,
-        docType: docType, // Always use the user-selected docType (exact dropdown value)
-        fileType: result.fileType,
-        mime: result.mimeType,
-        metaData: {
-          s3Key: result.key,
-          s3Bucket: result.bucket,
-          originalFileName: result.fileName,
-          fileSize: result.fileSize,
-        },
-      }));
+      // When re-uploading, only process the first result and include documentIdToUpdate
+      const documentsToStore = reuploadingDocumentId 
+        ? [{
+            fileUrl: uploadResult.uploadResults[0].url,
+            docType: docType,
+            fileType: uploadResult.uploadResults[0].fileType,
+            mime: uploadResult.uploadResults[0].mimeType,
+            metaData: {
+              s3Key: uploadResult.uploadResults[0].key,
+              s3Bucket: uploadResult.uploadResults[0].bucket,
+              originalFileName: uploadResult.uploadResults[0].fileName,
+              fileSize: uploadResult.uploadResults[0].fileSize,
+              documentIdToUpdate: reuploadingDocumentId, // Include documentIdToUpdate for re-upload
+            },
+          }]
+        : uploadResult.uploadResults.map((result) => ({
+            fileUrl: result.url,
+            docType: docType,
+            fileType: result.fileType,
+            mime: result.mimeType,
+            metaData: {
+              s3Key: result.key,
+              s3Bucket: result.bucket,
+              originalFileName: result.fileName,
+              fileSize: result.fileSize,
+            },
+          }));
 
-      toast.info('Storing document information...');
+      toast.info(reuploadingDocumentId ? 'Updating document...' : 'Storing document information...');
       await dispatch(storeDocumentMetadata(documentsToStore)).unwrap();
 
       // Step 3: Refresh documents list
@@ -430,9 +445,10 @@ function VerificationCenter() {
       if (reuploadingDocumentId) {
         setReuploadingDocumentId(null);
         setReuploadingDocType(null);
+        toast.success('Document re-uploaded successfully and submitted for review!');
+      } else {
+        toast.success('Documents uploaded successfully and submitted for review!');
       }
-
-      toast.success('Documents uploaded successfully and submitted for review!');
     } catch (error) {
       console.error('Error submitting documents:', error);
       let errorMessage = "Failed to upload documents. Please try again.";
@@ -510,11 +526,12 @@ function VerificationCenter() {
           <>
             <VerificationProgressTracker currentStep={verificationProgressStep} />
 
-            {rejectedDocument && (
-              <DocumentRejectedSection
-                rejectedDocument={rejectedDocument}
+            {transformedDocuments.rejected.length > 0 && (
+              <RejectedDocumentsSection
+                documents={transformedDocuments.rejected}
+                onDelete={(id) => handleDeleteDocument(id, "rejected")}
+                onDownload={handleDownloadDocument}
                 onReupload={handleReupload}
-                onDownload={() => handleDownloadDocument(transformedDocuments.rejected[0])}
               />
             )}
 

@@ -28,7 +28,7 @@ function ProfileSection() {
                 </button>
               </div>
             </div>
-            <div className="order-1 md:order-2 w-full lg:w-1/2  lg:-mt-10 -mt-16">
+            <div className="order-1 md:order-2 w-full lg:w-1/2  lg:-mt-10 -mt-0">
               <img
                 src="/images/website/profile-section-image.png"
                 alt="Modern house"

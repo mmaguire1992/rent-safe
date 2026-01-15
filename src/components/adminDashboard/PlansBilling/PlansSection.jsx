@@ -1,6 +1,201 @@
+import { useState, useEffect } from "react";
 import { FiCheck } from "react-icons/fi";
+import { getOwnerPlans, getRenterPlan } from "@/api/subscriptions";
+import { getUserType } from "@/utils/auth";
 
-function PlansSection({ plans, currentPlan, onSwitchPlan }) {
+function PlansSection({ currentPlan, onSwitchPlan, onPlansLoaded }) {
+  const [plans, setPlans] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [userType, setUserType] = useState(null);
+
+  useEffect(() => {
+    // Get user type
+    const type = getUserType();
+    setUserType(type);
+  }, []);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        let fetchedPlans = [];
+        
+        // Fetch plans based on user type
+        if (userType === 'owner') {
+          fetchedPlans = await getOwnerPlans();
+        } else if (userType === 'renter') {
+          // For renters, there's typically only one active plan
+          const renterPlan = await getRenterPlan();
+          fetchedPlans = renterPlan ? [renterPlan] : [];
+        } else {
+          // Default to owner plans if user type not determined
+          fetchedPlans = await getOwnerPlans();
+        }
+        
+        // Transform plans to match UI structure
+        const transformedPlans = fetchedPlans.map((plan) => {
+          const price = plan.billing?.price || plan.monthlyPrice || 0;
+          
+          // Build features array dynamically based on user type
+          const features = [];
+          
+          if (userType === 'owner') {
+            // Owner-specific features
+            const propertyLimit = plan.features?.propertyLimit || 0;
+            const featuredListings = plan.features?.featuredListings || 0;
+            
+            // Property limit - dynamic based on plan
+            if (propertyLimit === -1) {
+              features.push("Unlimited active listings");
+            } else if (propertyLimit > 0) {
+              features.push(`${propertyLimit} active listing${propertyLimit > 1 ? 's' : ''}`);
+            } else {
+              features.push("1 active listing");
+            }
+            
+            // Featured listings - dynamic
+            if (featuredListings > 0) {
+              if (featuredListings === 1) {
+                features.push("Featured listing (1)");
+              } else {
+                features.push(`Featured listings (${featuredListings})`);
+              }
+            }
+            
+            // Common features
+            features.push("Verified renter messages");
+            
+            // Analytics based on plan level
+            if (plan.planKey === 'premium') {
+              features.push("Advanced analytics");
+            } else {
+              features.push("Basic analytics");
+            }
+            
+            // Support based on plan level
+            if (plan.planKey === 'premium') {
+              features.push("Priority phone support");
+            } else if (plan.planKey === 'standard') {
+              features.push("Priority email support");
+            } else {
+              features.push("Email support");
+            }
+            
+            // Additional premium features
+            if (plan.planKey === 'premium') {
+              features.push("Promoted in search");
+            }
+            
+            // Common to all plans
+            features.push("No per-listing fees");
+          } else if (userType === 'renter') {
+            // Renter-specific features
+            const chatContactLimit = plan.features?.chatContactLimit || 5;
+            
+            features.push(`${chatContactLimit} chat contacts`);
+            features.push("Verified property access");
+            features.push("Message property owners");
+            features.push("Save favorite properties");
+            features.push("Email notifications");
+            features.push("Priority customer support");
+          }
+          
+          // Determine badge
+          let badge = null;
+          if (plan.planKey === 'basic') {
+            badge = "NEW";
+          } else if (plan.planKey === 'premium') {
+            badge = "POPULAR";
+          }
+          
+          return {
+            id: plan.planKey || plan._id || plan.id,
+            name: plan.name || 'Unnamed Plan',
+            badge: badge,
+            description: plan.description || 'Choose the perfect plan for your needs',
+            price: `€${price.toFixed(2)}`,
+            period: "/ one-time payment",
+            features: features,
+            planData: plan, // Keep original plan data for reference
+          };
+        });
+        
+        setPlans(transformedPlans);
+        // Notify parent component about loaded plans
+        if (onPlansLoaded) {
+          onPlansLoaded(transformedPlans);
+        }
+      } catch (err) {
+        console.error('Error fetching plans:', err);
+        setError('Failed to load plans. Please try again later.');
+        setPlans([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (userType) {
+      fetchPlans();
+    }
+  }, [userType]);
+
+  if (isLoading) {
+    return (
+      <div className="block">
+        <div className="mb-6">
+          <h2 className="lg:text-2xl text-xl font-bold font-nunito text-secondary mb-0">
+            Plans & Billing
+          </h2>
+          <p className="text-base font-normal font-nunito text-darkGray">
+            Choose the perfect plan for your needs
+          </p>
+        </div>
+        <div className="text-center py-12">
+          <p className="text-darkGray">Loading plans...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="block">
+        <div className="mb-6">
+          <h2 className="lg:text-2xl text-xl font-bold font-nunito text-secondary mb-0">
+            Plans & Billing
+          </h2>
+          <p className="text-base font-normal font-nunito text-darkGray">
+            Choose the perfect plan for your needs
+          </p>
+        </div>
+        <div className="text-center py-12">
+          <p className="text-red-500">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (plans.length === 0) {
+    return (
+      <div className="block">
+        <div className="mb-6">
+          <h2 className="lg:text-2xl text-xl font-bold font-nunito text-secondary mb-0">
+            Plans & Billing
+          </h2>
+          <p className="text-base font-normal font-nunito text-darkGray">
+            Choose the perfect plan for your needs
+          </p>
+        </div>
+        <div className="text-center py-12">
+          <p className="text-darkGray">No plans available at the moment.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="block">
       <div className="mb-6">

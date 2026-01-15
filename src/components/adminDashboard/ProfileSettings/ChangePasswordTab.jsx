@@ -103,21 +103,8 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
     } catch (error) {
       // Error is handled by parent component and toast
       console.error('Password change error:', error);
-      // Extract error message - could be string (from Redux) or object (from axios)
-      let errorMessage = "Failed to change password. Please try again.";
-      
-      if (typeof error === 'string') {
-        errorMessage = error;
-      } else if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-      
-      // Also show inline so user knows exactly what to fix
-      setFieldErrors((prev) => ({ ...prev, newPassword: errorMessage }));
+      // Clear inline errors - only show toast notification
+      setFieldErrors({});
     }
   };
 
@@ -140,7 +127,11 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
               name="oldPassword"
               value={formData.oldPassword}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+              className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+                fieldErrors.oldPassword
+                  ? "border-errorColor focus:border-errorColor"
+                  : "border-lightGray"
+              }`}
               placeholder="Enter your old password"
             />
             <button
@@ -157,6 +148,7 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
         </div>
 
         {/* New Password */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
           <label className="block text-base font-semibold font-nunito text-secondary mb-1">
             New Password
@@ -167,7 +159,11 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
               name="newPassword"
               value={formData.newPassword}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+              className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+                fieldErrors.newPassword
+                  ? "border-errorColor focus:border-errorColor"
+                  : "border-lightGray"
+              }`}
               placeholder="Enter your new password"
             />
             <button
@@ -178,11 +174,8 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
               {showPasswords.new ? <BsEye /> : <BsEyeSlash />}
             </button>
           </div>
-          {fieldErrors.newPassword ? (
-            <p className="mt-1 text-sm text-errorColor">{fieldErrors.newPassword}</p>
-          ) : null}
         </div>
-      </div>
+      
       {/* Confirm Password */}
       <div>
         <label className="block text-base font-semibold font-nunito text-secondary mb-1">
@@ -194,7 +187,11 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleInputChange}
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              fieldErrors.confirmPassword
+                ? "border-errorColor focus:border-errorColor"
+                : "border-lightGray"
+            }`}
             placeholder="Enter your confirm password"
           />
           <button
@@ -209,7 +206,7 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
           <p className="mt-1 text-sm text-errorColor">{fieldErrors.confirmPassword}</p>
         ) : null}
       </div>
-
+      </div>
 
       {/* Save Button */}
       <div className="flex justify-end">
@@ -220,6 +217,7 @@ function ChangePasswordTab({ onSave, onSuccess, loading = false, error = null })
         >
           {loading ? "Changing Password..." : "Save Changes"}
         </button>
+      </div>
       </div>
     </form>
   );
