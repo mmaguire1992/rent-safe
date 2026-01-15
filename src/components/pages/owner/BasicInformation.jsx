@@ -134,14 +134,6 @@ function BasicInformation() {
       }
       
       const result = await signupUser(signupData);
-        email: formData.email.trim(),
-        password: formData.password,
-        userType: 'owner',
-        phone: formData.phoneNumber || undefined,
-        companyName: formData.companyName?.trim() || undefined, // Send company name (will be saved as businessName in backend)
-        state: formData.state || undefined,
-        country: formData.country || undefined,
-      });
 
       // Store user data and token (will be activated after OTP verification)
       // We store it in a temporary location first, then move it after OTP verification
