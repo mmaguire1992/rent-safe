@@ -12,6 +12,7 @@ function DocumentsSection({
   documentTypeOptions,
   onDocumentsUpdated,
   existingDocuments = [],
+  errors = {},
 }) {
   // Map dropdown values to backend docType enum values
   const docTypeMap = {
@@ -74,7 +75,12 @@ function DocumentsSection({
             value={formData.documentExpire}
             onChange={(value) => handleDateChange("documentExpire", value)}
             placeholder="DD/MM/YYYY"
+            // Expiry date must never be in the past (Passport / Driving License / ID Card)
+            minDate={new Date().toISOString().split('T')[0]}
           />
+          {errors.documentExpire && (
+            <p className="mt-1 text-sm text-errorColor">{errors.documentExpire}</p>
+          )}
         </div>
       </div>
 

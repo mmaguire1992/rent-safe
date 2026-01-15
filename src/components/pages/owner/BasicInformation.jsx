@@ -80,7 +80,7 @@ function BasicInformation() {
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
+      newErrors.confirmPassword = "Passwords must match";
     }
 
     setErrors(newErrors);

@@ -18,6 +18,7 @@ import { FiCheckCircle } from "react-icons/fi";
 import BlueSearchIcon from "@/svg/blueSearchIcon";
 import BellIcon from "@/svg/bellIcon";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
+import RedCrossIcon from "@/svg/redCrossIcon";
 import LogoutIcon from "@/svg/logoutIcon";
 import NotificationDropdown from "../common/NotificationDropdown";
 
@@ -68,9 +69,10 @@ const clearSubscriptionCache = () => {
 
 function Header({ onMenuClick }) {
   const navigate = useNavigate();
-  const { logout, userName, user, isAuthenticated, userType } = useAuth();
+  const { logout, userName, user, isAuthenticated, userType, updateUser } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
+  const [freshUser, setFreshUser] = useState(user || null);
   const [profileImage, setProfileImage] = useState(() => {
     // Initialize from user context immediately
     return user?.userInfo?.profileImage || null;
@@ -111,12 +113,18 @@ function Header({ onMenuClick }) {
     if (!isAuthenticated) {
       setProfileImage(null);
       profileImageFetchedRef.current = false;
+      setFreshUser(null);
       return;
     }
 
     // Use profile image from context if available (immediate render)
     if (user?.userInfo?.profileImage) {
       setProfileImage(user.userInfo.profileImage);
+    }
+
+    // Keep a local "freshUser" copy to ensure we have up-to-date verificationStatus
+    if (user) {
+      setFreshUser(user);
     }
 
     // Only fetch once per session if we don't have it from context
@@ -127,6 +135,11 @@ function Header({ onMenuClick }) {
       const fetchProfileImage = async () => {
         try {
           const userData = await getCurrentUser();
+          // Keep freshest user info for verification badge
+          if (userData) {
+            setFreshUser(userData);
+            if (updateUser) updateUser(userData);
+          }
           if (userData?.userInfo?.profileImage) {
             setProfileImage(userData.userInfo.profileImage);
           } else {
@@ -224,6 +237,13 @@ function Header({ onMenuClick }) {
 
   const displayName = userName || 'User';
   const displayEmail = user?.email || '';
+  // Owner should show green only when verified; otherwise show red cross
+  const verificationStatus =
+    freshUser?.userInfo?.verificationStatus ??
+    user?.userInfo?.verificationStatus ??
+    user?.verificationStatus ??
+    'not_started';
+  const isOwnerVerified = verificationStatus === 'verified';
 
   return (
     <div className="bg-white  px-3 sm:px-6 py-3 md:py-4 relative">
@@ -354,7 +374,7 @@ function Header({ onMenuClick }) {
                   </div>
                 )}
                 <span className="absolute -top-1 -right-1">
-                  <GreenCheckedIcon />
+                  {isOwnerVerified ? <GreenCheckedIcon /> : <RedCrossIcon />}
                 </span>
               </div>
               <div className="hidden md:flex items-center gap-1">
@@ -388,7 +408,7 @@ function Header({ onMenuClick }) {
                         </div>
                       )}
                       <span className="absolute -top-1 -right-1">
-                        <GreenCheckedIcon />
+                        {isOwnerVerified ? <GreenCheckedIcon /> : <RedCrossIcon />}
                       </span>
                     </div>
                     <div>

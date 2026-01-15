@@ -60,8 +60,8 @@ function CurrentAddressSection({ formData, handleChange, existingDocuments = [],
             value={formData.currentPostcode}
             onChange={handleChange}
             placeholder="Enter your postcode"
-            inputMode="numeric"
-            pattern="[0-9]*"
+            inputMode="text"
+            autoComplete="postal-code"
             className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
               errors.currentPostcode ? 'border-errorColor' : 'border-lightGray'
             }`}

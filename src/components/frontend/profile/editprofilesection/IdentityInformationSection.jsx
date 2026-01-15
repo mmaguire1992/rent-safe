@@ -38,8 +38,12 @@ function IdentityInformationSection({
             value={formData.dateOfBirth}
             onChange={(value) => handleDateChange("dateOfBirth", value)}
             placeholder="DD/MM/YYYY"
-            maxDate={new Date().toISOString().split('T')[0]} // Allow past dates, but not future dates
+            // Allow selecting up to today (no future dates). Age 18+ is validated separately.
+            maxDate={new Date().toISOString().split('T')[0]}
           />
+          {errors.dateOfBirth && (
+            <p className="mt-1 text-sm text-errorColor">{errors.dateOfBirth}</p>
+          )}
         </div>
 
         <div>
