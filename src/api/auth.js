@@ -149,11 +149,15 @@ export const signupUser = async (userData) => {
     // Build request body with all fields
     const requestBody = {
       firstName: userData.firstName.trim(),
-      lastName: userData.lastName.trim(),
       email: userData.email.trim().toLowerCase(),
       password: userData.password,
       userType: userData.userType,
     };
+    
+    // Only add lastName if it's provided (not null/undefined/empty)
+    if (userData.lastName && userData.lastName.trim()) {
+      requestBody.lastName = userData.lastName.trim();
+    }
     
     // Add optional fields only if they exist and have values
     if (userData.phone) requestBody.phone = userData.phone;

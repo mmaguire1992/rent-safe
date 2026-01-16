@@ -99,16 +99,16 @@ function BasicInformation() {
 
     try {
       // Split fullName into firstName and lastName
-      // If single name (no space): use as full name for both firstName and lastName
+      // If single name (no space): use as firstName only, leave lastName empty
       // If two or more words: first word is firstName, rest is lastName
       const trimmedName = formData.fullName.trim();
       const nameParts = trimmedName.split(/\s+/).filter(part => part.length > 0);
       
       let firstName, lastName;
       if (nameParts.length === 1) {
-        // Single name: use as full name
+        // Single name: use as firstName only, don't set lastName
         firstName = nameParts[0];
-        lastName = nameParts[0];
+        lastName = null;
       } else {
         // Two or more words: first is firstName, rest is lastName
         firstName = nameParts[0];
@@ -116,9 +116,9 @@ function BasicInformation() {
       }
 
       // Call signup API
-      const result = await signupUser({
+      // Only include lastName if it's not null/empty
+      const signupData = {
         firstName,
-        lastName,
         email: formData.email.trim(),
         password: formData.password,
         userType: 'owner',
@@ -126,7 +126,14 @@ function BasicInformation() {
         companyName: formData.companyName?.trim() || undefined, // Send company name (will be saved as businessName in backend)
         state: formData.state || undefined,
         country: formData.country || undefined,
-      });
+      };
+      
+      // Only add lastName if it's provided
+      if (lastName) {
+        signupData.lastName = lastName;
+      }
+      
+      const result = await signupUser(signupData);
 
       // Store user data and token (will be activated after OTP verification)
       // We store it in a temporary location first, then move it after OTP verification

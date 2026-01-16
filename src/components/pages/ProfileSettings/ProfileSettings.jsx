@@ -100,17 +100,17 @@ function ProfileSettings() {
     try {
       // Prepare update data
       // Split full name into first and last
-      const nameParts = data.fullName.trim().split(/\s+/);
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
+      // If only one name, use as firstName only, leave lastName empty
+      const nameParts = data.fullName.trim().split(/\s+/).filter(part => part.length > 0);
+      const firstName = nameParts[0] || null;
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
       
       const updateData = {
         firstName: firstName,
-        lastName: lastName,
         userInfo: {
           name: {
-            first: firstName,
-            last: lastName,
+            first: firstName || undefined,
+            last: lastName || undefined,
           },
           address: {
             street: data.address || '',
@@ -122,6 +122,11 @@ function ProfileSettings() {
           businessName: data.businessName || '',
         },
       };
+      
+      // Only add lastName to updateData if it's provided (not null)
+      if (lastName) {
+        updateData.lastName = lastName;
+      }
 
       // If phone number changed, request OTP first
       if (data.phoneNumber && data.phoneNumber !== profileSettingsData.phoneNumber) {
