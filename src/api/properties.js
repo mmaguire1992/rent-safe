@@ -323,7 +323,19 @@ export async function getPropertyById(id, requireAuth = false) {
  */
 export async function createProperty(propertyData) {
   try {
-    const responseData = await usePostApi(propertyRoutes.createProperty, true, propertyData);
+    // Normalize furnished values (UI sometimes uses "semi-furnished")
+    const normalizedData =
+      propertyData && typeof propertyData === 'object'
+        ? {
+            ...propertyData,
+            furnished:
+              propertyData.furnished === 'semi-furnished'
+                ? 'partially_furnished'
+                : propertyData.furnished,
+          }
+        : propertyData;
+
+    const responseData = await usePostApi(propertyRoutes.createProperty, true, normalizedData);
     
     if (responseData && responseData.success && responseData.data) {
       return responseData.data;
@@ -348,7 +360,19 @@ export async function updateProperty(id, propertyData) {
       throw new Error('Property ID is required');
     }
     
-    const responseData = await usePutApi(propertyRoutes.updateProperty(id), true, propertyData);
+    // Normalize furnished values (UI sometimes uses "semi-furnished")
+    const normalizedData =
+      propertyData && typeof propertyData === 'object'
+        ? {
+            ...propertyData,
+            furnished:
+              propertyData.furnished === 'semi-furnished'
+                ? 'partially_furnished'
+                : propertyData.furnished,
+          }
+        : propertyData;
+
+    const responseData = await usePutApi(propertyRoutes.updateProperty(id), true, normalizedData);
     
     if (responseData && responseData.success && responseData.data) {
       return responseData.data;

@@ -227,6 +227,14 @@ function EditProperty() {
       // Get coordinates from address
       const coordinates = property.address?.coordinates?.coordinates || property.address?.coordinates || [];
 
+      // Map backend furnished enum to UI furnishedStatus values
+      // Backend: furnished | unfurnished | partially_furnished
+      // UI: furnished | unfurnished | semi-furnished
+      const furnishedStatus =
+        property.furnished === "partially_furnished"
+          ? "semi-furnished"
+          : (property.furnished || "");
+
       // Get existing images from media - store as objects with url property for better compatibility
       // UploadImagesStep can handle both strings and objects with url property
       const images = property.media && property.media.length > 0
@@ -291,7 +299,7 @@ function EditProperty() {
         monthlyRent: property.rent?.toString() || "",
         availableFrom: availableFromFormatted,
         additionalCharges: additionalCharges,
-        furnishedStatus: property.furnished || "",
+        furnishedStatus,
         amenities: transformedAmenities,
         otherAmenities: property.otherAmenities || [],
         utilities: utilities,
@@ -436,6 +444,14 @@ function EditProperty() {
       setIsSubmitting(true);
       setSubmitError(null);
 
+      // Map UI furnishedStatus to backend enum
+      // UI: furnished | unfurnished | semi-furnished
+      // Backend: furnished | unfurnished | partially_furnished
+      const furnished =
+        formData.furnishedStatus === "semi-furnished"
+          ? "partially_furnished"
+          : formData.furnishedStatus;
+
       // Build property data (same format as AddProperty)
       const data = {
         title: formData.propertyTitle.trim(),
@@ -453,7 +469,7 @@ function EditProperty() {
             type: charge.type,
             amount: parseFloat(charge.amount),
           })),
-        furnished: formData.furnishedStatus,
+        furnished,
         amenities: formData.amenities.map(mapAmenityToBackend),
         otherAmenities: formData.otherAmenities.filter(amenity => amenity.trim()),
         utilitiesIncluded: {
