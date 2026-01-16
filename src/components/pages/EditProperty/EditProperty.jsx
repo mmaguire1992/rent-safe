@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from '@/lib/react-router-compat';
+import { useDispatch, useSelector } from "react-redux";
 import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
 import Breadcrumb from "@/components/adminDashboard/common/Breadcrumb";
 import ProgressIndicator from "@/components/adminDashboard/AddProperty/ProgressIndicator";
@@ -16,17 +17,23 @@ import RenterDescriptionStep from "@/components/adminDashboard/AddProperty/Rente
 import ReviewStep from "@/components/adminDashboard/AddProperty/ReviewStep";
 import { addPropertySteps, amenitiesList } from "@/constant";
 import { getPropertyById, updateProperty, uploadMultiplePropertyMedia, deletePropertyMedia } from '@/api/properties';
+import { hydrateEditWizard, saveEditWizard, clearEditWizard } from "@/redux/slices/propertyWizardSlice";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { toast } from "react-toastify";
 
 function EditProperty() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const wizardEdit = useSelector((state) => state.propertyWizard?.edit);
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
   const [showAIModal, setShowAIModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
+  const [wizardFinalized, setWizardFinalized] = useState(false);
   const [aiDescription, setAiDescription] = useState("");
   const [submitError, setSubmitError] = useState(null);
   const [isDescriptionAIGenerated, setIsDescriptionAIGenerated] = useState(false);
@@ -59,6 +66,126 @@ function EditProperty() {
     additionalRequirements: "",
     coordinates: [],
   });
+
+  const isWizardDirty = useMemo(() => {
+    if (wizardFinalized) return false;
+    if (!id) return false;
+    if (isSubmitting) return false;
+    if (currentStep > 1) return true;
+
+    const fd = formData || {};
+    const keysToIgnore = new Set(['images']);
+    for (const [key, value] of Object.entries(fd)) {
+      if (keysToIgnore.has(key)) continue;
+      if (Array.isArray(value)) {
+        if (value.length > 0 && !(value.length === 1 && value[0] === '')) return true;
+      } else if (typeof value === 'object' && value) {
+        if (key === 'additionalCharges') {
+          const normalized = Array.isArray(value) ? value : [];
+          const hasAny = normalized.some(
+            (c) => (c?.type && String(c.type).trim()) || (c?.amount && String(c.amount).trim())
+          );
+          if (hasAny) return true;
+        } else {
+          return true;
+        }
+      } else if (typeof value === 'string') {
+        if (value.trim() !== '') return true;
+      } else if (value !== null && value !== undefined && value !== '') {
+        return true;
+      }
+    }
+    return false;
+  }, [wizardFinalized, id, isSubmitting, currentStep, formData]);
+
+  const isWizardDirtyRef = useRef(false);
+  useEffect(() => {
+    isWizardDirtyRef.current = isWizardDirty;
+  }, [isWizardDirty]);
+
+  // Register a global navigation blocker so sidebar/header navigation prompts before leaving
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!id) return;
+    const owner = `EditProperty:${id}`;
+    window.__rentsafe_navBlocker = {
+      owner,
+      shouldBlock: () => isWizardDirtyRef.current,
+      request: (nav) => {
+        setPendingNavigation(nav);
+        setShowLeaveModal(true);
+      },
+    };
+    return () => {
+      if (window.__rentsafe_navBlocker?.owner === owner) {
+        window.__rentsafe_navBlocker = null;
+      }
+    };
+  }, [id]);
+
+  // Hydrate wizard draft for this property id (so refresh doesn't reset to step 1)
+  useEffect(() => {
+    if (!id) return;
+    dispatch(hydrateEditWizard({ id }));
+  }, [id, dispatch]);
+
+  // Apply saved wizard draft (if any) once it is hydrated
+  const hasAppliedWizardRef = useRef(false);
+  const [autosaveEnabled, setAutosaveEnabled] = useState(false);
+  useEffect(() => {
+    if (!id) return;
+    if (!wizardEdit || wizardEdit.id !== id) return; // not hydrated yet
+
+    if (wizardEdit.hasSaved && !hasAppliedWizardRef.current) {
+      hasAppliedWizardRef.current = true;
+      if (wizardEdit.currentStep) setCurrentStep(wizardEdit.currentStep);
+      if (wizardEdit.formData) {
+        // Deep-clone to avoid Immer-frozen objects from Redux (prevents "read only property" errors)
+        const restoredFormData = JSON.parse(JSON.stringify(wizardEdit.formData));
+        setFormData((prev) => ({
+          ...prev,
+          ...restoredFormData,
+        }));
+      }
+      setAutosaveEnabled(true);
+      return;
+    }
+
+    // If there's no saved wizard, enable autosave once initial fetch completes
+    if (!wizardEdit.hasSaved && !autosaveEnabled && !loading) {
+      setAutosaveEnabled(true);
+    }
+  }, [id, wizardEdit, loading, autosaveEnabled]);
+
+  // Autosave wizard draft
+  useEffect(() => {
+    if (!id || !autosaveEnabled) return;
+
+    // Avoid putting File objects into redux actions (serializableCheck)
+    const serializableImages = Array.isArray(formData.images)
+      ? formData.images
+          .map((img) => {
+            if (typeof img === 'string') return img;
+            if (!img || typeof img !== 'object') return null;
+            if (img.file) return null; // drop new uploads
+            if (img.url) {
+              const kept = { url: img.url };
+              if (img.mediaId) kept.mediaId = img.mediaId;
+              return kept;
+            }
+            return null;
+          })
+          .filter(Boolean)
+      : [];
+
+    dispatch(
+      saveEditWizard({
+        id,
+        currentStep,
+        formData: { ...formData, images: serializableImages },
+      })
+    );
+  }, [id, autosaveEnabled, currentStep, formData, dispatch]);
 
   // Fetch property data on mount
   useEffect(() => {
@@ -436,7 +563,9 @@ function EditProperty() {
 
   const handleConfirmCancel = () => {
     setShowCancelModal(false);
-    navigate(`/dashboard/properties/${id}`);
+    if (id) dispatch(clearEditWizard({ id }));
+    setWizardFinalized(true);
+    navigate(`/dashboard/properties/${id}`, { __bypassBlocker: true });
   };
 
   const handleSubmit = async () => {
@@ -587,6 +716,9 @@ function EditProperty() {
         }
       }
 
+      // Clear wizard draft after successful update
+      if (id) dispatch(clearEditWizard({ id }));
+      setWizardFinalized(true);
       setShowSuccessModal(true);
     } catch (error) {
       console.error("Error updating property:", error);
@@ -802,6 +934,29 @@ function EditProperty() {
         message="Are you sure you want to cancel? All unsaved changes will be lost."
         confirmText="Yes, Cancel"
         cancelText="Continue Editing"
+      />
+
+      <ConfirmationModal
+        isOpen={showLeaveModal}
+        onClose={() => {
+          setShowLeaveModal(false);
+          setPendingNavigation(null);
+        }}
+        onConfirm={() => {
+          setShowLeaveModal(false);
+          if (id) dispatch(clearEditWizard({ id }));
+          setWizardFinalized(true);
+          if (pendingNavigation?.proceed) {
+            pendingNavigation.proceed();
+          } else if (pendingNavigation?.to !== undefined) {
+            navigate(pendingNavigation.to, { ...(pendingNavigation.options || {}), __bypassBlocker: true });
+          }
+          setPendingNavigation(null);
+        }}
+        title="Discard your changes?"
+        message="You have unsaved progress in this property edit. If you leave now, your changes will be discarded."
+        confirmText="Discard & Leave"
+        cancelText="Stay"
       />
     </DashboardLayout>
   );

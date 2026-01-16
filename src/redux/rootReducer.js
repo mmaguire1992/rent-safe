@@ -4,6 +4,7 @@ import uiReducer from './slices/uiSlice';
 import userReducer from './slices/userSlice';
 import propertyReducer from './slices/propertySlice';
 import verificationReducer from './slices/verificationSlice';
+import propertyWizardReducer from './slices/propertyWizardSlice';
 
 export const rootReducer = combineReducers({
   auth: authReducer,
@@ -11,5 +12,6 @@ export const rootReducer = combineReducers({
   user: userReducer,
   property: propertyReducer,
   verification: verificationReducer,
+  propertyWizard: propertyWizardReducer,
 });
 

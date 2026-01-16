@@ -56,6 +56,21 @@ export const logout = createAsyncThunk(
       if (typeof window !== 'undefined') {
         localStorage.removeItem('userData');
         localStorage.removeItem('userToken');
+        // Also clear persisted property wizard drafts on logout
+        localStorage.removeItem('rentsafe:addPropertyWizard');
+        try {
+          const prefix = 'rentsafe:editPropertyWizard:';
+          const keysToRemove = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(prefix)) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach((k) => localStorage.removeItem(k));
+        } catch {
+          // ignore
+        }
       }
       return null;
     } catch (error) {

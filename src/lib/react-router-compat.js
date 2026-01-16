@@ -8,9 +8,53 @@ import { useEffect, useState } from 'react'
 
 // Link compatibility - Next.js Link uses 'href', react-router-dom uses 'to'
 export function Link({ to, href, children, className, ...props }) {
+  const router = useRouter()
   const linkHref = href || to || '#'
+
+  const handleClick = (e) => {
+    // Allow consumer handlers first
+    if (typeof props.onClick === 'function') {
+      props.onClick(e)
+    }
+    if (e.defaultPrevented) return
+
+    // Respect new-tab / modified clicks
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+    if (props.target === '_blank') return
+    // Only intercept left clicks
+    if (typeof e.button === 'number' && e.button !== 0) return
+
+    const bypassBlocker = props?.__bypassBlocker === true
+    const blocker =
+      (typeof window !== 'undefined' && window.__rentsafe_navBlocker)
+        ? window.__rentsafe_navBlocker
+        : null
+
+    if (
+      !bypassBlocker &&
+      blocker &&
+      typeof blocker.shouldBlock === 'function' &&
+      blocker.shouldBlock() &&
+      typeof blocker.request === 'function'
+    ) {
+      e.preventDefault()
+      blocker.request({
+        to: linkHref,
+        options: { replace: !!props.replace },
+        kind: 'push',
+        proceed: () => {
+          if (props.replace) {
+            router.replace(linkHref)
+          } else {
+            router.push(linkHref)
+          }
+        },
+      })
+    }
+  }
+
   return (
-    <NextLink href={linkHref} className={className} {...props}>
+    <NextLink href={linkHref} className={className} {...props} onClick={handleClick}>
       {children}
     </NextLink>
   )
@@ -20,19 +64,65 @@ export function Link({ to, href, children, className, ...props }) {
 export function useNavigate() {
   const router = useRouter()
   return (to, options) => {
-    if (typeof to === 'string') {
-      if (options?.replace) {
-        router.replace(to)
+    // Internal options used by our app (not part of react-router-dom API)
+    const bypassBlocker = options?.__bypassBlocker === true
+    const afterNavigate = typeof options?.__afterNavigate === 'function' ? options.__afterNavigate : null
+
+    // Navigation blocker (set by pages like Add/Edit Property to confirm before leaving)
+    // Shape:
+    // window.__rentsafe_navBlocker = { shouldBlock: () => boolean, request: ({ to, options, kind, proceed }) => void }
+    const blocker = (typeof window !== 'undefined' && window.__rentsafe_navBlocker) ? window.__rentsafe_navBlocker : null
+
+    const doNavigate = () => {
+      // Strip internal-only fields so they don't leak elsewhere
+      const safeOptions = options && typeof options === 'object'
+        ? (() => {
+            const { __bypassBlocker, __afterNavigate, ...rest } = options
+            return rest
+          })()
+        : options
+
+      if (typeof to === 'string') {
+        if (safeOptions?.replace) {
+          router.replace(to)
+        } else {
+          router.push(to)
+        }
+      } else if (typeof to === 'number') {
+        router.back()
       } else {
-        router.push(to)
+        // Handle unexpected types - log error and default to login
+        console.error('Invalid navigation target:', to);
+        router.push('/login')
       }
-    } else if (typeof to === 'number') {
-      router.back()
-    } else {
-      // Handle unexpected types - log error and default to login
-      console.error('Invalid navigation target:', to);
-      router.push('/login')
+
+      // Run post-navigation side-effect (e.g., deferred logout clear)
+      if (afterNavigate) {
+        try { afterNavigate() } catch (e) { /* ignore */ }
+      }
     }
+
+    if (!bypassBlocker && blocker && typeof blocker.shouldBlock === 'function' && blocker.shouldBlock()) {
+      if (typeof blocker.request === 'function') {
+        blocker.request({
+          to,
+          options,
+          kind: typeof to === 'number' ? 'back' : 'push',
+          proceed: () => doNavigate(),
+        })
+        return
+      }
+    }
+
+    if (typeof to === 'string') {
+      doNavigate()
+      return
+    }
+    if (typeof to === 'number') {
+      doNavigate()
+      return
+    }
+    doNavigate()
   }
 }
 

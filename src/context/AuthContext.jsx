@@ -164,11 +164,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    // Clear localStorage (no API call needed)
-    clearAuthData();
-    setUser(null);
-    setToken(null);
-    navigate('/');
+    // Defer clearing auth data until after navigation is allowed.
+    // This lets pages like Add/Edit Property block navigation with a confirmation modal.
+    navigate('/', {
+      __afterNavigate: () => {
+        clearAuthData();
+        setUser(null);
+        setToken(null);
+      },
+    });
   };
 
   /**

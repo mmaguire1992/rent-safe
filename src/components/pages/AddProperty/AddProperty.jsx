@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from '@/lib/react-router-compat';
 import { useDispatch, useSelector } from 'react-redux';
 import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
@@ -19,6 +19,7 @@ import VerificationSubscriptionModal from "@/components/common/VerificationSubsc
 import { addPropertySteps, amenitiesList } from "@/constant";
 import { createNewProperty } from '@/redux/slices/propertySlice';
 import { uploadMultiplePropertyMedia } from '@/api/properties';
+import { saveAddWizard, clearAddWizard } from '@/redux/slices/propertyWizardSlice';
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { useAuth } from "@/context/AuthContext";
 import { getCurrentUser } from "@/api/users";
@@ -28,12 +29,16 @@ function AddProperty() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { creating, error: propertyError } = useSelector((state) => state.property);
+  const wizardAdd = useSelector((state) => state.propertyWizard?.add);
   const { user, userType } = useAuth();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [showAIModal, setShowAIModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
+  const [wizardFinalized, setWizardFinalized] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [needsSubscription, setNeedsSubscription] = useState(false);
@@ -72,6 +77,101 @@ function AddProperty() {
     additionalRequirements: "",
     coordinates: [], // [longitude, latitude]
   });
+
+  const isWizardDirty = useMemo(() => {
+    if (wizardFinalized) return false;
+    if (isSubmitting || creating) return false;
+    if (currentStep > 1) return true;
+    // Check if any meaningful field has been filled
+    const fd = formData || {};
+    const keysToIgnore = new Set(['images']);
+    for (const [key, value] of Object.entries(fd)) {
+      if (keysToIgnore.has(key)) continue;
+      if (Array.isArray(value)) {
+        if (value.length > 0 && !(value.length === 1 && value[0] === '')) return true;
+      } else if (typeof value === 'object' && value) {
+        // additionalCharges etc.
+        if (JSON.stringify(value) !== JSON.stringify(undefined) && Object.keys(value).length > 0) {
+          // handle default additionalCharges
+          if (key === 'additionalCharges') {
+            const normalized = Array.isArray(value) ? value : [];
+            const hasAny = normalized.some((c) => (c?.type && String(c.type).trim()) || (c?.amount && String(c.amount).trim()));
+            if (hasAny) return true;
+          } else {
+            return true;
+          }
+        }
+      } else if (typeof value === 'string') {
+        if (value.trim() !== '') return true;
+      } else if (value !== null && value !== undefined && value !== '') {
+        return true;
+      }
+    }
+    return false;
+  }, [wizardFinalized, currentStep, formData, isSubmitting, creating]);
+
+  const isWizardDirtyRef = useRef(false);
+  useEffect(() => {
+    isWizardDirtyRef.current = isWizardDirty;
+  }, [isWizardDirty]);
+
+  // Register a global navigation blocker so sidebar/header navigation prompts before leaving
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const owner = 'AddProperty';
+    window.__rentsafe_navBlocker = {
+      owner,
+      shouldBlock: () => isWizardDirtyRef.current,
+      request: (nav) => {
+        setPendingNavigation(nav);
+        setShowLeaveModal(true);
+      },
+    };
+    return () => {
+      if (window.__rentsafe_navBlocker?.owner === owner) {
+        window.__rentsafe_navBlocker = null;
+      }
+    };
+  }, []);
+
+  // Restore wizard state on first mount (prevents refresh from resetting to step 1)
+  const hasRestoredWizardRef = useRef(false);
+  useEffect(() => {
+    if (hasRestoredWizardRef.current) return;
+    hasRestoredWizardRef.current = true;
+
+    if (wizardAdd?.currentStep) {
+      setCurrentStep(wizardAdd.currentStep);
+    }
+    if (wizardAdd?.formData) {
+      // Deep-clone to avoid Immer-frozen objects from Redux (prevents "read only property" errors)
+      const restoredFormData = JSON.parse(JSON.stringify(wizardAdd.formData));
+      setFormData((prev) => ({
+        ...prev,
+        ...restoredFormData,
+        // New uploads cannot be restored after refresh
+        images: prev.images,
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Autosave wizard state (serializable only) so refresh doesn't lose progress
+  const canAutosaveWizardRef = useRef(false);
+  useEffect(() => {
+    if (!canAutosaveWizardRef.current) {
+      // enable after first render so we don't overwrite an existing saved wizard with defaults
+      canAutosaveWizardRef.current = true;
+      return;
+    }
+    dispatch(
+      saveAddWizard({
+        currentStep,
+        // only serializable data (Files can't be stored/restored after refresh)
+        formData: { ...formData, images: [] },
+      })
+    );
+  }, [currentStep, formData, dispatch]);
 
   // Check verification and subscription status on mount
   useEffect(() => {
@@ -570,6 +670,9 @@ function AddProperty() {
 
       // Step 3: Only show success modal after both property creation AND media upload complete
       // If media upload failed, still show success but with a note
+      // Clear draft wizard state now that property is created
+      dispatch(clearAddWizard());
+      setWizardFinalized(true);
       if (mediaUploadSuccess || !formData.images || formData.images.length === 0) {
         // All good - show success modal
         setShowSuccessModal(true);
@@ -845,12 +948,38 @@ function AddProperty() {
         onClose={() => setShowCancelModal(false)}
         onConfirm={() => {
           setShowCancelModal(false);
-          navigate("/dashboard/properties");
+          dispatch(clearAddWizard());
+          navigate("/dashboard/properties", { __bypassBlocker: true });
         }}
         title="Cancel Property Creation"
         message="Are you sure you want to cancel? All your progress will be lost if you continue."
         confirmText="Yes, Cancel"
         cancelText="Continue Editing"
+      />
+
+      <ConfirmationModal
+        isOpen={showLeaveModal}
+        onClose={() => {
+          setShowLeaveModal(false);
+          setPendingNavigation(null);
+        }}
+        onConfirm={() => {
+          setShowLeaveModal(false);
+          dispatch(clearAddWizard());
+          setWizardFinalized(true);
+          // proceed with the original navigation attempt
+          if (pendingNavigation?.proceed) {
+            pendingNavigation.proceed();
+          } else if (pendingNavigation?.to !== undefined) {
+            // Fallback if proceed not provided
+            navigate(pendingNavigation.to, { ...(pendingNavigation.options || {}), __bypassBlocker: true });
+          }
+          setPendingNavigation(null);
+        }}
+        title="Discard your changes?"
+        message="You have unsaved progress in this property draft. If you leave now, your draft will be discarded."
+        confirmText="Discard & Leave"
+        cancelText="Stay"
       />
     </DashboardLayout>
   );
