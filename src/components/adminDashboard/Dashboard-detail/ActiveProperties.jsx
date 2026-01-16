@@ -472,14 +472,14 @@ function ActiveProperties() {
                       </button>
                       {openDropdownId === property.id && (
                         <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-lightGray rounded-lg shadow-lg z-50">
-                          <button
+                          {/* <button
                             onClick={() => handleAction("edit", property.id)}
                             className="w-full flex items-center gap-3 px-4 py-2 text-left text-secondary hover:bg-gray-50 transition-colors first:rounded-t-lg"
                           >
                             <span className="text-base text-secondary font-medium font-nunito">
                               Edit
                             </span>
-                          </button>
+                          </button> */}
                           <button
                             onClick={() => handleAction("delete", property.id)}
                             className="w-full flex items-center gap-3 px-4 py-2 text-left  hover:bg-gray-50  transition-colors"
