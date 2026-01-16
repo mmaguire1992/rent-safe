@@ -318,8 +318,7 @@ function Header({ onMenuClick }) {
           <div className="relative" ref={notificationRef}>
             <button
               onClick={() => {
-                navigate('/dashboard/notifications');
-                setNotificationDropdownOpen(false);
+                setNotificationDropdownOpen((prev) => !prev);
                 setDropdownOpen(false);
               }}
               className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -335,6 +334,8 @@ function Header({ onMenuClick }) {
               isOpen={notificationDropdownOpen}
               onClose={() => setNotificationDropdownOpen(false)}
               onUnreadCountChange={(count) => setUnreadCount(count)}
+              viewAllPath="/dashboard/notifications"
+              previewLimit={3}
             />
           </div>
           <div

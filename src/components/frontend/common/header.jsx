@@ -18,6 +18,9 @@ import { getCurrentUser } from "@/api/users";
 import { usePaymentStatus } from "@/hooks/usePaymentStatus";
 import { getChatrooms } from "@/api/chat";
 import { getWishlistPropertyIds } from "@/api/wishlists";
+import { getNotifications } from "@/api/notifications";
+import NotificationDropdown from "@/components/adminDashboard/common/NotificationDropdown";
+import BellIcon from "@/svg/bellIcon";
 import { toast } from "react-toastify";
 import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtils';
 import { isAuthenticated as checkAuth } from "@/utils/auth";
@@ -34,6 +37,9 @@ const Navbar = () => {
   const [profileImage, setProfileImage] = useState(null);
   const [favoriteCount, setFavoriteCount] = useState(0);
   const [freshUserData, setFreshUserData] = useState(null);
+  const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const notificationRef = useRef(null);
   
   // Use shared payment status hook
   const { 
@@ -161,6 +167,22 @@ const Navbar = () => {
     };
   }, [isAuthenticated, userType, user?.id]);
 
+  // Fetch notification unread count (for the bell badge)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const fetchUnread = async () => {
+      try {
+        const data = await getNotifications({ page: 1, limit: 1 });
+        setUnreadCount(data.unreadCount || 0);
+      } catch {
+        // ignore
+      }
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
   // Close renter menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -258,6 +280,8 @@ const Navbar = () => {
     baseBtn +
     " text-white border-transparent bg-gradient-to-l from-[#4A2FCC] to-[#6B4EFF] " +
     "hover:border-[#6B4EFF] hover:from-[#3B21C0] hover:to-[#5C3BFF]";
+
+  const notificationsViewAllPath = userType === 'owner' ? '/dashboard/notifications' : '/notifications';
 
   const loginMobile =
     baseBtn +
@@ -377,6 +401,31 @@ const Navbar = () => {
 
               {/* Icons */}
               <div className="flex items-center gap-4 ml-4 pl-4 border-l border-gray-200">
+                {/* Notifications */}
+                {isAuthenticated && (
+                  <div className="relative" ref={notificationRef}>
+                    <button
+                      onClick={() => setNotificationDropdownOpen((prev) => !prev)}
+                      className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      aria-label="Notifications"
+                    >
+                      <BellIcon />
+                      {unreadCount > 0 && (
+                        <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                      )}
+                    </button>
+                    <NotificationDropdown
+                      isOpen={notificationDropdownOpen}
+                      onClose={() => setNotificationDropdownOpen(false)}
+                      onUnreadCountChange={(count) => setUnreadCount(count)}
+                      viewAllPath={notificationsViewAllPath}
+                      previewLimit={3}
+                    />
+                  </div>
+                )}
+
                 <button
                   onClick={handleHouseClick}
                   className="text-primary hover:opacity-80 transition-opacity"
@@ -414,7 +463,31 @@ const Navbar = () => {
           ) : (
             <div className="hidden lg:flex items-center gap-3">
               {isAuthenticated && userType === 'renter' ? (
-                <div className="relative" ref={renterMenuRef}>
+                <div className="flex items-center gap-2">
+                  {/* Notifications */}
+                  <div className="relative" ref={notificationRef}>
+                    <button
+                      onClick={() => setNotificationDropdownOpen((prev) => !prev)}
+                      className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      aria-label="Notifications"
+                    >
+                      <BellIcon />
+                      {unreadCount > 0 && (
+                        <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                      )}
+                    </button>
+                    <NotificationDropdown
+                      isOpen={notificationDropdownOpen}
+                      onClose={() => setNotificationDropdownOpen(false)}
+                      onUnreadCountChange={(count) => setUnreadCount(count)}
+                      viewAllPath={notificationsViewAllPath}
+                      previewLimit={3}
+                    />
+                  </div>
+
+                  <div className="relative" ref={renterMenuRef}>
                   <button
                     onClick={() => setRenterMenuOpen(!renterMenuOpen)}
                     className="flex items-center gap-2 cursor-pointer border border-lightGray rounded-full px-3 py-1.5 hover:bg-gray-50 transition-colors"
@@ -519,6 +592,7 @@ const Navbar = () => {
                       </div>
                     </div>
                   )}
+                  </div>
                 </div>
               ) : (
                 <>

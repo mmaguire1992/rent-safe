@@ -11,8 +11,10 @@ import { FiCheck, FiCheckCircle } from 'react-icons/fi';
  * @param {boolean} isOpen - Whether dropdown is open
  * @param {Function} onClose - Callback when dropdown closes
  * @param {Function} onUnreadCountChange - Callback when unread count changes
+ * @param {string} viewAllPath - Path to the full notifications page
+ * @param {number} previewLimit - Number of notifications to show in the dropdown (default: 3)
  */
-function NotificationDropdown({ isOpen, onClose, onUnreadCountChange }) {
+function NotificationDropdown({ isOpen, onClose, onUnreadCountChange, viewAllPath = '/dashboard/notifications', previewLimit = 3 }) {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -43,7 +45,8 @@ function NotificationDropdown({ isOpen, onClose, onUnreadCountChange }) {
   const fetchNotifications = async () => {
     try {
       setIsLoading(true);
-      const data = await getNotifications({ page: 1, limit: 20 });
+      const safeLimit = Math.max(1, Number(previewLimit) || 3);
+      const data = await getNotifications({ page: 1, limit: safeLimit });
       setNotifications(data.notifications || []);
       const newUnreadCount = data.unreadCount || 0;
       setUnreadCount(newUnreadCount);
@@ -143,24 +146,31 @@ function NotificationDropdown({ isOpen, onClose, onUnreadCountChange }) {
     >
       {/* Header */}
       <div className="p-4 border-b border-lightGray flex items-center justify-between">
-        <h3 
-          className="font-bold text-secondary text-lg font-nunito cursor-pointer hover:text-primary"
-          onClick={() => {
-            onClose();
-            navigate('/dashboard/notifications');
-          }}
-        >
-          Notifications
-        </h3>
-        {unreadCount > 0 && (
+        <div className="flex items-center gap-3">
+          <h3 className="font-bold text-secondary text-lg font-nunito">
+            Notifications
+          </h3>
           <button
-            onClick={handleMarkAllAsRead}
-            disabled={isMarkingRead}
-            className="text-sm text-primary hover:text-primary/80 font-medium disabled:opacity-50"
+            onClick={() => {
+              onClose();
+              navigate(viewAllPath);
+            }}
+            className="text-sm text-primary hover:text-primary/80 font-semibold"
           >
-            Mark all as read
+            View all
           </button>
-        )}
+        </div>
+        <div className="flex items-center gap-3">
+          {unreadCount > 0 && (
+            <button
+              onClick={handleMarkAllAsRead}
+              disabled={isMarkingRead}
+              className="text-sm text-primary hover:text-primary/80 font-medium disabled:opacity-50"
+            >
+              Mark all as read
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Notifications List */}
@@ -188,7 +198,7 @@ function NotificationDropdown({ isOpen, onClose, onUnreadCountChange }) {
                   }`}
                   onClick={() => {
                     onClose();
-                    navigate('/dashboard/notifications');
+                    navigate(viewAllPath);
                   }}
                 >
                   <div className="flex items-start gap-3">
@@ -238,13 +248,22 @@ function NotificationDropdown({ isOpen, onClose, onUnreadCountChange }) {
       </div>
 
       {/* Footer */}
-      {notifications.length > 0 && (
-        <div className="p-3 border-t border-lightGray text-center">
-          <p className="text-xs text-midGray">
-            {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up!'}
-          </p>
-        </div>
-      )}
+      <div className="p-3 border-t border-lightGray flex items-center justify-between">
+        <p className="text-xs text-midGray">
+          {notifications.length > 0
+            ? (unreadCount > 0 ? `${unreadCount} unread` : 'All caught up!')
+            : 'No notifications'}
+        </p>
+        <button
+          onClick={() => {
+            onClose();
+            navigate(viewAllPath);
+          }}
+          className="text-xs font-semibold text-primary hover:text-primary/80"
+        >
+          View all
+        </button>
+      </div>
     </div>
   );
 }

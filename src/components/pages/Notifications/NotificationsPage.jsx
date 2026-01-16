@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from '@/lib/react-router-compat';
 import DashboardLayout from '@/components/adminDashboard/dashboard/DashboardLayout';
+import Navbar from '@/components/frontend/common/header';
+import Footer from '@/components/frontend/common/footer';
 import { getNotifications, markNotificationAsRead } from '@/api/notifications';
 import { FiCheck, FiFilter, FiSearch, FiCheckCircle, FiChevronLeft } from 'react-icons/fi';
 import Pagination from '@/components/adminDashboard/common/Pagination';
@@ -61,7 +63,7 @@ const getNotificationIcon = (type) => {
   }
 };
 
-function NotificationsPage() {
+function NotificationsPage({ layout = 'dashboard' }) {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -183,9 +185,8 @@ function NotificationsPage() {
     );
   });
 
-  return (
-    <DashboardLayout>
-      <div className="block">
+  const content = (
+    <div className="block">
         {/* Header */}
         <div className="mb-3 sm:mb-4">
           <div className="flex items-center gap-3 mb-2">
@@ -380,9 +381,22 @@ function NotificationsPage() {
             </div>
           )}
         </div>
-      </div>
-    </DashboardLayout>
+    </div>
   );
+
+  if (layout === 'public') {
+    return (
+      <>
+        <Navbar />
+        <main className="min-h-[60vh] px-4 sm:px-6 lg:px-8 py-6">
+          {content}
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  return <DashboardLayout>{content}</DashboardLayout>;
 }
 
 export default NotificationsPage;
