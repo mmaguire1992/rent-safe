@@ -112,6 +112,13 @@ function PropertyDetailPage() {
   }, [user?.userType]);
   // Handle contact owner click
   const handleContactOwner = async () => {
+    // Check if user is authenticated first - prevent API call if not logged in
+    if (!isAuthenticated()) {
+      toast.info('Please login to contact the owner');
+      navigate('/login');
+      return;
+    }
+
     // Removed verification check for renters - renters can contact owners regardless of verification status
 
     if (!property?.owner?._id && !property?.ownerId) {
@@ -166,6 +173,14 @@ function PropertyDetailPage() {
     } catch (err) {
       console.error('Error contacting owner:', err);
       const errorMessage = err.response?.data?.message || err.message || 'Failed to contact owner';
+      const statusCode = err.response?.status;
+      
+      // If unauthorized or not authenticated, redirect to login
+      if (statusCode === 401 || statusCode === 403 || errorMessage.toLowerCase().includes('unauthorized') || errorMessage.toLowerCase().includes('not authenticated')) {
+        toast.info('Please login to contact the owner');
+        navigate('/login');
+        return;
+      }
       
       // If limit reached, show modal
       if (errorMessage.includes('limit') || errorMessage.includes('Contact limit')) {
