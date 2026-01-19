@@ -3,7 +3,6 @@
  * All rental history related API calls
  */
 import { useGetApi, usePostApi } from './apiClient';
-import apiClient from './apiClient';
 
 /**
  * Find renter by email
@@ -106,6 +105,47 @@ export async function getAllRentalHistory(params = {}) {
     };
   } catch (error) {
     console.error('Error in getAllRentalHistory:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get rental history entries for the authenticated renter
+ * @param {Object} params - Query parameters
+ * @param {number} params.page - Page number
+ * @param {number} params.limit - Items per page
+ * @returns {Promise<Object>} Rental history entries with pagination
+ */
+export async function getMyRentalHistory(params = {}) {
+  try {
+    const { page = 1, limit = 10 } = params;
+    const queryParams = new URLSearchParams();
+
+    if (page) queryParams.append('page', page);
+    if (limit) queryParams.append('limit', limit);
+
+    const responseData = await useGetApi(
+      `/rental-history/my?${queryParams.toString()}`,
+      true
+    );
+
+    if (responseData && responseData.success && responseData.data) {
+      return responseData.data;
+    }
+
+    return {
+      data: [],
+      pagination: {
+        currentPage: 1,
+        totalPages: 0,
+        totalItems: 0,
+        itemsPerPage: 10,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      },
+    };
+  } catch (error) {
+    console.error('Error in getMyRentalHistory:', error);
     throw error;
   }
 }

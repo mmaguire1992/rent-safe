@@ -132,7 +132,13 @@ function ProfileMenu({ profileImage }) {
             >
               Profile Settings
             </button>
-            <button className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-50">
+            <button
+              onClick={() => {
+                setShowMenu(false);
+                navigate("/profile?tab=property-history");
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-50"
+            >
               Property History
             </button>
             <button

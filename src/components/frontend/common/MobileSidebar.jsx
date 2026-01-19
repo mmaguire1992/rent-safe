@@ -179,14 +179,14 @@ function MobileSidebar({ isOpen, onClose }) {
           {isMenuExpanded && isAuthenticated && userType === 'renter' && (
             <div className="py-4 pr-4 pl-6 space-y-1 border-b border-white/20 pb-4">
               <button
-                onClick={() => handleNavigation("/profileManagement")}
+                onClick={() => handleNavigation("/profile")}
                 className="w-full text-left px-4 text-sm font-normal font-nunito py-2 text-white hover:bg-white/10 rounded-lg transition-colors"
               >
                 Profile Setting
               </button>
               <button
                 onClick={() =>
-                  handleNavigation("/profileManagement?tab=property-history")
+                  handleNavigation("/profile?tab=property-history")
                 }
                 className="w-full text-left px-4 py-2 text-sm font-normal font-nunito text-white hover:bg-white/10 rounded-lg transition-colors"
               >
