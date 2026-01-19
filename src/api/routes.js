@@ -91,3 +91,11 @@ export const subscriptions = {
   getAllPlans: '/stripe/subscriptions/plans', // Public endpoint for getting plans
   createCheckoutSession: '/stripe/subscriptions/checkout',
 };
+
+// Rental History Routes
+export const rentalHistory = {
+  create: '/rental-history',
+  getAll: '/rental-history',
+  getById: (id) => `/rental-history/${id}`,
+  findRenter: '/rental-history/find-renter',
+};
