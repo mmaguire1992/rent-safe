@@ -75,9 +75,9 @@ function AIModal({
       <div className="bg-white rounded-lg w-full max-w-3xl relative max-h-[90vh] overflow-y-auto">
         <div className="p-3 md:p-5 flex items-start justify-between sticky top-0 bg-white">
           <div>
-            <h2 className="text-xl font-bold text-secondary mb-0">
+            {/* <h2 className="text-xl font-bold text-secondary mb-0">
               AI Content Generator
-            </h2>
+            </h2> */}
             <p className="text-base font-normal text-darkGray mt-1">
               Generate your property description with AI
             </p>
@@ -153,9 +153,9 @@ function AIModal({
           {showAIGenerated && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-base font-semibold text-[#6B4EFF]">
+                {/* <label className="block text-base font-semibold text-[#6B4EFF]">
                   AI Generated Description
-                </label>
+                </label> */}
                 <span className="text-sm font-normal text-midGray">
                   Save to edit the AI generated content
                 </span>

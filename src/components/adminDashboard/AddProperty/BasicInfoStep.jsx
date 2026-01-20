@@ -206,13 +206,13 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
                   : "border-lightGray"
               }`}
             />
-            <button
+            {/* <button
               onClick={() => setShowAIModal(true)}
               className="md:absolute bottom-3 right-2 flex items-center gap-2 px-4 py-2 bg-[#E8E2FF] text-[#6B4EFF] rounded-[10px] font-bold hover:bg-opacity-90 transition-colors text-base"
             >
               <BlueAIIcon />
               AI Content Generator
-            </button>
+            </button> */}
           </div>
           {touched.propertyDescription && errors?.propertyDescription && (
             <p className="mt-1 text-sm text-red-600">{errors.propertyDescription}</p>
