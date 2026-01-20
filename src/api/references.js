@@ -51,8 +51,15 @@ export async function createOwnerReference(referenceData) {
       throw new Error('Rental history ID and reference text are required');
     }
 
-    if (referenceText.length > 200) {
-      throw new Error('Reference text must be 200 characters or less');
+    // Disallow leading spaces (UX requirement)
+    if (/^\s/.test(referenceText)) {
+      throw new Error('Reference cannot start with a space');
+    }
+
+    // Max 200 characters, not counting spaces
+    const nonSpaceCount = String(referenceText).replace(/\s/g, '').length;
+    if (nonSpaceCount > 200) {
+      throw new Error('Reference must be 200 characters or less (spaces not counted)');
     }
 
     const responseData = await usePostApi(
@@ -60,7 +67,7 @@ export async function createOwnerReference(referenceData) {
       true, // Requires authentication
       {
         rentalHistoryId,
-        referenceText: referenceText.trim(),
+        referenceText: String(referenceText).trim(),
       }
     );
 
