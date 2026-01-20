@@ -7,6 +7,7 @@ import Breadcrumb from "@/components/adminDashboard/common/Breadcrumb";
 import RentOutDetailsForm from "@/components/adminDashboard/PropertyDetail/RentOutDetailsForm";
 import RenterDetailsSection from "@/components/adminDashboard/PropertyDetail/RenterDetailsSection";
 import PropertyStatusCard from "@/components/adminDashboard/PropertyDetail/PropertyStatusCard";
+import ReferencesSection from "@/components/adminDashboard/PropertyDetail/ReferencesSection";
 import PropertyGallery from "@/components/adminDashboard/PropertyDetail/PropertyGallery";
 import PropertyDescription from "@/components/adminDashboard/PropertyDetail/PropertyDescription";
 import PropertyDetailsGrid from "@/components/adminDashboard/PropertyDetail/PropertyDetailsGrid";
@@ -461,6 +462,11 @@ function PropertyDetail() {
         <PropertyStatusCard 
           propertyData={propertyData} 
           onStatusChange={handleStatusChange}
+        />
+
+        <ReferencesSection 
+          propertyId={id} 
+          propertyStatus={propertyData.status}
         />
         
         {/* Edit Button - Only show for pending_approval status */}
