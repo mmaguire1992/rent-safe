@@ -9,6 +9,10 @@ function IdentityInformationSection({
   handleDateChange,
   existingDocuments = [],
   onDocumentsUpdated,
+  deferDbSave = false,
+  pendingKey = null,
+  onPendingDocumentsChange = null,
+  pendingResetToken = 0,
   errors = {},
 }) {
   return (
@@ -26,8 +30,13 @@ function IdentityInformationSection({
             value={formData.identityFullName}
             onChange={handleChange}
             placeholder="Enter your full name"
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              errors.identityFullName ? 'border-errorColor' : 'border-lightGray'
+            }`}
           />
+          {errors.identityFullName && (
+            <p className="mt-1 text-sm text-errorColor">{errors.identityFullName}</p>
+          )}
         </div>
 
         <div>
@@ -56,8 +65,13 @@ function IdentityInformationSection({
             value={formData.nationalInsurance}
             onChange={handleChange}
             placeholder="Enter your national insurance"
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              errors.nationalInsurance ? 'border-errorColor' : 'border-lightGray'
+            }`}
           />
+          {errors.nationalInsurance && (
+            <p className="mt-1 text-sm text-errorColor">{errors.nationalInsurance}</p>
+          )}
         </div>
 
         <div>
@@ -106,6 +120,10 @@ function IdentityInformationSection({
           console.log('Documents updated:', files);
         }}
         onDocumentsUpdated={onDocumentsUpdated}
+        deferDbSave={deferDbSave}
+        pendingKey={pendingKey}
+        onPendingDocumentsChange={onPendingDocumentsChange}
+        pendingResetToken={pendingResetToken}
       />
     </div>
   );

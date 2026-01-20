@@ -2,7 +2,17 @@ import BlueLocationIcon from "@/svg/blueLocationIcon";
 import SectionHeader from "./SectionHeader";
 import DocumentUpload from "./DocumentUpload";
 
-function CurrentAddressSection({ formData, handleChange, existingDocuments = [], onDocumentsUpdated, errors = {} }) {
+function CurrentAddressSection({
+  formData,
+  handleChange,
+  existingDocuments = [],
+  onDocumentsUpdated,
+  deferDbSave = false,
+  pendingKey = null,
+  onPendingDocumentsChange = null,
+  pendingResetToken = 0,
+  errors = {},
+}) {
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
       <SectionHeader icon={BlueLocationIcon} title="Current Address" />
@@ -18,8 +28,13 @@ function CurrentAddressSection({ formData, handleChange, existingDocuments = [],
             value={formData.currentAddress}
             onChange={handleChange}
             placeholder="Enter your address"
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              errors.currentAddress ? 'border-errorColor' : 'border-lightGray'
+            }`}
           />
+          {errors.currentAddress && (
+            <p className="mt-1 text-sm text-errorColor">{errors.currentAddress}</p>
+          )}
         </div>
 
         <div>
@@ -32,8 +47,13 @@ function CurrentAddressSection({ formData, handleChange, existingDocuments = [],
             value={formData.currentCity}
             onChange={handleChange}
             placeholder="Enter your city"
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              errors.currentCity ? 'border-errorColor' : 'border-lightGray'
+            }`}
           />
+          {errors.currentCity && (
+            <p className="mt-1 text-sm text-errorColor">{errors.currentCity}</p>
+          )}
         </div>
 
         <div>
@@ -46,8 +66,13 @@ function CurrentAddressSection({ formData, handleChange, existingDocuments = [],
             value={formData.currentCountry}
             onChange={handleChange}
             placeholder="Enter your country"
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              errors.currentCountry ? 'border-errorColor' : 'border-lightGray'
+            }`}
           />
+          {errors.currentCountry && (
+            <p className="mt-1 text-sm text-errorColor">{errors.currentCountry}</p>
+          )}
         </div>
 
         <div>
@@ -81,8 +106,13 @@ function CurrentAddressSection({ formData, handleChange, existingDocuments = [],
             value={formData.residencyLength}
             onChange={handleChange}
             placeholder="Enter your residency length"
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              errors.residencyLength ? 'border-errorColor' : 'border-lightGray'
+            }`}
           />
+          {errors.residencyLength && (
+            <p className="mt-1 text-sm text-errorColor">{errors.residencyLength}</p>
+          )}
         </div>
       </div>
 
@@ -92,6 +122,10 @@ function CurrentAddressSection({ formData, handleChange, existingDocuments = [],
         docType="proof_of_address"
         existingDocuments={existingDocuments}
         onDocumentsUpdated={onDocumentsUpdated}
+        deferDbSave={deferDbSave}
+        pendingKey={pendingKey}
+        onPendingDocumentsChange={onPendingDocumentsChange}
+        pendingResetToken={pendingResetToken}
       />
     </div>
   );

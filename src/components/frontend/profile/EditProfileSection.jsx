@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from "react";
-import { getCurrentUser, updateUserProfile, uploadProfilePicture, deleteProfilePicture, uploadCreditScoreDocument } from "@/api/users";
-import { getMyDocuments } from "@/api/verification";
+import { getCurrentUser, updateUserProfile, uploadProfilePicture, deleteProfilePicture } from "@/api/users";
+import { getMyDocuments, storeDocuments } from "@/api/verification";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-toastify";
 import BasicInformationSection from "./editprofilesection/BasicInformationSection";
@@ -24,6 +24,18 @@ function EditProfileSection() {
   const [paySlipDocuments, setPaySlipDocuments] = useState([]);
   const [otherDocuments, setOtherDocuments] = useState([]);
   const [documentSectionDocuments, setDocumentSectionDocuments] = useState([]);
+  const [creditScoreDocuments, setCreditScoreDocuments] = useState([]);
+  const [pendingDocumentsByKey, setPendingDocumentsByKey] = useState({});
+  const [pendingResetToken, setPendingResetToken] = useState(0);
+  const REQUIRED_ERROR = 'This field is mandatory';
+
+  const handlePendingDocumentsChange = (key, docs) => {
+    if (!key) return;
+    setPendingDocumentsByKey((prev) => ({
+      ...(prev || {}),
+      [key]: Array.isArray(docs) ? docs : [],
+    }));
+  };
   
   // Function to reload user profile and documents
   const reloadUserDataAndDocuments = async () => {
@@ -63,6 +75,7 @@ function EditProfileSection() {
           postcode: address.postcode || prev.postcode,
           monthlyIncome: employment.monthlyIncome || prev.monthlyIncome,
           creditScore: userInfo.creditScore || prev.creditScore,
+          // Keep legacy credit score doc values for backward compatibility (older uploads stored in user_info)
           creditScoreDocument: userInfo.creditScoreDocument || prev.creditScoreDocument,
           creditScoreDocumentMetaData: userInfo.creditScoreDocumentMetaData || prev.creditScoreDocumentMetaData,
           creditRating: userInfo.creditRating || prev.creditRating,
@@ -127,6 +140,27 @@ function EditProfileSection() {
             // Load other documents (for guarantor section)
             const otherDocs = getDocumentsByType('other');
             setOtherDocuments(otherDocs);
+
+            // Load credit score document(s)
+            const creditDocs = getDocumentsByType('credit_score');
+
+            // If legacy user_info.creditScoreDocument exists but no user_docs entry yet, show it as a "legacy" doc
+            const legacyUrl = userData?.userInfo?.creditScoreDocument || null;
+            const legacyMeta = userData?.userInfo?.creditScoreDocumentMetaData || null;
+            if ((!creditDocs || creditDocs.length === 0) && legacyUrl) {
+              setCreditScoreDocuments([
+                {
+                  id: 'legacy-credit-score',
+                  docType: 'credit_score',
+                  fileUrl: legacyUrl,
+                  metaData: legacyMeta || {},
+                  isLegacyCreditScore: true,
+                  createdAt: legacyMeta?.uploadedAt || null,
+                },
+              ]);
+            } else {
+              setCreditScoreDocuments(creditDocs || []);
+            }
             
             console.log('Reloaded documents:', {
               identity: identityDocs.length,
@@ -134,6 +168,7 @@ function EditProfileSection() {
               proofOfAddress: proofOfAddressDocs.length,
               paySlip: paySlipDocs.length,
               other: otherDocs.length,
+              creditScore: (creditDocs || []).length,
             });
         }
       }
@@ -331,6 +366,15 @@ function EditProfileSection() {
       // Keep only letters/numbers/spaces and normalize to uppercase
       processedValue = value.replace(/[^a-zA-Z0-9\s]/g, '').toUpperCase();
     }
+
+    // Clear required-field error as soon as user provides a value
+    if (String(processedValue || '').trim()) {
+      setErrors((prev) => {
+        const next = { ...(prev || {}) };
+        if (next[name] === REQUIRED_ERROR) delete next[name];
+        return next;
+      });
+    }
     
     setFormData((prev) => {
       const updated = { ...prev, [name]: processedValue };
@@ -448,10 +492,26 @@ function EditProfileSection() {
     }
 
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Clear required error for date fields once a value is picked
+    if (String(value || '').trim()) {
+      setErrors((prev) => {
+        const next = { ...(prev || {}) };
+        if (next[name] === REQUIRED_ERROR) delete next[name];
+        return next;
+      });
+    }
   };
 
   const handleDropdownChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (String(value || '').trim()) {
+      setErrors((prev) => {
+        const next = { ...(prev || {}) };
+        if (next[name] === REQUIRED_ERROR) delete next[name];
+        return next;
+      });
+    }
   };
 
   const handleReferenceChange = (index, field, value) => {
@@ -723,35 +783,120 @@ function EditProfileSection() {
     }
   };
 
-  const handleCreditScoreDocumentChange = (file) => {
-    // Store File for upload on submit; URL string will be set after upload/refresh
-    setFormData((prev) => ({ ...prev, creditScoreDocument: file || null }));
-  };
-
-  const handleCreditScoreDocumentUploaded = (result) => {
-    // Result comes from /users/credit-score-document
-    const url = result?.creditScoreDocument || null;
-    const meta = result?.creditScoreDocumentMetaData || null;
-    setFormData((prev) => ({
-      ...prev,
-      creditScoreDocument: url,
-      creditScoreDocumentMetaData: meta,
-    }));
-  };
-
-  const handleCreditScoreDocumentDeleted = async () => {
-    // After delete endpoint, clear local form state
-    setFormData((prev) => ({
-      ...prev,
-      creditScoreDocument: null,
-      creditScoreDocumentMetaData: null,
-    }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
+      // --- Save-time validation: for every section that has a doc (pending or already stored),
+      // enforce that the related fields are filled. ---
+      const isBlank = (v) => !String(v ?? '').trim();
+      const nextErrors = {};
+
+      const hasDoc = (pendingKey, existingDocs) => {
+        const pendingCount = Array.isArray(pendingDocumentsByKey?.[pendingKey]) ? pendingDocumentsByKey[pendingKey].length : 0;
+        const existingCount = Array.isArray(existingDocs) ? existingDocs.length : 0;
+        return pendingCount > 0 || existingCount > 0;
+      };
+
+      const requireField = (fieldName) => {
+        if (isBlank(formData[fieldName])) nextErrors[fieldName] = REQUIRED_ERROR;
+      };
+
+      // Credit score doc -> credit score required
+      if (hasDoc('credit_score', creditScoreDocuments)) {
+        requireField('creditScore');
+      }
+
+      // Identity doc -> identity fields required
+      if (hasDoc('identity_proof', identityDocuments)) {
+        requireField('identityFullName');
+        requireField('dateOfBirth');
+        requireField('nationalInsurance');
+        requireField('identityPhone');
+      }
+
+      // Current address doc -> current address fields required
+      if (hasDoc('proof_of_address', proofOfAddressDocuments)) {
+        requireField('currentAddress');
+        requireField('currentCity');
+        requireField('currentCountry');
+        requireField('currentPostcode');
+        requireField('residencyLength');
+      }
+
+      // Proof of income docs -> income fields required
+      if (hasDoc('pay_slip', paySlipDocuments)) {
+        requireField('incomeType');
+        requireField('incomeDate');
+        requireField('grossMonthly');
+        requireField('netMonthly');
+      }
+
+      // Documents section doc(s) -> document fields required
+      if (hasDoc('documents_section', documentSectionDocuments)) {
+        requireField('documentType');
+        requireField('documentNumber');
+        requireField('documentExpire');
+      }
+
+      // Guarantor doc -> guarantor fields required
+      if (hasDoc('guarantor_other', otherDocuments)) {
+        requireField('guarantorName');
+        requireField('guarantorRelationship');
+        requireField('guarantorOccupation');
+        requireField('guarantorAnnualIncome');
+        requireField('guarantorEmail');
+        requireField('guarantorPhone');
+        requireField('guarantorAddress');
+        requireField('guarantorCity');
+        requireField('guarantorCountry');
+        requireField('guarantorPostcode');
+      }
+
+      if (Object.keys(nextErrors).length > 0) {
+        setErrors((prev) => ({ ...(prev || {}), ...nextErrors }));
+        toast.error('Please fill the required fields');
+        return;
+      } else {
+        // Clear any previous REQUIRED_ERROR entries for the fields we validate here
+        const validatedFields = [
+          'creditScore',
+          'identityFullName',
+          'dateOfBirth',
+          'nationalInsurance',
+          'identityPhone',
+          'currentAddress',
+          'currentCity',
+          'currentCountry',
+          'currentPostcode',
+          'residencyLength',
+          'incomeType',
+          'incomeDate',
+          'grossMonthly',
+          'netMonthly',
+          'documentType',
+          'documentNumber',
+          'documentExpire',
+          'guarantorName',
+          'guarantorRelationship',
+          'guarantorOccupation',
+          'guarantorAnnualIncome',
+          'guarantorEmail',
+          'guarantorPhone',
+          'guarantorAddress',
+          'guarantorCity',
+          'guarantorCountry',
+          'guarantorPostcode',
+        ];
+        setErrors((prev) => {
+          const next = { ...(prev || {}) };
+          validatedFields.forEach((f) => {
+            if (next[f] === REQUIRED_ERROR) delete next[f];
+          });
+          return next;
+        });
+      }
+
       setSaving(true);
       
       // Upload profile image first if provided
@@ -768,17 +913,6 @@ function EditProfileSection() {
             window.dispatchEvent(new CustomEvent('profileImageUpdated'));
           }, 100);
         }
-      }
-
-      // Upload credit score document (optional) if selected
-      if (formData.creditScoreDocument && formData.creditScoreDocument instanceof File) {
-        await uploadCreditScoreDocument(formData.creditScoreDocument);
-        toast.success('Credit score document uploaded successfully');
-        // Refresh user data to get stored S3 URL
-        const updatedUserData = await getCurrentUser();
-        const docUrl = updatedUserData?.userInfo?.creditScoreDocument || null;
-        const docMeta = updatedUserData?.userInfo?.creditScoreDocumentMetaData || null;
-        setFormData((prev) => ({ ...prev, creditScoreDocument: docUrl, creditScoreDocumentMetaData: docMeta }));
       }
       
       // Prepare update data according to backend API structure
@@ -816,7 +950,6 @@ function EditProfileSection() {
             workLocation: formData.workLocation || "",
           },
           creditScore: formData.creditScore ? parseInt(formData.creditScore) : undefined,
-          creditScoreDocument: typeof formData.creditScoreDocument === 'string' ? formData.creditScoreDocument : undefined,
           creditRating: formData.creditRating || "",
           creditDescription: formData.creditDescription || "",
           proofOfIncome: {
@@ -833,7 +966,17 @@ function EditProfileSection() {
       const cleanUpdateData = JSON.parse(JSON.stringify(updateData));
       
       await updateUserProfile(cleanUpdateData);
+
+      // Store any pending documents in DB only after profile save succeeds
+      const pendingDocs = Object.values(pendingDocumentsByKey || {}).flat().filter(Boolean);
+      if (pendingDocs.length > 0) {
+        await storeDocuments(pendingDocs);
+        setPendingDocumentsByKey({});
+        setPendingResetToken((t) => t + 1);
+      }
+
       toast.success('Profile updated successfully!');
+      await reloadUserDataAndDocuments();
       
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -883,8 +1026,11 @@ function EditProfileSection() {
       <CreditCheckSection
         formData={formData}
         handleChange={handleChange}
-        onCreditScoreDocumentUploaded={handleCreditScoreDocumentUploaded}
-        onCreditScoreDocumentDeleted={handleCreditScoreDocumentDeleted}
+        existingCreditScoreDocuments={creditScoreDocuments}
+        pendingCreditScoreKey="credit_score"
+        onPendingDocumentsChange={handlePendingDocumentsChange}
+        onDocumentsUpdated={reloadUserDataAndDocuments}
+        pendingResetToken={pendingResetToken}
         errors={errors}
       />
 
@@ -894,6 +1040,10 @@ function EditProfileSection() {
         handleDateChange={handleDateChange}
         existingDocuments={identityDocuments}
         onDocumentsUpdated={reloadDocuments}
+        deferDbSave
+        pendingKey="identity_proof"
+        onPendingDocumentsChange={handlePendingDocumentsChange}
+        pendingResetToken={pendingResetToken}
         errors={errors}
       />
 
@@ -902,6 +1052,10 @@ function EditProfileSection() {
         handleChange={handleChange}
         existingDocuments={proofOfAddressDocuments}
         onDocumentsUpdated={reloadUserDataAndDocuments}
+        deferDbSave
+        pendingKey="proof_of_address"
+        onPendingDocumentsChange={handlePendingDocumentsChange}
+        pendingResetToken={pendingResetToken}
         errors={errors}
       />
 
@@ -922,6 +1076,10 @@ function EditProfileSection() {
         incomeTypeOptions={incomeTypeOptions}
         existingDocuments={paySlipDocuments}
         onDocumentsUpdated={reloadUserDataAndDocuments}
+        deferDbSave
+        pendingKey="pay_slip"
+        onPendingDocumentsChange={handlePendingDocumentsChange}
+        pendingResetToken={pendingResetToken}
         errors={errors}
       />
 
@@ -933,6 +1091,10 @@ function EditProfileSection() {
         documentTypeOptions={documentTypeOptions}
         onDocumentsUpdated={reloadUserDataAndDocuments}
         existingDocuments={documentSectionDocuments}
+        deferDbSave
+        pendingKey="documents_section"
+        onPendingDocumentsChange={handlePendingDocumentsChange}
+        pendingResetToken={pendingResetToken}
         errors={errors}
       />
 
@@ -948,6 +1110,11 @@ function EditProfileSection() {
         handleChange={handleChange}
         existingDocuments={otherDocuments}
         onDocumentsUpdated={reloadUserDataAndDocuments}
+        deferDbSave
+        pendingKey="guarantor_other"
+        onPendingDocumentsChange={handlePendingDocumentsChange}
+        pendingResetToken={pendingResetToken}
+        errors={errors}
       />
 
       {/* Save Changes Button */}

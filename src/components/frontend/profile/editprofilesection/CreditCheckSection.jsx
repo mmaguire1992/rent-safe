@@ -5,8 +5,11 @@ import CreditScoreDocumentUpload from "./CreditScoreDocumentUpload";
 function CreditCheckSection({
   formData,
   handleChange,
-  onCreditScoreDocumentUploaded,
-  onCreditScoreDocumentDeleted,
+  existingCreditScoreDocuments = [],
+  pendingCreditScoreKey = 'credit_score',
+  onPendingDocumentsChange,
+  onDocumentsUpdated,
+  pendingResetToken = 0,
   errors = {},
 }) {
   return (
@@ -37,10 +40,11 @@ function CreditCheckSection({
       <div className="mb-6 w-full md:max-w-[50%]">
         <CreditScoreDocumentUpload
           label="Credit Score Document"
-          documentUrl={typeof formData.creditScoreDocument === 'string' ? formData.creditScoreDocument : null}
-          metaData={formData.creditScoreDocumentMetaData || null}
-          onUploaded={onCreditScoreDocumentUploaded}
-          onDeleted={onCreditScoreDocumentDeleted}
+          existingDocuments={existingCreditScoreDocuments}
+          pendingKey={pendingCreditScoreKey}
+          onPendingDocumentsChange={onPendingDocumentsChange}
+          onDocumentsUpdated={onDocumentsUpdated}
+          pendingResetToken={pendingResetToken}
         />
       </div>
 

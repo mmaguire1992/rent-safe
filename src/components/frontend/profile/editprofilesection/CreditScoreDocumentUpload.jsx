@@ -1,23 +1,31 @@
 'use client'
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import UploadIcon from "@/svg/uploadIcon";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { FiDownload, FiX } from "react-icons/fi";
 import { toast } from "react-toastify";
-import { uploadCreditScoreDocument, deleteCreditScoreDocument } from "@/api/users";
+import { deleteCreditScoreDocument } from "@/api/users";
+import { uploadDocumentsToS3, deleteDocument } from "@/api/verification";
 
 function CreditScoreDocumentUpload({
   label = "Credit Score Document",
-  documentUrl = null,
-  metaData = null,
-  onUploaded,
-  onDeleted,
+  existingDocuments = [],
+  pendingKey = 'credit_score',
+  onPendingDocumentsChange,
+  onDocumentsUpdated,
+  pendingResetToken = 0,
 }) {
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [pendingDoc, setPendingDoc] = useState(null); // { url, metaData }
   const fileInputRef = useRef(null);
+
+  // Clear pending UI state after parent commits pending docs
+  useEffect(() => {
+    setPendingDoc(null);
+  }, [pendingResetToken]);
 
   const formatFileSize = (bytes) => {
     if (!bytes || bytes === 0) return '0 B';
@@ -34,18 +42,36 @@ function CreditScoreDocumentUpload({
     return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
   };
 
+  const existingDoc = existingDocuments && existingDocuments.length > 0 ? existingDocuments[0] : null;
+
   const fileCard = useMemo(() => {
-    if (!documentUrl) return null;
-    const name = metaData?.originalFileName || 'Credit score document';
-    const fileSize = metaData?.fileSize ? formatFileSize(metaData.fileSize) : null;
-    const uploadedDate = metaData?.uploadedAt ? formatDate(metaData.uploadedAt) : null;
+    if (pendingDoc?.url) {
+      const name = pendingDoc?.metaData?.originalFileName || 'Credit score document';
+      const fileSize = pendingDoc?.metaData?.fileSize ? formatFileSize(pendingDoc.metaData.fileSize) : null;
+      const uploadedDate = pendingDoc?.metaData?.uploadedAt ? formatDate(pendingDoc.metaData.uploadedAt) : null;
+      return {
+        name,
+        url: pendingDoc.url,
+        fileSize,
+        uploadedDate,
+        isPending: true,
+      };
+    }
+
+    if (!existingDoc?.fileUrl) return null;
+    const name = existingDoc?.metaData?.originalFileName || 'Credit score document';
+    const fileSize = existingDoc?.metaData?.fileSize ? formatFileSize(existingDoc.metaData.fileSize) : null;
+    const uploadedDate = existingDoc?.metaData?.uploadedAt ? formatDate(existingDoc.metaData.uploadedAt) : (existingDoc?.createdAt ? formatDate(existingDoc.createdAt) : null);
     return {
       name,
-      url: documentUrl,
+      url: existingDoc.fileUrl,
       fileSize,
       uploadedDate,
+      isPending: false,
+      isLegacy: !!existingDoc?.isLegacyCreditScore,
+      id: existingDoc?.id || existingDoc?._id,
     };
-  }, [documentUrl, metaData]);
+  }, [existingDoc, pendingDoc]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -61,9 +87,47 @@ function CreditScoreDocumentUpload({
     if (!file) return;
     try {
       setUploading(true);
-      const result = await uploadCreditScoreDocument(file);
-      toast.success('Credit score document uploaded successfully');
-      if (onUploaded) onUploaded(result);
+
+      // If an existing DB doc is present, require deletion first (keeps behavior consistent and avoids accidental overwrite)
+      if (existingDoc?.fileUrl) {
+        toast.warning('Document already uploaded. Please delete the existing document first.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('creditScoreDocument', file);
+
+      const uploadResult = await uploadDocumentsToS3(formData);
+      const first = uploadResult?.uploadResults?.[0] || (Array.isArray(uploadResult) ? uploadResult[0] : null);
+      if (!first?.url && !first?.fileUrl) {
+        throw new Error('Invalid upload response');
+      }
+
+      const ext = file?.name?.includes('.') ? file.name.split('.').pop().toLowerCase() : '';
+      const docToStore = {
+        fileUrl: first.url || first.fileUrl,
+        docType: 'credit_score',
+        fileType: first.fileType || ext || 'pdf',
+        mime: first.mimeType || file.type,
+        metaData: {
+          originalFileName: first.fileName || file.name,
+          fileSize: first.fileSize || file.size,
+          s3Key: first.key,
+          s3Bucket: first.bucket,
+          uploadedAt: new Date().toISOString(),
+        },
+      };
+
+      setPendingDoc({
+        url: docToStore.fileUrl,
+        metaData: docToStore.metaData,
+      });
+
+      if (onPendingDocumentsChange) {
+        onPendingDocumentsChange(pendingKey, [docToStore]);
+      }
+
+      toast.info('Credit score document uploaded. Click Save Profile to store it.');
     } catch (error) {
       const msg = error?.response?.data?.message || error?.message || 'Failed to upload credit score document';
       toast.error(msg);
@@ -91,9 +155,34 @@ function CreditScoreDocumentUpload({
     try {
       setUploading(true);
       setDeleteModalOpen(false);
-      await deleteCreditScoreDocument();
-      toast.success('Credit score document deleted successfully');
-      if (onDeleted) onDeleted();
+
+      // Pending (deferred) doc: remove only locally
+      if (fileCard?.isPending) {
+        setPendingDoc(null);
+        if (onPendingDocumentsChange) {
+          onPendingDocumentsChange(pendingKey, []);
+        }
+        toast.success('Pending credit score document removed');
+        return;
+      }
+
+      // Legacy doc (stored in user_info) — keep old route for cleanup
+      if (fileCard?.isLegacy) {
+        await deleteCreditScoreDocument();
+        toast.success('Credit score document deleted successfully');
+        if (onDocumentsUpdated) onDocumentsUpdated();
+        return;
+      }
+
+      // New flow: stored in user_docs
+      if (fileCard?.id) {
+        await deleteDocument(fileCard.id);
+        toast.success('Credit score document deleted successfully');
+        if (onDocumentsUpdated) onDocumentsUpdated();
+        return;
+      }
+
+      toast.error('Document ID is missing');
     } catch (error) {
       const msg = error?.response?.data?.message || error?.message || 'Failed to delete credit score document';
       toast.error(msg);
@@ -147,7 +236,9 @@ function CreditScoreDocumentUpload({
       {fileCard && (
         <div className="border border-lightGray rounded-xl p-4 bg-gray-50 text-center">
           <p className="text-sm text-darkGray">
-            Document already uploaded. Delete the existing document to upload a new one.
+            {fileCard.isPending
+              ? 'Document uploaded. Click Save Profile to store it, or delete to cancel.'
+              : 'Document already uploaded. Delete the existing document to upload a new one.'}
           </p>
         </div>
       )}

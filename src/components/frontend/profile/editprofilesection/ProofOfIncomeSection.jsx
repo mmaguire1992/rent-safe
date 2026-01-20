@@ -12,6 +12,10 @@ function ProofOfIncomeSection({
   incomeTypeOptions,
   existingDocuments = [],
   onDocumentsUpdated,
+  deferDbSave = false,
+  pendingKey = null,
+  onPendingDocumentsChange = null,
+  pendingResetToken = 0,
   errors = {},
 }) {
   return (
@@ -29,6 +33,9 @@ function ProofOfIncomeSection({
             onChange={(value) => handleDropdownChange("incomeType", value)}
             placeholder="Select an option"
           />
+          {errors.incomeType && (
+            <p className="mt-1 text-sm text-errorColor">{errors.incomeType}</p>
+          )}
         </div>
 
         <div>
@@ -40,6 +47,9 @@ function ProofOfIncomeSection({
             onChange={(value) => handleDateChange("incomeDate", value)}
             placeholder="DD/MM/YYYY"
           />
+          {errors.incomeDate && (
+            <p className="mt-1 text-sm text-errorColor">{errors.incomeDate}</p>
+          )}
         </div>
 
         <div>
@@ -91,6 +101,10 @@ function ProofOfIncomeSection({
         docType="pay_slip"
         existingDocuments={existingDocuments}
         onDocumentsUpdated={onDocumentsUpdated}
+        deferDbSave={deferDbSave}
+        pendingKey={pendingKey}
+        onPendingDocumentsChange={onPendingDocumentsChange}
+        pendingResetToken={pendingResetToken}
       />
     </div>
   );

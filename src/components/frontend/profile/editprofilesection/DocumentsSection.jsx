@@ -12,6 +12,10 @@ function DocumentsSection({
   documentTypeOptions,
   onDocumentsUpdated,
   existingDocuments = [],
+  deferDbSave = false,
+  pendingKey = null,
+  onPendingDocumentsChange = null,
+  pendingResetToken = 0,
   errors = {},
 }) {
   // Map dropdown values to backend docType enum values
@@ -51,6 +55,9 @@ function DocumentsSection({
             onChange={(value) => handleDropdownChange("documentType", value)}
             placeholder="Select an option"
           />
+          {errors.documentType && (
+            <p className="mt-1 text-sm text-errorColor">{errors.documentType}</p>
+          )}
         </div>
 
         <div>
@@ -63,8 +70,13 @@ function DocumentsSection({
             value={formData.documentNumber}
             onChange={handleChange}
             placeholder="Enter your document number"
-            className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
+              errors.documentNumber ? 'border-errorColor' : 'border-lightGray'
+            }`}
           />
+          {errors.documentNumber && (
+            <p className="mt-1 text-sm text-errorColor">{errors.documentNumber}</p>
+          )}
         </div>
 
         <div>
@@ -107,6 +119,10 @@ function DocumentsSection({
             handleDateChange('documentExpire', '');
           }
         }}
+        deferDbSave={deferDbSave}
+        pendingKey={pendingKey}
+        onPendingDocumentsChange={onPendingDocumentsChange}
+        pendingResetToken={pendingResetToken}
       />
     </div>
   );
