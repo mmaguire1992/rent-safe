@@ -65,14 +65,8 @@ function PropertyStatusCard({ propertyData, onStatusChange }) {
     return editableStatusOptions;
   };
 
-  const [selectedStatus, setSelectedStatus] = useState(currentStatus);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
-
-  // Update selected status when propertyData changes
-  useEffect(() => {
-    setSelectedStatus(currentStatus);
-  }, [currentStatus]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -93,7 +87,6 @@ function PropertyStatusCard({ propertyData, onStatusChange }) {
       return;
     }
     
-    setSelectedStatus(value);
     setIsDropdownOpen(false);
     if (onStatusChange) {
       onStatusChange(value);
@@ -101,10 +94,7 @@ function PropertyStatusCard({ propertyData, onStatusChange }) {
   };
 
   const availableOptions = getAvailableOptions();
-  const selectedOption = editableStatusOptions.find(
-    (opt) => opt.value === selectedStatus
-  );
-  const displayLabel = formatStatus(selectedStatus);
+  const displayLabel = formatStatus(currentStatus);
 
   return (
     <div className="bg-white rounded-[20px] border border-lightGray md:p-6 p-4">

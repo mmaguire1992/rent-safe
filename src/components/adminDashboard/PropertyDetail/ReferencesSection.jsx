@@ -83,27 +83,18 @@ function ReferencesSection({ propertyId, propertyStatus }) {
       return pid && rentalPropertyId && rentalPropertyId === pid && hasMovedOut;
     });
 
-    const getTime = (r) =>
-      new Date(r?.cancelledAt || r?.rentedFrom || r?.createdAt || 0).getTime();
+    const getCreatedTime = (r) =>
+      new Date(r?.createdAt || r?.rentedFrom || r?.cancelledAt || 0).getTime();
 
-    // Priority sorting:
-    // 1) Rentals that need feedback (moved out + no reference yet) come first
-    // 2) Within each group: newest first
+    // Deterministic sorting: latest entries first (by createdAt), stable tie-breaker by _id.
+    // This prevents the list from shuffling on refresh.
     return list.sort((a, b) => {
-      const aHasReference = referenceByRentalHistoryId.has(String(a?._id));
-      const bHasReference = referenceByRentalHistoryId.has(String(b?._id));
-
-      const aNeedsFeedback = isPropertyActive && !aHasReference;
-      const bNeedsFeedback = isPropertyActive && !bHasReference;
-
-      const aScore = aNeedsFeedback ? 1 : 0;
-      const bScore = bNeedsFeedback ? 1 : 0;
-
-      if (aScore !== bScore) return bScore - aScore; // higher score first
-
-      return getTime(b) - getTime(a);
+      const ta = getCreatedTime(a);
+      const tb = getCreatedTime(b);
+      if (tb !== ta) return tb - ta;
+      return String(b?._id || "").localeCompare(String(a?._id || ""));
     });
-  }, [rentals, propertyId, referenceByRentalHistoryId, isPropertyActive]);
+  }, [rentals, propertyId]);
 
   const totalItems = propertyRentals.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));

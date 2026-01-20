@@ -14,6 +14,7 @@ import PropertyDetailsGrid from "@/components/adminDashboard/PropertyDetail/Prop
 import LocationSection from "@/components/adminDashboard/PropertyDetail/LocationSection";
 import RenterProfileDescription from "@/components/adminDashboard/PropertyDetail/RenterProfileDescription";
 import { getPropertyById, deleteProperty, updateProperty } from "@/api/properties";
+import { getAllRentalHistory } from "@/api/rentalHistory";
 import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
 import { toast } from "react-toastify";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
@@ -332,6 +333,48 @@ function PropertyDetail() {
 
     // For other status changes, update directly
     try {
+      // Guard: prevent setting Active if that would auto-set a move-out date before the tenancy start date.
+      // This happens when a property is "rented" with a future rentedFrom, and the owner tries to end tenancy early.
+      const currentStatus = String(property?.status || '').toLowerCase();
+      if (String(newStatus).toLowerCase() === 'active' && currentStatus === 'rented') {
+        try {
+          const rentalHistoryData = await getAllRentalHistory({ page: 1, limit: 500 });
+          const allRentals = rentalHistoryData?.data || [];
+
+          const openRental = allRentals
+            .filter((r) => {
+              const pid = String(r?.propertyId?._id || r?.propertyId || '');
+              return pid === String(id) && !r?.cancelledAt;
+            })
+            .sort((a, b) => new Date(b?.createdAt || b?.rentedFrom || 0) - new Date(a?.createdAt || a?.rentedFrom || 0))[0];
+
+          if (openRental?.rentedFrom) {
+            const rentedFrom = new Date(openRental.rentedFrom);
+            const today = new Date();
+            const rentedFromDay = new Date(rentedFrom);
+            rentedFromDay.setHours(0, 0, 0, 0);
+            const todayDay = new Date(today);
+            todayDay.setHours(0, 0, 0, 0);
+
+            if (todayDay < rentedFromDay) {
+              const rentedFromLabel = rentedFrom.toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              });
+              toast.error(
+                `This tenancy starts on ${rentedFromLabel}, so you can’t mark the property Active before that date.`
+              );
+              return;
+            }
+          }
+        } catch (e) {
+          // If rental history fetch fails, don't block the status change here;
+          // backend will still enforce the rule.
+          console.error('Unable to validate tenancy start date before status change:', e);
+        }
+      }
+
       setIsUpdatingStatus(true);
       await updateProperty(id, { status: newStatus });
       toast.success(`Property status updated to ${newStatus === 'rented' ? 'Rent Out' : 'Active'}`);
