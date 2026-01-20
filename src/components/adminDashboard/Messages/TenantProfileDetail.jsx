@@ -41,7 +41,7 @@ function TenantProfileDetail({
 
       {/* Profile Details Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        <CreditCheck tenantData={tenantData} />
+        <CreditCheck tenantData={tenantData} showDocument={false} />
         <IdentityInfo identity={tenantData.identity} />
         <CurrentAddress address={tenantData.currentAddress} />
       </div>

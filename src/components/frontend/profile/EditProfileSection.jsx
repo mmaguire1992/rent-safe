@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react";
-import { getCurrentUser, updateUserProfile, uploadProfilePicture, deleteProfilePicture } from "@/api/users";
+import { getCurrentUser, updateUserProfile, uploadProfilePicture, deleteProfilePicture, uploadCreditScoreDocument } from "@/api/users";
 import { getMyDocuments } from "@/api/verification";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-toastify";
@@ -63,6 +63,8 @@ function EditProfileSection() {
           postcode: address.postcode || prev.postcode,
           monthlyIncome: employment.monthlyIncome || prev.monthlyIncome,
           creditScore: userInfo.creditScore || prev.creditScore,
+          creditScoreDocument: userInfo.creditScoreDocument || prev.creditScoreDocument,
+          creditScoreDocumentMetaData: userInfo.creditScoreDocumentMetaData || prev.creditScoreDocumentMetaData,
           creditRating: userInfo.creditRating || prev.creditRating,
           creditDescription: userInfo.creditDescription || prev.creditDescription,
           identityFullName: `${name.first || ""} ${name.last || ""}`.trim() || prev.identityFullName,
@@ -189,6 +191,8 @@ function EditProfileSection() {
 
     // Credit Check
     creditScore: "",
+    creditScoreDocument: null, // string URL (from DB) or File (selected for upload)
+    creditScoreDocumentMetaData: null, // { originalFileName, fileSize, uploadedAt }
     creditRating: "",
     creditDescription: "",
 
@@ -527,6 +531,8 @@ function EditProfileSection() {
             
             // Credit Check
             creditScore: userInfo.creditScore || "",
+            creditScoreDocument: userInfo.creditScoreDocument || null,
+            creditScoreDocumentMetaData: userInfo.creditScoreDocumentMetaData || null,
             creditRating: userInfo.creditRating || "",
             creditDescription: userInfo.creditDescription || "",
             
@@ -717,6 +723,31 @@ function EditProfileSection() {
     }
   };
 
+  const handleCreditScoreDocumentChange = (file) => {
+    // Store File for upload on submit; URL string will be set after upload/refresh
+    setFormData((prev) => ({ ...prev, creditScoreDocument: file || null }));
+  };
+
+  const handleCreditScoreDocumentUploaded = (result) => {
+    // Result comes from /users/credit-score-document
+    const url = result?.creditScoreDocument || null;
+    const meta = result?.creditScoreDocumentMetaData || null;
+    setFormData((prev) => ({
+      ...prev,
+      creditScoreDocument: url,
+      creditScoreDocumentMetaData: meta,
+    }));
+  };
+
+  const handleCreditScoreDocumentDeleted = async () => {
+    // After delete endpoint, clear local form state
+    setFormData((prev) => ({
+      ...prev,
+      creditScoreDocument: null,
+      creditScoreDocumentMetaData: null,
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -737,6 +768,17 @@ function EditProfileSection() {
             window.dispatchEvent(new CustomEvent('profileImageUpdated'));
           }, 100);
         }
+      }
+
+      // Upload credit score document (optional) if selected
+      if (formData.creditScoreDocument && formData.creditScoreDocument instanceof File) {
+        await uploadCreditScoreDocument(formData.creditScoreDocument);
+        toast.success('Credit score document uploaded successfully');
+        // Refresh user data to get stored S3 URL
+        const updatedUserData = await getCurrentUser();
+        const docUrl = updatedUserData?.userInfo?.creditScoreDocument || null;
+        const docMeta = updatedUserData?.userInfo?.creditScoreDocumentMetaData || null;
+        setFormData((prev) => ({ ...prev, creditScoreDocument: docUrl, creditScoreDocumentMetaData: docMeta }));
       }
       
       // Prepare update data according to backend API structure
@@ -774,6 +816,7 @@ function EditProfileSection() {
             workLocation: formData.workLocation || "",
           },
           creditScore: formData.creditScore ? parseInt(formData.creditScore) : undefined,
+          creditScoreDocument: typeof formData.creditScoreDocument === 'string' ? formData.creditScoreDocument : undefined,
           creditRating: formData.creditRating || "",
           creditDescription: formData.creditDescription || "",
           proofOfIncome: {
@@ -837,7 +880,13 @@ function EditProfileSection() {
         errors={errors}
       />
 
-      <CreditCheckSection formData={formData} handleChange={handleChange} errors={errors} />
+      <CreditCheckSection
+        formData={formData}
+        handleChange={handleChange}
+        onCreditScoreDocumentUploaded={handleCreditScoreDocumentUploaded}
+        onCreditScoreDocumentDeleted={handleCreditScoreDocumentDeleted}
+        errors={errors}
+      />
 
       <IdentityInformationSection
         formData={formData}
