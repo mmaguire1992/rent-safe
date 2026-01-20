@@ -11,7 +11,7 @@ function PropertyHistoryCard({ property }) {
 
   const handleCardClick = () => {
     if (property?.id) {
-      navigate(`/property/${property.id}`);
+      navigate(`/properties/${property.id}`);
     }
   };
 

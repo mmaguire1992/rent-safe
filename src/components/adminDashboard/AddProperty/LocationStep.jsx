@@ -25,7 +25,8 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
   const validatePostcodeFormat = (postcode, country) => {
     if (!postcode || !country) return "";
     
-    const postcodeDigits = postcode.replace(/\D/g, ""); // Extract only digits
+    const postcodeAlphanumeric = postcode.replace(/[^a-zA-Z0-9]/g, ""); // Extract only alphanumeric characters
+    const postcodeDigits = postcode.replace(/\D/g, ""); // Extract only digits for numeric-only postcodes
     const countryLower = country.toLowerCase();
     
     // Common postcode format validations by country
@@ -35,10 +36,9 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
         return "Indian PIN codes must be 6 digits. Please verify the postcode.";
       }
     } else if (countryLower.includes("united kingdom") || countryLower.includes("uk")) {
-      // UK postcodes are typically 5-7 characters (alphanumeric), but backend requires numeric only
-      // So we'll just check if it's reasonable length (5-7 digits)
-      if (postcodeDigits.length < 5 || postcodeDigits.length > 7) {
-        return "UK postcodes are typically 5-7 characters. Please verify the postcode.";
+      // UK postcodes are typically 5-8 characters (alphanumeric)
+      if (postcodeAlphanumeric.length < 5 || postcodeAlphanumeric.length > 8) {
+        return "UK postcodes are typically 5-8 characters. Please verify the postcode.";
       }
     } else if (countryLower.includes("united states") || countryLower.includes("usa") || countryLower.includes("us")) {
       // US ZIP codes are 5 digits (or 9 with ZIP+4)
@@ -46,10 +46,9 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
         return "US ZIP codes are 5 digits (or 9 with ZIP+4). Please verify the postcode.";
       }
     } else if (countryLower.includes("canada")) {
-      // Canadian postal codes are 6 characters (alphanumeric), but backend requires numeric only
-      // So we'll check for reasonable length
-      if (postcodeDigits.length < 5 || postcodeDigits.length > 6) {
-        return "Canadian postal codes are typically 6 characters. Please verify the postcode.";
+      // Canadian postal codes are 6 characters (alphanumeric)
+      if (postcodeAlphanumeric.length !== 6) {
+        return "Canadian postal codes must be 6 characters. Please verify the postcode.";
       }
     }
     
@@ -75,10 +74,10 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
         if (!value || !value.trim()) {
           error = "Postcode is required";
         } else {
-          // Check if postcode contains only digits (backend requirement)
-          const digitsOnly = value.replace(/\D/g, "");
-          if (digitsOnly.length === 0) {
-            error = "Postcode must contain at least one digit";
+          // Allow alphanumeric characters (letters and numbers) and spaces
+          const alphanumericRegex = /^[a-zA-Z0-9\s]+$/;
+          if (!alphanumericRegex.test(value.trim())) {
+            error = "Postcode can contain only letters, numbers, and spaces";
           } else {
             // Validate format based on country
             const formatWarning = validatePostcodeFormat(value, formData.country);
@@ -206,12 +205,12 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
       }
     }
     
-    // Clean postcode: remove spaces and non-numeric characters (keeping only digits)
-    // This ensures compatibility with backend validation (numeric only)
+    // Clean postcode: remove extra spaces but keep alphanumeric characters
+    // This ensures compatibility with backend validation (alphanumeric allowed)
     if (postcode) {
-      const cleanedPostcode = postcode.replace(/\s+/g, '').replace(/[^\d]/g, '');
-      if (cleanedPostcode && cleanedPostcode.length >= 4) {
-        // Only accept if we have at least 4 digits (reasonable minimum)
+      const cleanedPostcode = postcode.replace(/\s+/g, ' ').trim().replace(/[^a-zA-Z0-9\s]/g, '');
+      if (cleanedPostcode && cleanedPostcode.length >= 2) {
+        // Accept if we have at least 2 characters (reasonable minimum for postcodes)
         addressComponents.postcode = cleanedPostcode;
       }
     }
@@ -475,8 +474,8 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
                           if (postalComponent) {
                             const extractedPostcode = postalComponent.long_name || postalComponent.short_name;
                             if (extractedPostcode) {
-                              const cleaned = extractedPostcode.replace(/\s+/g, '').replace(/[^\d]/g, '');
-                              if (cleaned && cleaned.length >= 4) {
+                              const cleaned = extractedPostcode.replace(/\s+/g, ' ').trim().replace(/[^a-zA-Z0-9\s]/g, '');
+                              if (cleaned && cleaned.length >= 2) {
                                 finalPostcode = cleaned;
                                 addressComponents.postcode = cleaned;
                                 if (process.env.NODE_ENV === 'development') {

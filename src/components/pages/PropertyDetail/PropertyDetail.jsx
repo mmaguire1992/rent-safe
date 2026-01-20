@@ -7,6 +7,7 @@ import Breadcrumb from "@/components/adminDashboard/common/Breadcrumb";
 import RentOutDetailsForm from "@/components/adminDashboard/PropertyDetail/RentOutDetailsForm";
 import RenterDetailsSection from "@/components/adminDashboard/PropertyDetail/RenterDetailsSection";
 import PropertyStatusCard from "@/components/adminDashboard/PropertyDetail/PropertyStatusCard";
+import ReferencesSection from "@/components/adminDashboard/PropertyDetail/ReferencesSection";
 import PropertyGallery from "@/components/adminDashboard/PropertyDetail/PropertyGallery";
 import PropertyDescription from "@/components/adminDashboard/PropertyDetail/PropertyDescription";
 import PropertyDetailsGrid from "@/components/adminDashboard/PropertyDetail/PropertyDetailsGrid";
@@ -16,6 +17,7 @@ import { getPropertyById, deleteProperty, updateProperty } from "@/api/propertie
 import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
 import { toast } from "react-toastify";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import RentOutModal from "@/components/adminDashboard/PropertyDetail/RentOutModal";
 
 function PropertyDetail() {
   const { id } = useParams();
@@ -40,6 +42,8 @@ function PropertyDetail() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [showRentOutModal, setShowRentOutModal] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState(null);
 
   // Fetch property data from API
   useEffect(() => {
@@ -319,6 +323,14 @@ function PropertyDetail() {
       return;
     }
 
+    // If changing to "rented", open the Rent Out modal instead of directly updating
+    if (newStatus === 'rented') {
+      setPendingStatus(newStatus);
+      setShowRentOutModal(true);
+      return;
+    }
+
+    // For other status changes, update directly
     try {
       setIsUpdatingStatus(true);
       await updateProperty(id, { status: newStatus });
@@ -334,6 +346,33 @@ function PropertyDetail() {
     } finally {
       setIsUpdatingStatus(false);
     }
+  };
+
+  // Handle successful rental history creation
+  const handleRentalHistorySuccess = async () => {
+    try {
+      // Update property status to "rented"
+      setIsUpdatingStatus(true);
+      await updateProperty(id, { status: 'rented' });
+      toast.success('Property status updated to Rent Out');
+      
+      // Refresh property data to get updated status
+      const updatedProperty = await getPropertyById(id);
+      setProperty(updatedProperty);
+    } catch (error) {
+      console.error('Error updating property status:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to update property status';
+      toast.error(errorMessage);
+    } finally {
+      setIsUpdatingStatus(false);
+      setPendingStatus(null);
+    }
+  };
+
+  // Handle modal close
+  const handleCloseRentOutModal = () => {
+    setShowRentOutModal(false);
+    setPendingStatus(null);
   };
 
   // Handle share button click - copy property link to clipboard
@@ -424,6 +463,11 @@ function PropertyDetail() {
           propertyData={propertyData} 
           onStatusChange={handleStatusChange}
         />
+
+        <ReferencesSection 
+          propertyId={id} 
+          propertyStatus={propertyData.status}
+        />
         
         {/* Edit Button - Only show for pending_approval status */}
         {propertyData.status?.toLowerCase() === 'pending_approval' && (
@@ -440,6 +484,16 @@ function PropertyDetail() {
           </div>
         )}
         
+        {/* Rent Out Modal */}
+        {showRentOutModal && (
+          <RentOutModal
+            isOpen={showRentOutModal}
+            onClose={handleCloseRentOutModal}
+            propertyId={id}
+            onSuccess={handleRentalHistorySuccess}
+          />
+        )}
+
         {showRentOutForm && (
           <RentOutDetailsForm
             renterEmail={renterEmail}

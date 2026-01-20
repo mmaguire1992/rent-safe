@@ -92,3 +92,11 @@ export const subscriptions = {
   createCheckoutSession: '/stripe/subscriptions/checkout',
   downloadInvoice: (paymentId) => `/stripe/subscriptions/invoice/${paymentId}`,
 };
+
+// Rental History Routes
+export const rentalHistory = {
+  create: '/rental-history',
+  getAll: '/rental-history',
+  getById: (id) => `/rental-history/${id}`,
+  findRenter: '/rental-history/find-renter',
+};
