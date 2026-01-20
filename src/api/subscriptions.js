@@ -184,3 +184,48 @@ export const getPaymentHistory = async (params = {}) => {
     throw error;
   }
 };
+
+/**
+ * Download invoice PDF for a payment
+ * @param {string} paymentId - Payment ID
+ * @returns {Promise<Blob|string>} Invoice PDF blob or receipt URL
+ */
+export const downloadInvoice = async (paymentId) => {
+  try {
+    // Make request without specifying responseType to check content type
+    const response = await apiClient.get(`/stripe/subscriptions/invoice/${paymentId}`, {
+      responseType: 'arraybuffer', // Use arraybuffer to handle both JSON and binary
+    });
+    
+    const contentType = response.headers['content-type'] || '';
+    
+    // Check if response is JSON (receipt URL for one-time payments)
+    if (contentType.includes('application/json')) {
+      const textDecoder = new TextDecoder();
+      const jsonText = textDecoder.decode(response.data);
+      const jsonData = JSON.parse(jsonText);
+      
+      if (jsonData.data?.receiptUrl) {
+        // Open receipt URL in new tab
+        window.open(jsonData.data.receiptUrl, '_blank');
+        return jsonData.data.receiptUrl;
+      }
+    }
+    
+    // Otherwise, it's a PDF - create blob and download
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `invoice-${paymentId}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    return blob;
+  } catch (error) {
+    console.error('Error downloading invoice:', error);
+    throw error;
+  }
+};

@@ -15,6 +15,7 @@ function PlansBilling() {
   const [currentPlan, setCurrentPlan] = useState(null);
   const [billingHistory, setBillingHistory] = useState([]);
   const [dateFilter, setDateFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [userType, setUserType] = useState(null);
   const [plans, setPlans] = useState([]);
   const [loadingPlan, setLoadingPlan] = useState(true);
@@ -31,6 +32,13 @@ function PlansBilling() {
     }
   }, []);
 
+  // Fetch payment history when filters change
+  useEffect(() => {
+    if (userType === 'owner') {
+      fetchPaymentHistory();
+    }
+  }, [dateFilter, statusFilter]);
+
   const fetchCurrentSubscription = async () => {
     try {
       setLoadingPlan(true);
@@ -45,13 +53,51 @@ function PlansBilling() {
     }
   };
 
-  const fetchPaymentHistory = async (filters = {}) => {
+  const getDateRange = (dateFilterValue) => {
+    if (!dateFilterValue || dateFilterValue === "Date") {
+      return { dateFrom: null, dateTo: null };
+    }
+
+    const now = new Date();
+    const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+    let dateFrom, dateTo;
+
+    switch (dateFilterValue) {
+      case "today":
+        dateFrom = startOfDay.toISOString();
+        dateTo = new Date().toISOString();
+        break;
+      case "week":
+        const weekAgo = new Date(startOfDay);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        dateFrom = weekAgo.toISOString();
+        dateTo = new Date().toISOString();
+        break;
+      case "month":
+        const monthAgo = new Date(startOfDay);
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        dateFrom = monthAgo.toISOString();
+        dateTo = new Date().toISOString();
+        break;
+      default:
+        return { dateFrom: null, dateTo: null };
+    }
+
+    return { dateFrom, dateTo };
+  };
+
+  const fetchPaymentHistory = async () => {
     try {
       setLoadingHistory(true);
+      const { dateFrom, dateTo } = getDateRange(dateFilter);
+      const status = statusFilter && statusFilter !== "all" ? statusFilter : undefined;
+      
       const result = await getPaymentHistory({
         page: 1,
         limit: 50,
-        ...filters,
+        status,
+        dateFrom,
+        dateTo,
       });
       console.log('Fetched payment history:', result);
       setBillingHistory(result.payments || []);
@@ -141,6 +187,8 @@ function PlansBilling() {
               billingHistory={billingHistory}
               dateFilter={dateFilter}
               setDateFilter={setDateFilter}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
               loading={loadingHistory}
             />
           </>

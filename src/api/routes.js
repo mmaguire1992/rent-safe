@@ -90,4 +90,5 @@ export const notifications = {
 export const subscriptions = {
   getAllPlans: '/stripe/subscriptions/plans', // Public endpoint for getting plans
   createCheckoutSession: '/stripe/subscriptions/checkout',
+  downloadInvoice: (paymentId) => `/stripe/subscriptions/invoice/${paymentId}`,
 };

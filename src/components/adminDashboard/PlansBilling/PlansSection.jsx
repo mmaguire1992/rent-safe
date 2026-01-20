@@ -209,20 +209,50 @@ function PlansSection({ currentPlan, onSwitchPlan, onPlansLoaded }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {plans.map((plan) => {
-          const isCurrentPlan = plan.id === currentPlan;
+          // Check if this plan is the current active plan
+          const currentPlanKey = currentPlan?.planKey || currentPlan?.plan?.planKey;
+          const isCurrentPlan = plan.id === currentPlanKey || plan.planData?.planKey === currentPlanKey;
+          
+          // Check if user has an active plan with remaining properties
+          const hasActivePlan = currentPlan && 
+                                currentPlan.status === 'active' && 
+                                currentPlan.remainingProperties !== undefined && 
+                                currentPlan.remainingProperties > 0;
+          
+          // Check if current plan has expired or ended
+          const isPlanExpired = currentPlan && (
+            currentPlan.status === 'expired' || 
+            currentPlan.status === 'canceled' ||
+            (currentPlan.currentPeriodEnd && new Date(currentPlan.currentPeriodEnd) < new Date())
+          );
+          
+          // Check if plan can be selected
+          // User can select a plan if:
+          // 1. No current plan exists, OR
+          // 2. Current plan is expired/ended AND remainingProperties === 0, OR
+          // 3. This is the current plan (to show it as selected)
+          const canSelectPlan = !hasActivePlan || 
+                                (isPlanExpired && currentPlan.remainingProperties === 0) || 
+                                isCurrentPlan;
+          
+          // Determine if this plan should be disabled
+          const isDisabled = hasActivePlan && !isCurrentPlan;
+          
           return (
             <div
               key={plan.id}
-              className={`rounded-[20px] border-2 p-4 flex flex-col ${
+              className={`rounded-[20px] border-2 p-4 flex flex-col transition-all ${
                 isCurrentPlan
-                  ? "border-[#6B4EFF] bg-[#6B4EFF] text-white"
-                  : "border-lightGray bg-white"
+                  ? "border-[#6B4EFF] bg-[#6B4EFF] text-white shadow-lg"
+                  : isDisabled
+                  ? "border-lightGray bg-gray-50 opacity-60"
+                  : "border-lightGray bg-white hover:border-[#6B4EFF] hover:shadow-md"
               }`}
             >
               <div className="flex items-center justify-between">
                 <h3
                   className={`text-xl font-bold font-nunito mb-0 ${
-                    isCurrentPlan ? "text-white" : "text-secondary"
+                    isCurrentPlan ? "text-white" : isDisabled ? "text-gray-400" : "text-secondary"
                   }`}
                 >
                   {plan.name}
@@ -245,44 +275,44 @@ function PlansSection({ currentPlan, onSwitchPlan, onPlansLoaded }) {
               </div>
               <p
                 className={`text-sm font-normal font-nunito mb-4 ${
-                  isCurrentPlan ? "text-white opacity-90" : "text-darkGray"
+                  isCurrentPlan ? "text-white opacity-90" : isDisabled ? "text-gray-500" : "text-darkGray"
                 }`}
               >
                 {plan.description}
               </p>
 
               <div
-                className={`mb-4 border-b  pb-1 ${
-                  isCurrentPlan ? "border-b-white" : "border-b-lightGray"
+                className={`mb-4 border-b pb-1 ${
+                  isCurrentPlan ? "border-b-white" : isDisabled ? "border-b-gray-300" : "border-b-lightGray"
                 }`}
               >
                 <span
                   className={`text-3xl font-bold font-nunito ${
-                    isCurrentPlan ? "text-white" : "text-[#4A2FCC]"
+                    isCurrentPlan ? "text-white" : isDisabled ? "text-gray-400" : "text-[#4A2FCC]"
                   }`}
                 >
                   {plan.price}
                 </span>
                 <span
                   className={`text-base font-normal font-nunito ml-2 ${
-                    isCurrentPlan ? "text-white opacity-90" : "text-midGray"
+                    isCurrentPlan ? "text-white opacity-90" : isDisabled ? "text-gray-400" : "text-midGray"
                   }`}
                 >
                   {plan.period}
                 </span>
               </div>
 
-              <div className="flex-1 space-y-2 mb-6">
+              <div className={`flex-1 space-y-2 mb-6 ${isDisabled ? 'opacity-75' : ''}`}>
                 {plan.features.map((feature, index) => (
                   <div key={index} className="flex items-start gap-2">
                     <FiCheck
                       className={`mt-0.5 text-xl flex-shrink-0 ${
-                        isCurrentPlan ? "text-white" : "text-[#009966]"
+                        isCurrentPlan ? "text-white" : isDisabled ? "text-gray-400" : "text-[#009966]"
                       }`}
                     />
                     <span
                       className={`text-base font-normal font-nunito ${
-                        isCurrentPlan ? "text-white" : "text-darkGray"
+                        isCurrentPlan ? "text-white" : isDisabled ? "text-gray-500" : "text-darkGray"
                       }`}
                     >
                       {feature}
@@ -291,16 +321,38 @@ function PlansSection({ currentPlan, onSwitchPlan, onPlansLoaded }) {
                 ))}
               </div>
 
-              <button
-                onClick={() => onSwitchPlan(plan.id)}
-                className={`w-full py-3 rounded-[10px] font-bold text-base font-nunito transition-colors ${
-                  isCurrentPlan
-                    ? "bg-white text-[#6B4EFF] hover:bg-gray-100"
-                    : "bg-blueGradient text-white hover:bg-opacity-90"
-                }`}
-              >
-                {isCurrentPlan ? "Current Plan" : "Switch Plan"}
-              </button>
+              {!isCurrentPlan && (
+                <>
+                  <button
+                    onClick={() => {
+                      if (!isDisabled) {
+                        onSwitchPlan(plan.id);
+                      }
+                    }}
+                    disabled={isDisabled}
+                    className={`w-full py-3 rounded-[10px] font-bold text-base font-nunito transition-colors ${
+                      isDisabled
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-blueGradient text-white hover:bg-opacity-90"
+                    }`}
+                    title={isDisabled ? "You can only select a new plan once your current plan expires and all properties are used" : ""}
+                  >
+                    {isDisabled ? "Not Available" : "Select Plan"}
+                  </button>
+                  
+                  {isDisabled && (
+                    <p className="text-xs text-center mt-2 text-gray-500 font-nunito">
+                      Wait for current plan to expire
+                    </p>
+                  )}
+                </>
+              )}
+              
+              {isCurrentPlan && (
+                <div className="w-full py-3 rounded-[10px] bg-white/20 text-white text-center font-bold text-base font-nunito">
+                  Current Plan
+                </div>
+              )}
             </div>
           );
         })}
