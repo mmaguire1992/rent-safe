@@ -53,27 +53,48 @@ function ReferencesSection({ propertyId, propertyStatus }) {
     return map;
   }, [references]);
 
-  const propertyRentals = useMemo(() => {
+  // Latest "moved out" rental for this property (used to highlight the last renter who left)
+  const latestMovedOutRentalId = useMemo(() => {
     const pid = String(propertyId || "");
-    const list = (rentals || []).filter((rental) => {
+    let latest = null;
+    let latestTime = -Infinity;
+
+    (rentals || []).forEach((rental) => {
       const rentalPropertyId = String(rental?.propertyId?._id || rental?.propertyId || "");
-      return pid && rentalPropertyId && rentalPropertyId === pid;
+      const hasMovedOut = !!rental?.cancelledAt;
+      if (!pid || rentalPropertyId !== pid || !hasMovedOut) return;
+
+      const t = new Date(rental?.cancelledAt || rental?.rentedFrom || rental?.createdAt || 0).getTime();
+      if (t > latestTime) {
+        latestTime = t;
+        latest = rental;
+      }
     });
 
-    const getTime = (r) => new Date(r?.rentedFrom || r?.createdAt || 0).getTime();
+    return latest?._id ? String(latest._id) : "";
+  }, [rentals, propertyId]);
+
+  const propertyRentals = useMemo(() => {
+    const pid = String(propertyId || "");
+    // Only show completed rentals (move-out date exists). Do not show "From - Now" entries.
+    const list = (rentals || []).filter((rental) => {
+      const rentalPropertyId = String(rental?.propertyId?._id || rental?.propertyId || "");
+      const hasMovedOut = !!rental?.cancelledAt;
+      return pid && rentalPropertyId && rentalPropertyId === pid && hasMovedOut;
+    });
+
+    const getTime = (r) =>
+      new Date(r?.cancelledAt || r?.rentedFrom || r?.createdAt || 0).getTime();
 
     // Priority sorting:
     // 1) Rentals that need feedback (moved out + no reference yet) come first
     // 2) Within each group: newest first
     return list.sort((a, b) => {
-      const aHasMovedOut = !!a?.cancelledAt;
-      const bHasMovedOut = !!b?.cancelledAt;
-
       const aHasReference = referenceByRentalHistoryId.has(String(a?._id));
       const bHasReference = referenceByRentalHistoryId.has(String(b?._id));
 
-      const aNeedsFeedback = isPropertyActive && aHasMovedOut && !aHasReference;
-      const bNeedsFeedback = isPropertyActive && bHasMovedOut && !bHasReference;
+      const aNeedsFeedback = isPropertyActive && !aHasReference;
+      const bNeedsFeedback = isPropertyActive && !bHasReference;
 
       const aScore = aNeedsFeedback ? 1 : 0;
       const bScore = bNeedsFeedback ? 1 : 0;
@@ -119,6 +140,12 @@ function ReferencesSection({ propertyId, propertyStatus }) {
   const handleSubmitFeedback = async () => {
     if (!activeRentalForFeedback?._id) {
       toast.error("Rental history not found");
+      return;
+    }
+
+    // Extra guard: feedback is only for completed rentals
+    if (!activeRentalForFeedback?.cancelledAt) {
+      toast.error("Feedback is available only after move-out date is set");
       return;
     }
 
@@ -215,7 +242,7 @@ function ReferencesSection({ propertyId, propertyStatus }) {
       {totalItems === 0 ? (
         <div className="text-center py-8 text-darkGray">
           <FiMessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-          <p>No rental history found for this property yet.</p>
+          <p>No completed rental history found for this property yet.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -233,9 +260,10 @@ function ReferencesSection({ propertyId, propertyStatus }) {
                 {paginatedRentals.map((rental) => {
                   const renter = rental?.renterId || {};
                   const reference = referenceByRentalHistoryId.get(String(rental?._id));
-                  const hasMovedOut = !!rental?.cancelledAt;
-                  const canSubmit =
-                    isPropertyActive && hasMovedOut && !reference && !submitting;
+                  const isLatestMovedOut = String(rental?._id || "") === latestMovedOutRentalId;
+                  // Allow feedback submission for any completed rental without a reference,
+                  // even if the property is currently rented again.
+                  const canSubmit = !!rental?.cancelledAt && !reference && !submitting;
 
                   return (
                     <tr key={String(rental?._id)} className="border-t border-lightGray">
@@ -256,14 +284,9 @@ function ReferencesSection({ propertyId, propertyStatus }) {
                           <FiCalendar className="text-[#6B4EFF]" />
                           <span>
                             {formatDate(rental?.rentedFrom)} -{" "}
-                            {hasMovedOut ? formatDate(rental?.cancelledAt) : "Now"}
+                            {formatDate(rental?.cancelledAt)}
                           </span>
                         </p>
-                        {!hasMovedOut && (
-                          <p className="text-xs text-darkGray mt-1">
-                            Feedback will be available once the renter leaves (move-out date is set).
-                          </p>
-                        )}
                       </td>
 
                       <td className="px-4 py-4 align-top">
@@ -278,13 +301,9 @@ function ReferencesSection({ propertyId, propertyStatus }) {
                               {reference?.referenceText || ""}
                             </p>
                           </div>
-                        ) : hasMovedOut ? (
-                          <span className="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-secondary">
-                            Pending feedback
-                          </span>
                         ) : (
                           <span className="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-secondary">
-                            Ongoing
+                            Pending feedback
                           </span>
                         )}
                       </td>
@@ -304,6 +323,9 @@ function ReferencesSection({ propertyId, propertyStatus }) {
                             onClick={() => openFeedbackModal(rental)}
                             className="px-4 py-2 bg-[#6B4EFF] text-white rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-colors"
                           >
+                            {isLatestMovedOut && (
+                              <FiMessageSquare className="inline-block mr-2 -mt-0.5" />
+                            )}
                             Submit Feedback
                           </button>
                         ) : (
@@ -311,7 +333,7 @@ function ReferencesSection({ propertyId, propertyStatus }) {
                             type="button"
                             className="px-4 py-2 border border-lightGray text-secondary rounded-lg text-sm font-semibold opacity-60 cursor-not-allowed"
                             disabled
-                            title={!isPropertyActive ? "Property must be Active to submit feedback" : "Feedback not available yet"}
+                            title="Feedback not available yet"
                           >
                             Submit Feedback
                           </button>
