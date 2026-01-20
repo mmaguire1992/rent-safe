@@ -11,9 +11,7 @@ const statusOptions = [
 ];
 
 function PropertyStatusCard({ propertyData, onStatusChange }) {
-  const [selectedStatus, setSelectedStatus] = useState(
-    propertyData.status?.toLowerCase() || "active"
-  );
+  const currentStatus = propertyData.status?.toLowerCase() || "active";
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -31,7 +29,6 @@ function PropertyStatusCard({ propertyData, onStatusChange }) {
   }, []);
 
   const handleStatusSelect = (value) => {
-    setSelectedStatus(value);
     setIsDropdownOpen(false);
     if (onStatusChange) {
       onStatusChange(value);
@@ -39,7 +36,7 @@ function PropertyStatusCard({ propertyData, onStatusChange }) {
   };
 
   const selectedOption = statusOptions.find(
-    (opt) => opt.value === selectedStatus
+    (opt) => opt.value === currentStatus
   );
   const displayLabel = selectedOption?.label || "Active";
 
@@ -59,7 +56,7 @@ function PropertyStatusCard({ propertyData, onStatusChange }) {
                 type="button"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-                  selectedStatus === "active"
+                  currentStatus === "active"
                     ? "bg-[#DFFFE6] text-[#00893A] hover:bg-green-200"
                     : "bg-gray-100 text-secondary hover:bg-gray-200"
                 }`}
@@ -76,7 +73,7 @@ function PropertyStatusCard({ propertyData, onStatusChange }) {
                     type="button"
                     onClick={() => handleStatusSelect(option.value)}
                     className={`w-full text-left px-4 py-1 text-sm font-normal transition-colors hover:bg-gray-50 ${
-                      selectedStatus === option.value
+                      currentStatus === option.value
                         ? "text-[#6B4EFF] font-medium"
                         : "text-secondary"
                     }`}

@@ -1,7 +1,17 @@
 import BlueCreditIcon from "@/svg/blueCreditIcon";
 import SectionHeader from "./SectionHeader";
+import CreditScoreDocumentUpload from "./CreditScoreDocumentUpload";
 
-function CreditCheckSection({ formData, handleChange, errors = {} }) {
+function CreditCheckSection({
+  formData,
+  handleChange,
+  existingCreditScoreDocuments = [],
+  pendingCreditScoreKey = 'credit_score',
+  onPendingDocumentsChange,
+  onDocumentsUpdated,
+  pendingResetToken = 0,
+  errors = {},
+}) {
   return (
     <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
       <SectionHeader icon={BlueCreditIcon} title="Credit Check" />
@@ -25,6 +35,17 @@ function CreditCheckSection({ formData, handleChange, errors = {} }) {
         {errors.creditScore && (
           <p className="mt-1 text-sm text-errorColor">{errors.creditScore}</p>
         )}
+      </div>
+
+      <div className="mb-6 w-full md:max-w-[50%]">
+        <CreditScoreDocumentUpload
+          label="Credit Score Document"
+          existingDocuments={existingCreditScoreDocuments}
+          pendingKey={pendingCreditScoreKey}
+          onPendingDocumentsChange={onPendingDocumentsChange}
+          onDocumentsUpdated={onDocumentsUpdated}
+          pendingResetToken={pendingResetToken}
+        />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

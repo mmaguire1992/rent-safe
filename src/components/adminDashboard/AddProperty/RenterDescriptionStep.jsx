@@ -79,13 +79,13 @@ function RenterDescriptionStep({ formData, setFormData, setShowAIModal }) {
               rows="6"
               className="w-full px-4 py-3 border  border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 resize-none"
             />
-            <button
+            {/* <button
               onClick={() => setShowAIModal(true)}
               className="lg:absolute bottom-3 right-2 flex items-center gap-2 px-4 py-2 bg-[#E8E2FF] text-[#6B4EFF] rounded-[10px] font-bold hover:bg-opacity-90 transition-colors text-sm md:text-base"
             >
               <BlueAIIcon />
               AI Content Generator
-            </button>
+            </button> */}
           </div>
         </div>
         <div>

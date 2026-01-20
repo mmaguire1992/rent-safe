@@ -1,6 +1,6 @@
 import BlueCreditIcon from "@/svg/blueCreditIcon";
 
-function CreditCheck({ tenantData }) {
+function CreditCheck({ tenantData, showDocument = true }) {
   const creditScore = tenantData.creditScore || 0;
   const creditMax = tenantData.creditMax || 850;
   const creditPercentage = creditMax > 0 ? (creditScore / creditMax) * 100 : 0;
@@ -103,6 +103,20 @@ function CreditCheck({ tenantData }) {
             {creditInfo.description}
           </p>
         </div>
+
+        {/* Credit Score Document (visible in tenant profile, hidden in chat profile view) */}
+        {showDocument && tenantData.creditScoreDocument ? (
+          <div className="mt-4">
+            <a
+              href={tenantData.creditScoreDocument}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-semibold text-primary underline"
+            >
+              View credit score document
+            </a>
+          </div>
+        ) : null}
       </div>
     </div>
   );

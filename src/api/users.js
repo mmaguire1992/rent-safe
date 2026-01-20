@@ -162,6 +162,59 @@ export const uploadProfilePicture = async (file) => {
 };
 
 /**
+ * Upload credit score document
+ * @param {File} file - Document file to upload (PDF/DOC/DOCX or image)
+ * @returns {Promise<Object>} - Upload response with document URL
+ */
+export const uploadCreditScoreDocument = async (file) => {
+  try {
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    if (typeof file === 'string') {
+      if (file.startsWith('blob:')) {
+        throw new Error('Invalid file: received blob URL instead of File object. Please select the file again.');
+      }
+      throw new Error('Invalid file: received string instead of File object. Please select the file again.');
+    }
+
+    if (!(file instanceof File) && !(file instanceof Blob)) {
+      throw new Error('Invalid file: must be a File object');
+    }
+
+    const formData = new FormData();
+    // Backend expects field name to be 'creditScoreDocument'
+    formData.append('creditScoreDocument', file);
+
+    const response = await apiClient.post('/users/credit-score-document', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('Error uploading credit score document:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete credit score document
+ * @returns {Promise<Object>} - Delete response
+ */
+export const deleteCreditScoreDocument = async () => {
+  try {
+    const response = await apiClient.delete('/users/credit-score-document');
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('Error deleting credit score document:', error);
+    throw error;
+  }
+};
+
+/**
  * Delete profile picture
  * @returns {Promise<Object>} - Delete response
  */

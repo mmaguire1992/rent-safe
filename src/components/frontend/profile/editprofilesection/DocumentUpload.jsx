@@ -7,14 +7,43 @@ import { toast } from "react-toastify";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { FiDownload, FiTrash2, FiUpload, FiFileText, FiAlertCircle, FiX } from "react-icons/fi";
 
-function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identity_proof', existingDocuments = [], onDocumentsUpdated, documentMetadata = null, onDocumentDeleted = null }) {
+function DocumentUpload({
+  label,
+  maxFiles = 5,
+  onFilesChange,
+  docType = 'identity_proof',
+  existingDocuments = [],
+  onDocumentsUpdated,
+  documentMetadata = null,
+  onDocumentDeleted = null,
+  // When true: upload to S3 immediately, but do NOT store in DB until parent saves.
+  deferDbSave = false,
+  // Identifier so parent can track pending docs from multiple upload widgets (especially when docType may repeat like "other").
+  pendingKey = null,
+  // (pendingKey, pendingDocuments[]) => void
+  onPendingDocumentsChange = null,
+  // Bump this value in parent after a successful Save to clear any pending uploads from UI.
+  pendingResetToken = 0,
+}) {
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState(null);
   const [reuploadingDocId, setReuploadingDocId] = useState(null);
+  const [pendingDocuments, setPendingDocuments] = useState([]); // docs to store on Save (deferred mode)
   const fileInputRef = useRef(null);
+
+  // Clear local pending docs when parent confirms they were saved (or intentionally reset)
+  useEffect(() => {
+    if (!deferDbSave) return;
+
+    setPendingDocuments([]);
+    setUploadedFiles((prev) => (prev || []).filter((f) => !f?.isPending));
+    if (onPendingDocumentsChange && pendingKey) {
+      onPendingDocumentsChange(pendingKey, []);
+    }
+  }, [pendingResetToken]);
   
   // Debug: Log component mount with docType
   useEffect(() => {
@@ -113,12 +142,16 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
         };
         return fileObj;
       });
-      setUploadedFiles(existingFiles);
+      // Preserve any local "pending" files that aren't in DB yet (deferred mode)
+      setUploadedFiles((prev) => {
+        const pending = (prev || []).filter((f) => f?.isPending);
+        return [...existingFiles, ...pending];
+      });
       // Reset reupload state when documents change
       setReuploadingDocId(null);
     } else {
       // Clear files if no existing documents
-      setUploadedFiles([]);
+      setUploadedFiles((prev) => (prev || []).filter((f) => f?.isPending));
     }
   }, [existingDocumentsString, existingDocuments]);
 
@@ -187,8 +220,15 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
       setUploading(true);
       
       // Track if we're replacing an existing document
-      const hadExistingDocument = uploadedFiles.length > 0 && maxFiles === 1;
+      const hadExistingDocument = uploadedFiles.some((f) => f?.isExisting) && maxFiles === 1;
       
+      // In deferred mode we never auto-delete an existing DB document before Save.
+      // Ask user to explicitly delete first to avoid losing data without clicking Save.
+      if (deferDbSave && hadExistingDocument && !isReupload) {
+        toast.warning('A document already exists. Please delete the existing document first, then upload a new one.');
+        return;
+      }
+
       // If reuploading, we don't delete the document - backend will update it
       // If there's an existing document and we're uploading a new one (not reupload), delete the old one first
       // This implements "replace" behavior for single-document types (like identity_proof)
@@ -298,7 +338,73 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
         return docToStore;
       });
 
-      // Store documents in database
+      // If deferring DB save, keep documents locally and let parent commit on Save.
+      if (deferDbSave) {
+        setPendingDocuments((prev) => {
+          const prevArr = Array.isArray(prev) ? prev : [];
+          // Single-file types should replace pending docs; multi-file should append.
+          const next = maxFiles === 1 ? documentsToStore : [...prevArr, ...documentsToStore];
+          if (onPendingDocumentsChange && pendingKey) {
+            onPendingDocumentsChange(pendingKey, next);
+          }
+          return next;
+        });
+
+        // Update UI (show as "pending save")
+        const docTypeLabels = {
+          'pay_slip': 'Pay Slip',
+          'bank_statement': 'Bank Statement',
+          'identity_proof': 'Identity Proof',
+          'passport': 'Passport',
+          'driving_license': 'Driving License',
+          'national_id': 'National ID',
+          'proof_of_address': 'Proof of Address',
+          'utility_bill': 'Utility Bill',
+          'tax_document': 'Tax Document',
+          'credit_score': 'Credit Score',
+          'other': 'Other',
+        };
+
+        const formatFileSize = (bytes) => {
+          if (!bytes || bytes === 0) return '0 B';
+          const k = 1024;
+          const sizes = ['B', 'KB', 'MB', 'GB'];
+          const i = Math.floor(Math.log(bytes) / Math.log(k));
+          return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+        };
+
+        const pendingFilesToAdd = validFiles.map((file, index) => ({
+          name: file.name,
+          url: uploadResults[index]?.url || uploadResults[index]?.fileUrl,
+          id: isReupload && docIdToUpdate ? docIdToUpdate : `pending-${Date.now()}-${index}`,
+          isExisting: false,
+          isPending: true,
+          docType: docType,
+          docTypeLabel: docTypeLabels[docType] || docType,
+          verificationStatus: null,
+          rejectionReason: null,
+          fileSize: formatFileSize(file.size),
+          uploadedDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        }));
+
+        setUploadedFiles((prev) => {
+          if (isReupload && docIdToUpdate) {
+            // Replace the existing doc card with a pending one
+            return (prev || []).map((f) => (f?.id === docIdToUpdate ? pendingFilesToAdd[0] : f));
+          }
+          // Replace pending (single-file) or append (multi-file)
+          if (maxFiles === 1) {
+            const existing = (prev || []).filter((f) => f?.isExisting);
+            return [...existing, ...pendingFilesToAdd];
+          }
+          return [...(prev || []), ...pendingFilesToAdd];
+        });
+
+        toast.info('Document uploaded. Click Save Profile to store it.');
+        return;
+      }
+
+      // Store documents in database (default behavior)
       // Final check: ensure docType is correct before storing
       console.log('DocumentUpload - Final documentsToStore before API call:', documentsToStore.map(doc => ({
         docType: doc.docType,
@@ -435,6 +541,23 @@ function DocumentUpload({ label, maxFiles = 5, onFilesChange, docType = 'identit
       setUploading(true);
       setDeleteModalOpen(false);
       
+      // Pending (deferred) docs are not in DB yet; remove only from UI + pending list
+      if (fileToRemove?.isPending) {
+        const newFiles = uploadedFiles.filter((_, i) => i !== index);
+        setUploadedFiles(newFiles);
+
+        // Remove corresponding pending doc (best-effort match by url)
+        const nextPending = pendingDocuments.filter((d) => d?.fileUrl !== fileToRemove?.url);
+        setPendingDocuments(nextPending);
+        if (onPendingDocumentsChange && pendingKey) {
+          onPendingDocumentsChange(pendingKey, nextPending);
+        }
+
+        toast.success('Pending document removed');
+        setFileToDelete(null);
+        return;
+      }
+
       // If document has an ID (either existing or newly uploaded), delete it from backend
       if (fileToRemove.id) {
         try {
