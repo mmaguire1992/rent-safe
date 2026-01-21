@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from '@/lib/react-router-compat';
+import { useAuth } from '@/context/AuthContext';
 import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
 import Breadcrumb from "@/components/adminDashboard/common/Breadcrumb";
 import RentOutDetailsForm from "@/components/adminDashboard/PropertyDetail/RentOutDetailsForm";
@@ -13,7 +14,7 @@ import PropertyDescription from "@/components/adminDashboard/PropertyDetail/Prop
 import PropertyDetailsGrid from "@/components/adminDashboard/PropertyDetail/PropertyDetailsGrid";
 import LocationSection from "@/components/adminDashboard/PropertyDetail/LocationSection";
 import RenterProfileDescription from "@/components/adminDashboard/PropertyDetail/RenterProfileDescription";
-import { getPropertyById, deleteProperty, updateProperty } from "@/api/properties";
+import { getPropertyById, deleteProperty, updateProperty, approveProperty, rejectProperty } from "@/api/properties";
 import { getAllRentalHistory } from "@/api/rentalHistory";
 import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
 import { toast } from "react-toastify";
@@ -23,6 +24,7 @@ import RentOutModal from "@/components/adminDashboard/PropertyDetail/RentOutModa
 function PropertyDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [showRentOutForm, setShowRentOutForm] = useState(false);
   const [showRenterDetails, setShowRenterDetails] = useState(false);
   const [renterEmail, setRenterEmail] = useState("");
@@ -45,6 +47,10 @@ function PropertyDetail() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [showRentOutModal, setShowRentOutModal] = useState(false);
   const [pendingStatus, setPendingStatus] = useState(null);
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [isProcessingApproval, setIsProcessingApproval] = useState(false);
 
   // Fetch property data from API
   useEffect(() => {
@@ -418,6 +424,64 @@ function PropertyDetail() {
     setPendingStatus(null);
   };
 
+  // Handle property approval (Admin only)
+  const handleApproveProperty = async () => {
+    if (!user || user.userType !== 'admin') {
+      toast.error('Only admins can approve properties');
+      return;
+    }
+
+    try {
+      setIsProcessingApproval(true);
+      await approveProperty(id);
+
+      // Refresh property data
+      const updatedProperty = await getPropertyById(id);
+      setProperty(updatedProperty);
+
+      toast.success('Property approved successfully');
+      setShowApproveModal(false);
+    } catch (error) {
+      console.error('Error approving property:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to approve property';
+      toast.error(errorMessage);
+    } finally {
+      setIsProcessingApproval(false);
+    }
+  };
+
+  // Handle property rejection (Admin only)
+  const handleRejectProperty = async () => {
+    if (!user || user.userType !== 'admin') {
+      toast.error('Only admins can reject properties');
+      return;
+    }
+
+    if (!rejectReason.trim()) {
+      toast.error('Please provide a reason for rejection');
+      return;
+    }
+
+    try {
+      setIsProcessingApproval(true);
+      await rejectProperty(id, rejectReason.trim());
+
+      // Refresh property data
+      const updatedProperty = await getPropertyById(id);
+      setProperty(updatedProperty);
+
+      toast.success('Property rejected successfully');
+      setShowRejectModal(false);
+      setRejectReason('');
+    } catch (error) {
+      console.error('Error rejecting property:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to reject property';
+      toast.error(errorMessage);
+    } finally {
+      setIsProcessingApproval(false);
+    }
+  };
+
   // Handle share button click - copy property link to clipboard
   const handleShare = async () => {
     try {
@@ -502,9 +566,12 @@ function PropertyDetail() {
       <div className="space-y-6">
         <Breadcrumb customLabels={{ propertyTitle: propertyData.title }} />
 
-        <PropertyStatusCard 
-          propertyData={propertyData} 
+        <PropertyStatusCard
+          propertyData={propertyData}
           onStatusChange={handleStatusChange}
+          onApprove={() => setShowApproveModal(true)}
+          onReject={() => setShowRejectModal(true)}
+          userRole={user?.userType}
         />
 
         <ReferencesSection 
@@ -592,6 +659,40 @@ function PropertyDetail() {
         confirmText="Delete"
         cancelText="Cancel"
         isProcessing={isDeleting}
+      />
+
+      {/* Approve Property Modal */}
+      <ConfirmationModal
+        isOpen={showApproveModal}
+        onClose={() => setShowApproveModal(false)}
+        onConfirm={handleApproveProperty}
+        title="Approve Property"
+        message={`Are you sure you want to approve "${propertyData.title}"? This will make the property live and visible to renters.`}
+        confirmText="Yes, Approve"
+        cancelText="Cancel"
+        confirmVariant="primary"
+        isProcessing={isProcessingApproval}
+      />
+
+      {/* Reject Property Modal */}
+      <ConfirmationModal
+        isOpen={showRejectModal}
+        onClose={() => {
+          setShowRejectModal(false);
+          setRejectReason('');
+        }}
+        onConfirm={handleRejectProperty}
+        title="Reject Property"
+        message={`Are you sure you want to reject "${propertyData.title}"? Please provide a reason for rejection.`}
+        confirmText="Yes, Reject"
+        cancelText="Cancel"
+        confirmVariant="danger"
+        showReasonInput={true}
+        reasonValue={rejectReason}
+        onReasonChange={setRejectReason}
+        reasonPlaceholder="Enter rejection reason..."
+        reasonRequired={true}
+        isProcessing={isProcessingApproval}
       />
     </DashboardLayout>
   );

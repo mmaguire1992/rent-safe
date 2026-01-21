@@ -46,6 +46,7 @@ function Messages() {
   const [confirmAction, setConfirmAction] = useState(null);
   const [confirmChatroomId, setConfirmChatroomId] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesTopRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -74,6 +75,11 @@ function Messages() {
       }
     };
     fetchUser();
+  }, []);
+
+  // Set mounted state to prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
   // Sync selectedConversation ref with state
@@ -827,6 +833,7 @@ function Messages() {
           
           // Format user data to match TenantProfileDetail expected structure
           const formattedTenantData = {
+            id: userData._id || userData.id, // Add user ID for references
             name: userData.userInfo?.name?.first && userData.userInfo?.name?.last
               ? `${userData.userInfo.name.first} ${userData.userInfo.name.last}`.trim()
               : userData.firstName && userData.lastName
@@ -903,6 +910,7 @@ function Messages() {
         toast.error('Failed to load tenant profile');
         // Still show profile detail with basic info
         setTenantProfileData({
+          id: selectedConversation.otherUser._id || selectedConversation.otherUser.id,
           name: `${selectedConversation.otherUser.firstName || ''} ${selectedConversation.otherUser.lastName || ''}`.trim() || selectedConversation.otherUser.email,
           profileImage: '/default-avatar.png',
           verified: false,
@@ -1212,7 +1220,7 @@ function Messages() {
 
         {!showProfileDetail && (
           <h1 className="text-xl xl:text-2xl font-bold text-secondary mb-4">
-            Messages {!isConnected && <span className="text-xs text-red-500">(Disconnected)</span>}
+            Messages {mounted && !isConnected && <span className="text-xs text-red-500">(Disconnected)</span>}
           </h1>
         )}
 

@@ -455,16 +455,69 @@ export async function deletePropertyMedia(propertyId, mediaId) {
     if (!propertyId || !mediaId) {
       throw new Error('Property ID and Media ID are required');
     }
-    
+
     const responseData = await useDeleteApi(propertyRoutes.deletePropertyMedia(propertyId, mediaId), true);
-    
+
     if (responseData && responseData.success) {
       return responseData;
     }
-    
+
     return responseData;
   } catch (error) {
     console.error('Error in deletePropertyMedia:', error);
+    throw error;
+  }
+}
+
+/**
+ * Approve property (Admin only)
+ * @param {string} propertyId - Property ID
+ * @returns {Promise<Object>} - Updated property data
+ */
+export async function approveProperty(propertyId) {
+  try {
+    if (!propertyId) {
+      throw new Error('Property ID is required');
+    }
+
+    const responseData = await usePutApi(`/properties/${propertyId}/approve`, true);
+
+    if (responseData && responseData.success && responseData.data) {
+      return responseData.data;
+    }
+
+    return responseData;
+  } catch (error) {
+    console.error('Error in approveProperty:', error);
+    throw error;
+  }
+}
+
+/**
+ * Reject property (Admin only)
+ * @param {string} propertyId - Property ID
+ * @param {string} reason - Rejection reason
+ * @returns {Promise<Object>} - Updated property data
+ */
+export async function rejectProperty(propertyId, reason) {
+  try {
+    if (!propertyId) {
+      throw new Error('Property ID is required');
+    }
+
+    if (!reason || !reason.trim()) {
+      throw new Error('Rejection reason is required');
+    }
+
+    const responseData = await usePutApi(`/properties/${propertyId}/reject`, true, { reason: reason.trim() });
+
+    if (responseData && responseData.success && responseData.data) {
+      return responseData.data;
+    }
+
+    return responseData;
+  } catch (error) {
+    console.error('Error in rejectProperty:', error);
     throw error;
   }
 }

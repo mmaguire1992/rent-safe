@@ -37,6 +37,38 @@ export async function getPropertyReferences(propertyId) {
 }
 
 /**
+ * Get all verified references for a specific renter
+ * @param {string} renterId - Renter user ID
+ * @returns {Promise<Array>} List of verified references
+ */
+export async function getRenterReferences(renterId) {
+  try {
+    if (!renterId) {
+      throw new Error('Renter ID is required');
+    }
+
+    // Get references filtered by renter ID and only verified status
+    const queryParams = new URLSearchParams({
+      page: '1',
+      limit: '100',
+      renterId: String(renterId),
+      status: 'verified', // Only verified references
+    });
+
+    const responseData = await useGetApi(`/references?${queryParams.toString()}`, true);
+
+    if (responseData?.success && responseData?.data?.references) {
+      return responseData.data.references;
+    }
+
+    return responseData?.data || [];
+  } catch (error) {
+    console.error('Error in getRenterReferences:', error);
+    throw error;
+  }
+}
+
+/**
  * Create owner reference/feedback about renter
  * @param {Object} referenceData - Reference data
  * @param {string} referenceData.rentalHistoryId - Rental history ID

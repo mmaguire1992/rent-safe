@@ -4,6 +4,7 @@ import CreditCheck from "@/components/adminDashboard/TenantProfile/CreditCheck";
 import IdentityInfo from "@/components/adminDashboard/TenantProfile/IdentityInfo";
 import CurrentAddress from "@/components/adminDashboard/TenantProfile/CurrentAddress";
 import EmploymentDetails from "@/components/adminDashboard/TenantProfile/EmploymentDetails";
+import RenterFeedbackSection from "@/components/adminDashboard/TenantProfile/RenterFeedbackSection";
 import { MdKeyboardBackspace } from "react-icons/md";
 
 function TenantProfileDetail({
@@ -51,6 +52,13 @@ function TenantProfileDetail({
         <EmploymentDetails
           employment={tenantData.employment}
           proofOfIncome={tenantData.proofOfIncome}
+        />
+      </div>
+
+      {/* Renter Feedback Section */}
+      <div className="block">
+        <RenterFeedbackSection
+          renterId={tenantData.id || tenantData.userId}
         />
       </div>
     </div>

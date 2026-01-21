@@ -46,11 +46,16 @@ const getStatusBadgeColor = (status) => {
   }
 };
 
-function PropertyStatusCard({ propertyData, onStatusChange }) {
+function PropertyStatusCard({ propertyData, onStatusChange, onApprove, onReject, userRole }) {
   const currentStatus = propertyData.status?.toLowerCase() || 'draft';
-  
-  // Determine if status can be edited (only active and rented can be toggled)
+
+  // Determine if status can be edited (only active and rented can be toggled by owners)
   const canEditStatus = currentStatus === 'active' || currentStatus === 'rented';
+
+  // Check if user is admin and property is pending approval
+  const isAdmin = userRole === 'admin';
+  const isPendingApproval = currentStatus === 'pending_approval';
+  const canApproveReject = isAdmin && isPendingApproval;
   
   // Get available options based on current status
   const getAvailableOptions = () => {
@@ -111,7 +116,28 @@ function PropertyStatusCard({ propertyData, onStatusChange }) {
               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(currentStatus)}`}>
                 {displayLabel}
               </span>
-              {canEditStatus && (
+              {canApproveReject ? (
+                // Show approve/reject buttons for admins with pending properties
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onApprove && onApprove()}
+                    className="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded hover:bg-green-700 transition-colors"
+                    title="Approve property"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onReject && onReject()}
+                    className="px-3 py-1 bg-red-600 text-white text-xs font-semibold rounded hover:bg-red-700 transition-colors"
+                    title="Reject property"
+                  >
+                    Reject
+                  </button>
+                </div>
+              ) : canEditStatus && (
+                // Show status change dropdown for owners with active/rented properties
                 <>
                   <button
                     type="button"

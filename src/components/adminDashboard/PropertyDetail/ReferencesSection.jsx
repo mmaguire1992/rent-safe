@@ -35,11 +35,18 @@ function ReferencesSection({ propertyId, propertyStatus }) {
     }
   };
 
-  const getStatusBadge = (status) => {
-    const statusLower = status?.toLowerCase() || "";
-    if (statusLower === "verified") return "bg-[#DFFFE6] text-[#00893A]";
-    if (statusLower === "rejected") return "bg-red-100 text-red-600";
+  const getStatusBadge = (reference) => {
+    // Use is_verified field to determine status
+    if (reference?.is_verified === true) return "bg-[#DFFFE6] text-[#00893A]";
+    if (reference?.is_verified === false && reference?.status === "rejected") return "bg-red-100 text-red-600";
     return "bg-[#FFF5CC] text-[#D19600]";
+  };
+
+  const getStatusText = (reference) => {
+    // Use is_verified field to determine status text
+    if (reference?.is_verified === true) return "verified";
+    if (reference?.is_verified === false && reference?.status === "rejected") return "rejected";
+    return "pending";
   };
 
   const isPropertyActive = String(propertyStatus || "").toLowerCase() === "active";
@@ -284,9 +291,9 @@ function ReferencesSection({ propertyId, propertyStatus }) {
                         {reference ? (
                           <div className="space-y-2">
                             <span
-                              className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(reference?.status)}`}
+                              className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(reference)}`}
                             >
-                              {reference?.status || "pending"}
+                              {getStatusText(reference)}
                             </span>
                             <p className="text-sm text-darkGray break-words max-w-[360px]">
                               {reference?.referenceText || ""}
