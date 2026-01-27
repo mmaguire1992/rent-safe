@@ -256,7 +256,6 @@ function VerificationCenter() {
       const { documentType, files } = data;
       
       if (!documentType || !files || files.length === 0) {
-        toast.error('Please select a document type and upload at least one file');
         return;
       }
 

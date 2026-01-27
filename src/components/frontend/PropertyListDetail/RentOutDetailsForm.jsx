@@ -30,7 +30,7 @@ function RentOutDetailsForm({
             <input
               type="email"
               value={renterEmail}
-              onChange={(e) => setRenterEmail(e.target.value)}
+              onChange={(e) => setRenterEmail(e.target.value.replace(/^\s+/, ''))}
               placeholder="Search renter's email address"
               className="w-full px-4 py-3 pr-12 border border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0"
             />

@@ -467,7 +467,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => setSearchQuery(e.target.value.replace(/^\s+/, ''))}
                 placeholder="Search subject or description..."
                 className="w-full px-3 py-2 text-sm border border-lightGray rounded-[8px] focus:outline-none focus:ring-0 font-nunito"
               />

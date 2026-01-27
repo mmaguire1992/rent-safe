@@ -665,7 +665,7 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
           ref={addressInputRef}
           type="text"
           value={formData.address}
-          onChange={(e) => handleChange("address", e.target.value)}
+          onChange={(e) => handleChange("address", e.target.value.replace(/^\s+/, ''))}
           onBlur={() => handleBlur("address")}
           placeholder="Search for an address (e.g., 123 Main St, London)..."
           className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] focus:border-[#6B4EFF] ${

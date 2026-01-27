@@ -248,7 +248,7 @@ function NotificationsPage({ layout = 'dashboard' }) {
               type="text"
               placeholder="Search notifications..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value.replace(/^\s+/, ''))}
               className="w-full pl-10 pr-10 py-2.5 border border-lightGray rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-nunito"
             />
             {searchQuery && (

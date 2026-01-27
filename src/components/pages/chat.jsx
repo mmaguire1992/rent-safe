@@ -1025,7 +1025,7 @@ function ChatMessage() {
                     type="text"
                     placeholder="Search Messages"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => setSearchQuery(e.target.value.replace(/^\s+/, ''))}
                     className="w-full pl-11 md:pl-12 pr-4 h-12 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#6B4EFF]/20 focus:border-[#6B4EFF] text-sm md:text-base bg-white transition-all duration-200 placeholder:text-gray-400"
                   />
                 </div>
