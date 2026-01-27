@@ -96,7 +96,7 @@ function SearchBar() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value.replace(/^\s+/, ''))}
               onKeyPress={handleKeyPress}
               placeholder="Enter an address, neighborhood, city, or ZIP code"
               className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 text-sm sm:text-base border border-border rounded-lg focus:outline-none transition-colors text-text-primary placeholder:text-[#5A5E67]"
