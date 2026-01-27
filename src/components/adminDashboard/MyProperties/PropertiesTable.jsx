@@ -166,7 +166,7 @@ function PropertiesTable({
                           {property.leads}
                         </p>
                       </td>
-                      <td className="py-4 px-4">
+                      <td className="py-4 px-4 w-[200px]">
                         <span
                           className={`px-3 py-1 rounded-full text-base font-nunito font-normal ${
                             property.status === "Active"

@@ -9,7 +9,7 @@ function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen ">
+    <div className="flex min-h-screen h-screen overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -18,22 +18,24 @@ function DashboardLayout({ children }) {
         ></div>
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Sticky */}
       <div
-        className={`fixed lg:static inset-y-0 left-0 z-50 bg-mainBlue transform ${
+        className={`fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 bg-mainBlue transform ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 transition-transform duration-300 ease-in-out`}
+        } lg:translate-x-0 transition-transform duration-300 ease-in-out h-screen`}
       >
         <Sidebar onClose={() => setSidebarOpen(false)} />
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col w-full lg:w-auto min-w-0">
-        {/* Header */}
-        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+      <div className="flex-1 flex flex-col w-full lg:w-auto min-w-0 h-screen overflow-hidden">
+        {/* Header - Sticky */}
+        <div className="sticky top-0 z-40 bg-white">
+          <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        </div>
 
-        {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-6 overflow-auto">{children}</main>
+        {/* Page Content - Scrollable */}
+        <main className="flex-1 p-4 sm:p-6 overflow-y-auto overflow-x-hidden">{children}</main>
       </div>
     </div>
   );

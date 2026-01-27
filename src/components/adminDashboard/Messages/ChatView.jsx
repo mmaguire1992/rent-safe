@@ -97,7 +97,7 @@ function ChatView({
   return (
     <>
       {/* Chat Header */}
-      <div className="p-3 sm:p-4 md:p-6 border-b border-lightGray flex items-center justify-between relative">
+      <div className="p-3 border-b border-lightGray flex items-center justify-between relative">
         <div
           onClick={onProfileClick}
           className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:opacity-80 transition-opacity flex-1 min-w-0"
@@ -213,7 +213,7 @@ function ChatView({
                 </div>
                 {/* Show verification icon for renters: cross if not verified, checkmark if verified */}
                 {msg.senderUserType === 'renter' && (
-                  <div className="absolute -bottom-0 -right-1 bg-white rounded-full">
+                  <div className="absolute -bottom-0 right-[-24px] bg-white rounded-full cursor-pointer">
                     {msg.isVerified ? (
                       <MediumCheckedIcon />
                     ) : (

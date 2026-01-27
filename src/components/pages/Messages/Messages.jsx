@@ -1275,7 +1275,7 @@ function Messages() {
         )}
 
         <div
-          className={`flex gap-0 bg-white rounded-[20px] ${!showProfileDetail && "border border-lightGray"
+          className={`flex gap-0 bg-white rounded-[20px] overflow-hidden ${!showProfileDetail && "border border-lightGray"
             }`}
         >
           {/* Left Panel - Message List */}
@@ -1285,7 +1285,7 @@ function Messages() {
                 } w-full md:w-96 lg:w-[400px] rounded-tl-[20px] rounded-bl-[20px] md:rounded-tr-none md:rounded-br-none rounded-[20px] md:rounded-[0] bg-white border-r border-lightGray md:border-r flex flex-col`}
             >
               {/* Header */}
-              <div className="p-4 border-b border-lightGray">
+              <div className="p-3 border-b border-lightGray">
                 {/* Search Bar */}
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lg md:text-xl">

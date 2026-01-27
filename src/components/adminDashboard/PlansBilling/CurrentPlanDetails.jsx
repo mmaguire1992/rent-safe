@@ -21,7 +21,7 @@ function CurrentPlanDetails({ currentPlan, onUpgrade }) {
     return (
       <div className="bg-[#DFFFE6] rounded-[20px] p-5 overflow-hidden">
         <div className="flex items-center justify-between w-full">
-          <h3 className="text-sm bg-[#009966] py-1 px-2 rounded font-medium font-nunito text-white">
+          <h3 className="text-sm bg-[#009966] py-1 px-2 mb-2 rounded font-medium font-nunito text-white">
             CURRENT PLAN
           </h3>
         </div>
@@ -46,7 +46,7 @@ function CurrentPlanDetails({ currentPlan, onUpgrade }) {
   return (
     <div className="bg-[#DFFFE6] rounded-[20px] p-5 overflow-hidden">
       <div className="flex items-center justify-between w-full">
-        <h3 className="text-sm bg-[#009966] py-1 px-2 rounded font-medium font-nunito text-white">
+        <h3 className="text-sm bg-[#009966] py-1 px-2 rounded mb-2 font-medium font-nunito text-white">
           CURRENT PLAN
         </h3>
         {showUpgradeButton && (

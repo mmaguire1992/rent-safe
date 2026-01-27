@@ -183,7 +183,7 @@ function PropertyStatusCard({ propertyData, onStatusChange, onApprove, onReject,
           </p>
         </div>
 
-        <div className="flex items-center gap-4 justify-between">
+        <div className="flex items-center gap-4 justify-between mt-5">
           <div className="flex items-center gap-2">
             <FiEye className="text-darkGray" />
             <p className="text-base font-normal font-nunito text-darkGray">
@@ -197,7 +197,7 @@ function PropertyStatusCard({ propertyData, onStatusChange, onApprove, onReject,
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-4 justify-between">
+        <div className="flex items-center gap-4 justify-between mt-5">
           <div className="flex items-center gap-2">
             <GrayLeadsIcon />
             <p className="text-base font-normal font-nunito text-darkGray">
