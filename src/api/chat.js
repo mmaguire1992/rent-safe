@@ -181,7 +181,7 @@ export async function getRecentRequests(limit = 10) {
         throw new Error('Chatroom ID is required');
       }
 
-      const response = await usePatchApi(chatRoutes.updateChatroom(chatroomId), true, { action: 'delete' });
+      const response = await useDeleteApi(chatRoutes.deleteChatroom(chatroomId), true);
 
       if (response && response.success && response.data) {
         return response.data;
@@ -246,14 +246,8 @@ export async function getRecentRequests(limit = 10) {
         return await blockUnblockChatroom(chatroomId, blockAction);
       }
 
-      // Handle delete (uses updateChatroom endpoint)
-      const response = await usePatchApi(chatRoutes.updateChatroom(chatroomId), true, { action: 'delete' });
-      
-      if (response && response.success && response.data) {
-        return response.data;
-      }
-      
-      throw new Error(response.message || 'Failed to update chatroom');
+      // Handle delete (uses DELETE endpoint)
+      return await deleteChatroom(chatroomId);
     } catch (error) {
       console.error('Error updating chatroom:', error);
       throw error;

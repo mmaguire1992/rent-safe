@@ -46,7 +46,7 @@ function PropertiesTable({
     if (e) e.stopPropagation();
     console.log(`${action} property:`, propertyId);
     if (action === "Edit") {
-      navigate(`/dashboard/properties/${propertyId}`);
+      navigate(`/dashboard/properties/edit/${propertyId}`);
     }
     setOpenDropdownId(null);
   };

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { toast } from "react-toastify";
-import { getMyDocuments, downloadDocument, deleteDocument } from "@/api/verification";
+import { getMyDocuments, downloadDocument, deleteDocument, uploadDocumentsToS3, storeDocuments } from "@/api/verification";
 import { getRenterPlan, getUserVerificationPayment } from "@/api/subscriptions";
 import { useAuth } from "@/context/AuthContext";
 import PaymentSection from "./PaymentSection";
@@ -12,6 +12,8 @@ import SuccessfullyCheck from "@/svg/successfullyCheck";
 import VerifiedDocumentsSection from "@/components/adminDashboard/VerificationCenter/VerifiedDocumentsSection";
 import UnderReviewDocumentsSection from "@/components/adminDashboard/VerificationCenter/UnderReviewDocumentsSection";
 import RejectedDocumentsSection from "@/components/adminDashboard/VerificationCenter/RejectedDocumentsSection";
+import UploadVerificationDocuments from "@/components/adminDashboard/VerificationCenter/UploadVerificationDocuments";
+import { documentTypeOptions } from "@/constant";
 
 // Format document type for display
 const formatDocumentType = (docType) => {
@@ -33,6 +35,12 @@ const formatDocumentType = (docType) => {
   return typeMap[docType] || docType?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Document';
 };
 
+// Convert frontend document type option to backend docType format
+const mapOptionToDocType = (option) => {
+  // Convert hyphens to underscores for backend format
+  return option.replace(/-/g, '_');
+};
+
 function VerificationSection() {
   const { user, updateUser } = useAuth();
   const [showPayment, setShowPayment] = useState(false);
@@ -45,16 +53,23 @@ function VerificationSection() {
   const [verificationPayment, setVerificationPayment] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null); // Store fresh user data
+  const paymentFetchedRef = useRef(false); // Track if payment has been fetched
+  const lastUserIdRef = useRef(null); // Track last user ID to reset fetch on user change
+  const [uploading, setUploading] = useState(false);
+  const [storing, setStoring] = useState(false);
 
   // Fetch documents on mount and when payment is successful
   const fetchDocuments = async () => {
     try {
       setLoading(true);
       const data = await getMyDocuments();
+      console.log('📥 Fetched documents from API:', data);
       setDocuments(data);
     } catch (error) {
       console.error('Error fetching documents:', error);
+      console.error('Error details:', error.response?.data);
       toast.error('Failed to load documents');
+      setDocuments(null);
     } finally {
       setLoading(false);
     }
@@ -152,8 +167,27 @@ function VerificationSection() {
 
   // Fetch verification payment status - always try to fetch to check if payment exists
   useEffect(() => {
+    const userId = currentUser?.id || user?.id;
+    
+    // Reset fetch flag if user ID changed (different user logged in)
+    if (userId && lastUserIdRef.current !== userId) {
+      paymentFetchedRef.current = false;
+      lastUserIdRef.current = userId;
+    }
+    
+    // Prevent infinite loop: only fetch once per user session
+    if (paymentFetchedRef.current || !userId) {
+      return;
+    }
+
     const fetchVerificationPayment = async () => {
+      // Double check to prevent race conditions
+      if (paymentFetchedRef.current) {
+        return;
+      }
+      
       try {
+        paymentFetchedRef.current = true;
         setPaymentLoading(true);
         // Always try to fetch payment - if it exists, user has paid
         const payment = await getUserVerificationPayment();
@@ -161,11 +195,14 @@ function VerificationSection() {
           setVerificationPayment(payment);
           console.log('✅ Verification payment found:', payment);
           // If payment exists but userInfo doesn't show verified, refresh user data
+          // Use a timeout to prevent immediate re-trigger
           const userToCheck = currentUser || user;
           if (userToCheck?.userInfo?.verificationStatus !== 'verified') {
             console.log('⚠️ Payment exists but verificationStatus not updated, refreshing user data...');
-            // Refresh user data to get updated status
-            await refreshUserData();
+            // Use setTimeout to break the synchronous update chain
+            setTimeout(async () => {
+              await refreshUserData();
+            }, 100);
           }
         } else {
           console.log('ℹ️ No verification payment found or payment not succeeded');
@@ -183,11 +220,9 @@ function VerificationSection() {
         setPaymentLoading(false);
       }
     };
-    // Only fetch if we have user data
-    if (currentUser || user) {
-      fetchVerificationPayment();
-    }
-  }, [currentUser, user]);
+    
+    fetchVerificationPayment();
+  }, [currentUser?.id, user?.id]); // Only depend on user IDs, not the entire user object
 
   // Transform and categorize documents
   const transformedDocuments = useMemo(() => {
@@ -195,7 +230,16 @@ function VerificationSection() {
     const underReview = [];
     const rejected = [];
 
+    // Debug: Log documents structure
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📄 Documents data:', documents);
+      console.log('📄 Documents.documents:', documents?.documents);
+    }
+
     if (!documents?.documents || !Array.isArray(documents.documents)) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('⚠️ No documents found or invalid structure');
+      }
       return { verified, underReview, rejected };
     }
 
@@ -204,7 +248,19 @@ function VerificationSection() {
       const docs = docGroup.docs || [];
       const docType = docGroup.docType;
 
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`📁 Processing docType: ${docType}, docs count: ${docs.length}`);
+      }
+
       docs.forEach((doc) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`  📄 Document:`, {
+            id: doc.id || doc._id,
+            is_verified: doc.is_verified,
+            docType: doc.docType || docType,
+          });
+        }
+
         const transformedDoc = {
           id: doc.id || doc._id,
           name: doc.metaData?.originalFileName || doc.fileUrl?.split('/').pop() || 'document',
@@ -236,12 +292,23 @@ function VerificationSection() {
       });
     });
 
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Transformed documents:', {
+        verified: verified.length,
+        rejected: rejected.length,
+        underReview: underReview.length,
+      });
+    }
+
     return { verified, underReview, rejected };
   }, [documents]);
 
   const handlePaymentComplete = async (paymentData) => {
     console.log("Payment completed:", paymentData);
     setShowPayment(false);
+    
+    // Reset payment fetch ref to allow fetching new payment
+    paymentFetchedRef.current = false;
     
     // Refresh user data to get updated verification status
     const updatedUser = await refreshUserData();
@@ -263,7 +330,10 @@ function VerificationSection() {
     // Fetch verification payment details
     try {
       const payment = await getUserVerificationPayment();
-      setVerificationPayment(payment);
+      if (payment && payment.status === 'succeeded') {
+        setVerificationPayment(payment);
+        paymentFetchedRef.current = true; // Mark as fetched
+      }
     } catch (error) {
       console.error('Error fetching verification payment:', error);
     }
@@ -339,6 +409,122 @@ function VerificationSection() {
     }
   };
 
+  const handleSubmitDocuments = async (data) => {
+    try {
+      const { documentType, files } = data;
+      
+      if (!documentType || !files || files.length === 0) {
+        toast.error('Please select a document type and upload at least one file');
+        return;
+      }
+
+      // Map frontend document type to backend docType
+      const docType = mapOptionToDocType(documentType);
+      
+      // Check if this document type is already uploaded
+      const existingDocs = transformedDocuments.verified
+        .concat(transformedDocuments.rejected)
+        .concat(transformedDocuments.underReview)
+        .filter(doc => doc.docType === docType);
+      
+      if (existingDocs.length > 0) {
+        const docTypeLabel = formatDocumentType(docType);
+        toast.error(`${docTypeLabel} is already uploaded. Please delete the existing document first or select a different document type.`);
+        return;
+      }
+      
+      // Ensure we have valid File objects
+      const fileObjects = files.filter(file => file instanceof File || file instanceof Blob);
+      
+      if (fileObjects.length === 0) {
+        toast.error('No valid files found. Please select files to upload.');
+        return;
+      }
+      
+      // Create FormData for S3 upload
+      const formData = new FormData();
+      let filesAppended = 0;
+      
+      // Backend expects specific field names based on docType
+      if (docType === 'identity_proof' || docType === 'id_proof' || docType === 'property_papers' || docType === 'licenses' || docType === 'utility_bill' || docType === 'other') {
+        const file = fileObjects[0];
+        if (file instanceof File || file instanceof Blob) {
+          formData.append('identityProof', file, file.name || 'document');
+          filesAppended++;
+        }
+      } else if (docType === 'pay_slip') {
+        fileObjects.forEach((file) => {
+          if (file instanceof File || file instanceof Blob) {
+            formData.append('paySlips', file, file.name || 'document');
+            filesAppended++;
+          }
+        });
+      } else if (docType === 'bank_statement') {
+        fileObjects.forEach((file) => {
+          if (file instanceof File || file instanceof Blob) {
+            formData.append('bankStatements', file, file.name || 'document');
+            filesAppended++;
+          }
+        });
+      } else {
+        // Fallback: use identityProof for unknown types
+        const file = fileObjects[0];
+        if (file instanceof File || file instanceof Blob) {
+          formData.append('identityProof', file, file.name || 'document');
+          filesAppended++;
+        }
+      }
+      
+      if (filesAppended === 0) {
+        toast.error('Failed to prepare files for upload.');
+        return;
+      }
+
+      // Step 1: Upload to S3
+      setUploading(true);
+      toast.info('Uploading documents...');
+      const uploadResult = await uploadDocumentsToS3(formData);
+      
+      if (!uploadResult?.uploadResults || uploadResult.uploadResults.length === 0) {
+        toast.error('Failed to upload documents');
+        setUploading(false);
+        return;
+      }
+
+      // Step 2: Store document metadata in database
+      setStoring(true);
+      const documentsToStore = uploadResult.uploadResults.map((result) => ({
+        fileUrl: result.url,
+        docType: docType,
+        fileType: result.fileType || result.fileName?.split('.').pop() || 'pdf',
+        mime: result.mimeType || 'application/pdf',
+        metaData: {
+          s3Key: result.key,
+          s3Bucket: result.bucket,
+          originalFileName: result.fileName,
+          fileSize: result.size,
+          uploadedAt: new Date().toISOString(),
+        },
+      }));
+
+      await storeDocuments(documentsToStore);
+      
+      toast.success('Documents uploaded successfully! They are now under review.');
+      
+      // Refresh documents list
+      await fetchDocuments();
+      
+      setUploading(false);
+      setStoring(false);
+    } catch (error) {
+      console.error('Error uploading documents:', error);
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to upload documents';
+      toast.error(errorMessage);
+      setUploading(false);
+      setStoring(false);
+    }
+  };
+
   if (showPayment) {
     return (
       <PaymentSection
@@ -385,6 +571,13 @@ function VerificationSection() {
               onDownload={handleDownloadDocument}
             />
           )}
+
+          {/* Upload Documents Section - Always show */}
+          <UploadVerificationDocuments
+            onSubmit={handleSubmitDocuments}
+            documentTypes={documentTypeOptions}
+            loading={uploading || storing}
+          />
 
           {/* Payment Section - Dynamic from subscription plan */}
           {renterPlan ? (

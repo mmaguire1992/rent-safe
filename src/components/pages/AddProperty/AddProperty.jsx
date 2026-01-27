@@ -24,6 +24,7 @@ import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { useAuth } from "@/context/AuthContext";
 import { getCurrentUser } from "@/api/users";
 import { getCurrentSubscription } from "@/api/subscriptions";
+import { toast } from "react-toastify";
 
 function AddProperty() {
   const navigate = useNavigate();
@@ -683,9 +684,10 @@ function AddProperty() {
       }
     } catch (error) {
       console.error("Error creating property:", error);
+      toast.error(error?.response?.data?.error || error?.error || error?.error?.message || "Failed to create property. Please try again.");
       setSubmitError(
         error?.response?.data?.error ||
-        error?.message || 
+        error?.error || 
         error?.error?.message || 
         "Failed to create property. Please try again."
       );

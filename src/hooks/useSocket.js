@@ -20,6 +20,7 @@ export const SOCKET_EVENTS = {
   MESSAGES_LIST: 'messages_list',
   MESSAGE_READ: 'message_read',
   MESSAGE_DELIVERED: 'message_delivered',
+  MESSAGES_MARKED_READ: 'messages_marked_read',
   USER_TYPING: 'user_typing',
   USER_STOPPED_TYPING: 'user_stopped_typing',
   ERROR: 'error',

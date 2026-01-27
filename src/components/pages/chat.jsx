@@ -164,14 +164,22 @@ function ChatMessage() {
             });
             scrollToBottom();
             
-            // Mark as read since it's from other user
+            // Mark as read since it's from other user AND conversation is selected
             markMessagesAsRead(chatroomIdStr);
+            // Explicitly set unread count to 0 for selected conversation
+            updateChatroomUnreadCount(chatroomIdStr, 0);
           }
         }
 
-        // Update chatroom list with last message (for all messages, including own)
-        if (chatroomIdStr && chatroomIdStr !== 'undefined' && chatroomIdStr !== 'null') {
-          updateChatroomLastMessage(chatroomIdStr, message);
+        // Check if this message is for the currently selected conversation
+        const selectedId = String(selectedConversation?.id || selectedConversation?.chatroomId || '');
+        const isForSelectedConversation = selectedId && chatroomIdStr && selectedId === chatroomIdStr;
+
+        // Update chatroom list with last message and increment unread count
+        // Only update if message is NOT from current user (current user's messages are handled by MESSAGE_SENT)
+        // IMPORTANT: Update AFTER checking if selected, so unread count logic works correctly
+        if (chatroomIdStr && chatroomIdStr !== 'undefined' && chatroomIdStr !== 'null' && !isFromCurrentUser) {
+          updateChatroomLastMessage(chatroomIdStr, message, isForSelectedConversation);
         }
       }
     });
@@ -206,6 +214,17 @@ function ChatMessage() {
       }
     });
 
+    // Listen for messages marked as read
+    const unsubscribeMessagesMarkedRead = on(SOCKET_EVENTS.MESSAGES_MARKED_READ, (data) => {
+      if (data && data.success && data.data) {
+        const { chatroomId } = data.data;
+        if (chatroomId) {
+          // Update unread count to 0 when messages are marked as read
+          updateChatroomUnreadCount(chatroomId, 0);
+        }
+      }
+    });
+
     // Listen for chatroom updates
     const unsubscribeChatroomUpdate = on(SOCKET_EVENTS.CHATROOM_UPDATED, (data) => {
       if (data && data.data) {
@@ -223,11 +242,36 @@ function ChatMessage() {
       }
     });
 
+    // Listen for socket errors (e.g., when trying to send message while blocked)
+    const unsubscribeError = on(SOCKET_EVENTS.ERROR, (data) => {
+      if (data && data.event === SOCKET_EVENTS.SEND_MESSAGE && data.message) {
+        // Remove temporary message if it exists
+        const errorMessage = data.message;
+        if (errorMessage.includes('blocked')) {
+          // Find and remove the last temporary message
+          setChatMessages(prev => {
+            // Remove the last message if it's a temporary one (has tempId)
+            const filtered = prev.filter((m, index) => {
+              // Keep all messages except the last one if it's temporary
+              if (index === prev.length - 1 && m.tempId) {
+                return false; // Remove last temporary message
+              }
+              return true;
+            });
+            return filtered;
+          });
+        }
+        toast.error(errorMessage);
+      }
+    });
+
     return () => {
       unsubscribeNewMessage();
       unsubscribeMessageSent();
+      unsubscribeMessagesMarkedRead();
       unsubscribeChatroomUpdate();
       unsubscribeNewChatroom();
+      unsubscribeError();
     };
   }, [isConnected, selectedConversation, currentUser, on]);
 
@@ -236,17 +280,20 @@ function ChatMessage() {
     if (!isConnected) return;
 
     if (selectedConversation) {
-      const chatroomId = selectedConversation.id || selectedConversation.chatroomId;
-      if (chatroomId) {
+      const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
+      if (chatroomId && chatroomId !== 'undefined' && chatroomId !== 'null') {
         joinChatroom(chatroomId);
+        // Mark messages as read when user opens the conversation
         markMessagesAsRead(chatroomId);
+        // Update unread count to 0 after marking as read
+        updateChatroomUnreadCount(chatroomId, 0);
       }
     }
 
     return () => {
       if (selectedConversation) {
-        const chatroomId = selectedConversation.id || selectedConversation.chatroomId;
-        if (chatroomId) {
+        const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
+        if (chatroomId && chatroomId !== 'undefined' && chatroomId !== 'null') {
           leaveChatroom(chatroomId);
         }
       }
@@ -445,11 +492,25 @@ function ChatMessage() {
     // Normalize IDs for comparison (use same format as list rendering)
     const currentUserId = String(currentUser?._id || currentUser?.id || '');
     const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
+    const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
     
-    // Determine other user: if currentUser is userId, otherUser is memberId, else otherUser is userId
-    const otherUser = currentUserId === chatroomUserId
-      ? chatroom.memberId 
-      : chatroom.userId;
+    // Determine other user - check if current user is userId or memberId
+    let otherUser = null;
+    if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
+      // Current user is userId, so other user is memberId
+      otherUser = chatroom.memberId;
+    } else if (currentUserId && chatroomMemberId && currentUserId === chatroomMemberId) {
+      // Current user is memberId, so other user is userId
+      otherUser = chatroom.userId;
+    } else {
+      // Fallback: if we can't determine, try to use the one that's not null
+      otherUser = chatroom.memberId || chatroom.userId;
+    }
+
+    // Ensure otherUser is an object, not just an ID string
+    if (otherUser && typeof otherUser === 'string') {
+      otherUser = null;
+    }
     
     // Determine block status using timestamp fields (handles mutual blocking)
     const isCurrentUserUserId = currentUserId === String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
@@ -475,6 +536,11 @@ function ChatMessage() {
     // Legacy field for backward compatibility (but we use timestamp-based logic above)
     const isBlocked = isBlockedByCurrentUser || isCurrentUserBlocked;
     
+    // Get profile image from userInfoId
+    const profileImage = otherUser && typeof otherUser === 'object' 
+      ? (otherUser.userInfoId?.profileImage || otherUser.userInfo?.profileImage || null)
+      : null;
+    
     const conversation = {
       id: chatroom._id || chatroom.id,
       chatroomId: chatroom._id || chatroom.id,
@@ -484,8 +550,8 @@ function ChatMessage() {
       initials: otherUser 
         ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase()
         : 'U',
-      hasPhoto: false,
-      photoUrl: null,
+      hasPhoto: !!profileImage,
+      photoUrl: profileImage || null,
       unread: chatroom.unreadCount || 0,
       property: '', // TODO: Get property info if available
       message: '', // Last message will be shown
@@ -503,6 +569,17 @@ function ChatMessage() {
     if (!selectedConversation || !isConnected) return;
 
     // Removed verification check for renters - renters can send files regardless of verification status
+
+    // Don't allow sending files if blocked
+    if (selectedConversation.isBlockedByCurrentUser) {
+      toast.error('You cannot send files because you have blocked this user. Please unblock to continue chatting.');
+      return;
+    }
+    
+    if (selectedConversation.isCurrentUserBlocked) {
+      toast.error('You cannot send files because this user has blocked you.');
+      return;
+    }
 
     const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
     if (!chatroomId || chatroomId === 'undefined' || chatroomId === 'null') return;
@@ -565,7 +642,13 @@ function ChatMessage() {
     // Removed verification check for renters - renters can send messages regardless of verification status
     
     // Don't allow sending if blocked
-    if (selectedConversation.isBlockedByCurrentUser || selectedConversation.isCurrentUserBlocked) {
+    if (selectedConversation.isBlockedByCurrentUser) {
+      toast.error('You cannot send messages because you have blocked this user. Please unblock to continue chatting.');
+      return;
+    }
+    
+    if (selectedConversation.isCurrentUserBlocked) {
+      toast.error('You cannot send messages because this user has blocked you.');
       return;
     }
 
@@ -620,13 +703,52 @@ function ChatMessage() {
     }, 3000);
   };
 
-  const updateChatroomLastMessage = (chatroomId, message) => {
+  const updateChatroomLastMessage = (chatroomId, message, isSelected = false) => {
+    const chatroomIdStr = String(chatroomId || '');
+    if (!chatroomIdStr || chatroomIdStr === 'undefined' || chatroomIdStr === 'null') return;
+
+    setChatrooms(prev => {
+      return prev.map(chatroom => {
+        const currentId = String(chatroom._id || chatroom.id || '');
+        if (currentId === chatroomIdStr) {
+          // Check if message is from other user - normalize IDs for comparison
+          const messageUserId = String(message.userId?._id || message.userId?.id || message.userId || '');
+          const currentUserId = String(currentUser?._id || currentUser?.id || '');
+          const isFromOtherUser = messageUserId && currentUserId && messageUserId !== currentUserId;
+          
+          // Only increment unread if:
+          // 1. Message is from other user (not current user)
+          // 2. Conversation is NOT currently selected
+          const shouldIncrementUnread = isFromOtherUser && !isSelected;
+          
+          // Calculate new unread count
+          const currentUnreadCount = chatroom.unreadCount || 0;
+          const newUnreadCount = shouldIncrementUnread 
+            ? currentUnreadCount + 1 
+            : currentUnreadCount;
+          
+          return {
+            ...chatroom,
+            lastMessage: message.textDecrypted || message.textEncrypted || message.text || '',
+            lastMessageAt: message.createdAt || new Date(),
+            unreadCount: newUnreadCount,
+          };
+        }
+        return chatroom;
+      });
+    });
+  };
+
+  const updateChatroomUnreadCount = (chatroomId, count) => {
+    const chatroomIdStr = String(chatroomId || '');
+    if (!chatroomIdStr || chatroomIdStr === 'undefined' || chatroomIdStr === 'null') return;
+
     setChatrooms(prev => prev.map(chatroom => {
-      if ((chatroom._id || chatroom.id) === chatroomId) {
+      const currentId = String(chatroom._id || chatroom.id || '');
+      if (currentId === chatroomIdStr) {
         return {
           ...chatroom,
-          lastMessage: message.textDecrypted || message.textEncrypted || message.text,
-          lastMessageAt: message.createdAt || new Date(),
+          unreadCount: count,
         };
       }
       return chatroom;
@@ -637,9 +759,20 @@ function ChatMessage() {
     setChatrooms(prev => {
       const exists = prev.find(c => (c._id || c.id) === (updatedChatroom._id || updatedChatroom.id));
       if (exists) {
-        return prev.map(c => 
+        const updated = prev.map(c => 
           (c._id || c.id) === (updatedChatroom._id || updatedChatroom.id) ? updatedChatroom : c
         );
+        
+        // Update selected conversation if it's the updated chatroom
+        if (selectedConversation && (selectedConversation.id === (updatedChatroom._id || updatedChatroom.id) || selectedConversation.chatroomId === (updatedChatroom._id || updatedChatroom.id))) {
+          // Re-select conversation to update blocking status
+          const updatedChatroomInList = updated.find(c => (c._id || c.id) === (updatedChatroom._id || updatedChatroom.id));
+          if (updatedChatroomInList) {
+            setTimeout(() => handleSelectConversation(updatedChatroomInList), 0);
+          }
+        }
+        
+        return updated;
       } else {
         return [updatedChatroom, ...prev];
       }
@@ -800,13 +933,27 @@ function ChatMessage() {
     // Apply search filter if search query exists
     if (!searchQuery.trim()) return true;
     
-    const otherUser = currentUserId === chatroomUserId
-      ? chatroom.memberId 
-      : chatroom.userId;
+    // Determine the other user - check if current user is userId or memberId
+    let otherUser = null;
+    if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
+      // Current user is userId, so other user is memberId
+      otherUser = chatroom.memberId;
+    } else if (currentUserId && chatroomMemberId && currentUserId === chatroomMemberId) {
+      // Current user is memberId, so other user is userId
+      otherUser = chatroom.userId;
+    } else {
+      // Fallback: if we can't determine, try to use the one that's not null
+      otherUser = chatroom.memberId || chatroom.userId;
+    }
+
+    // Ensure otherUser is an object, not just an ID string
+    if (otherUser && typeof otherUser === 'string') {
+      otherUser = null;
+    }
     
     const searchLower = searchQuery.toLowerCase();
     const name = otherUser 
-      ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email
+      ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email || ''
       : '';
     
     return name.toLowerCase().includes(searchLower) || 
@@ -912,24 +1059,46 @@ function ChatMessage() {
                     // Use same ID normalization as handleSelectConversation
                     const currentUserId = String(currentUser?._id || currentUser?.id || '');
                     const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
+                    const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
                     
-                    const otherUser = currentUserId === chatroomUserId
-                      ? chatroom.memberId 
-                      : chatroom.userId;
+                    // Determine the other user - check if current user is userId or memberId
+                    let otherUser = null;
+                    if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
+                      // Current user is userId, so other user is memberId
+                      otherUser = chatroom.memberId;
+                    } else if (currentUserId && chatroomMemberId && currentUserId === chatroomMemberId) {
+                      // Current user is memberId, so other user is userId
+                      otherUser = chatroom.userId;
+                    } else {
+                      // Fallback: if we can't determine, try to use the one that's not null
+                      otherUser = chatroom.memberId || chatroom.userId;
+                    }
+
+                    // Ensure otherUser is an object, not just an ID string
+                    if (otherUser && typeof otherUser === 'string') {
+                      otherUser = null;
+                    }
                     
                     const name = otherUser 
-                      ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email
+                      ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email || 'Unknown User'
                       : 'Unknown User';
                     
                     const initials = otherUser 
-                      ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase()
+                      ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase() || 'U'
                       : 'U';
+
+                    // Get profile image from userInfoId
+                    const profileImage = otherUser && typeof otherUser === 'object' 
+                      ? (otherUser.userInfoId?.profileImage || otherUser.userInfo?.profileImage || null)
+                      : null;
                     
-                    // Check verification status for renters
-                    const otherUserType = otherUser?.userType || null;
-                    const isOtherUserVerified = otherUser?.userInfoId?.verificationStatus === 'verified' || 
-                                                 otherUser?.userInfo?.verificationStatus === 'verified' ||
-                                                 false;
+                    // Check verification status for renters (only if otherUser is a valid object)
+                    const otherUserType = otherUser && typeof otherUser === 'object' ? (otherUser.userType || null) : null;
+                    const isOtherUserVerified = otherUser && typeof otherUser === 'object' 
+                      ? (otherUser.userInfoId?.verificationStatus === 'verified' || 
+                         otherUser.userInfo?.verificationStatus === 'verified' ||
+                         false)
+                      : false;
                     const showVerificationIcon = otherUserType === 'renter';
                     const isVerified = isOtherUserVerified;
                     
@@ -948,11 +1117,32 @@ function ChatMessage() {
                       >
                         <div className="flex items-start gap-3">
                           <div className="relative flex-shrink-0">
-                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-[#6B4EFF] font-bold text-base shadow-sm transition-all duration-200 ${
-                              isSelected 
-                                ? "bg-gradient-to-br from-purple-100 to-indigo-100 border-2 border-[#6B4EFF]/30" 
-                                : "bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200"
-                            }`}>
+                            {profileImage ? (
+                              <img
+                                src={profileImage}
+                                alt={name}
+                                className={`w-14 h-14 rounded-2xl object-cover shadow-sm transition-all duration-200 border-2 ${
+                                  isSelected 
+                                    ? "border-[#6B4EFF]/30" 
+                                    : "border-gray-200"
+                                }`}
+                                onError={(e) => {
+                                  // Fallback to initials if image fails to load
+                                  e.target.style.display = 'none';
+                                  const initialsDiv = e.target.parentElement.querySelector('.initials-fallback');
+                                  if (initialsDiv) {
+                                    initialsDiv.style.display = 'flex';
+                                  }
+                                }}
+                              />
+                            ) : null}
+                            <div 
+                              className={`w-14 h-14 rounded-2xl flex items-center justify-center text-[#6B4EFF] font-bold text-base shadow-sm transition-all duration-200 initials-fallback ${
+                                isSelected 
+                                  ? "bg-gradient-to-br from-purple-100 to-indigo-100 border-2 border-[#6B4EFF]/30" 
+                                  : "bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200"
+                              } ${profileImage ? 'hidden' : ''}`}
+                            >
                               {initials}
                             </div>
                             {/* Show verification icon for renters: cross if not verified, checkmark if verified */}

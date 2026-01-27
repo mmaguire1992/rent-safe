@@ -11,15 +11,45 @@ import RedCrossIcon from "@/svg/redCrossIcon";
 function ProfileHeader({ tenantData, onSendOffer, onChat }) {
   const navigate = useNavigate();
 
+  // Get initials from name
+  const getInitials = (name) => {
+    if (!name || name === 'N/A') return 'U';
+    const nameParts = name.trim().split(' ');
+    if (nameParts.length >= 2) {
+      return (nameParts[0][0] || '') + (nameParts[1][0] || '').toUpperCase();
+    }
+    return name[0]?.toUpperCase() || 'U';
+  };
+
+  const initials = getInitials(tenantData.name);
+  const hasValidImage = tenantData.profileImage && 
+                        tenantData.profileImage !== '/default-avatar.png' && 
+                        tenantData.profileImage !== 'N/A';
+
   return (
     <div className="bg-lightGrayGradient rounded-[20px] shadow-[0px_0px_40px_0px_#4A4A4A14] border border-lightGray p-4 md:p-6">
       <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
         <div className="relative mx-auto md:mx-0">
-          <img
-            src={tenantData.profileImage}
-            alt={tenantData.name}
-            className="w-24 h-24 md:w-[150px] mx-auto md:mx-0 md:h-[150px] shadow-[0px_0px_40px_0px_#4A4A4A14] rounded-full object-cover"
-          />
+          {hasValidImage ? (
+            <img
+              src={tenantData.profileImage}
+              alt={tenantData.name}
+              className="w-24 h-24 md:w-[150px] mx-auto md:mx-0 md:h-[150px] shadow-[0px_0px_40px_0px_#4A4A4A14] rounded-full object-cover"
+              onError={(e) => {
+                // Hide image and show initials if image fails to load
+                e.target.style.display = 'none';
+                const initialsDiv = e.target.nextSibling;
+                if (initialsDiv) {
+                  initialsDiv.style.display = 'flex';
+                }
+              }}
+            />
+          ) : null}
+          <div
+            className={`w-24 h-24 md:w-[150px] md:h-[150px] mx-auto md:mx-0 rounded-full shadow-[0px_0px_40px_0px_#4A4A4A14] flex items-center justify-center text-white font-bold text-2xl md:text-4xl bg-gradient-to-br from-[#6B4EFF] to-[#4A2FCC] ${hasValidImage ? 'hidden' : ''}`}
+          >
+            {initials}
+          </div>
           {tenantData.verified === true && (
             <span className="absolute bottom-0 right-0">
               <LargeCheckIcon />

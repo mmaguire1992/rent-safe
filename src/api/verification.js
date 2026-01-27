@@ -45,7 +45,16 @@ export const storeDocuments = async (documents) => {
 export const getMyDocuments = async () => {
   try {
     const response = await apiClient.get(verification.getMyDocuments);
-    return response.data?.data || response.data;
+    // Backend returns: { success: true, message: '...', data: { user, userInfo, documents, totalDocuments, propertyImages } }
+    const data = response.data?.data || response.data?.message || response.data;
+    console.log('📥 API Response structure:', {
+      hasData: !!response.data?.data,
+      hasMessage: !!response.data?.message,
+      dataKeys: data ? Object.keys(data) : [],
+      documentsType: Array.isArray(data?.documents) ? 'array' : typeof data?.documents,
+      documentsLength: data?.documents?.length,
+    });
+    return data;
   } catch (error) {
     console.error('Error fetching my documents:', error);
     throw error;

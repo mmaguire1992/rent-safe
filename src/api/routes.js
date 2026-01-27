@@ -52,6 +52,7 @@ export const chat = {
   uploadMedia: '/chat/upload-media',
   getRecentRequests: '/chat/recent-requests',
   updateChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}`,
+  deleteChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}`,
   blockUnblockChatroom: (chatroomId) => `/chat/chatrooms/${chatroomId}/block`,
 };
 

@@ -149,14 +149,35 @@ function Messages() {
 
   // Auto-select conversation if there's only one
   useEffect(() => {
-    if (chatrooms.length === 1 && !selectedConversation && currentUser && !loading) {
+    if (chatrooms.length === 1 && !selectedConversation && (currentUser || user) && !loading) {
       const chatroom = chatrooms[0];
       // Normalize IDs for comparison
-      const currentUserId = String(currentUser?._id || currentUser?.id || '');
+      const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
       const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
-      const otherUser = currentUserId && chatroomUserId && currentUserId === chatroomUserId
-        ? chatroom.memberId
-        : chatroom.userId;
+      const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
+      
+      // Determine the other user - check if current user is userId or memberId
+      let otherUser = null;
+      if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
+        // Current user is userId, so other user is memberId
+        otherUser = chatroom.memberId;
+      } else if (currentUserId && chatroomMemberId && currentUserId === chatroomMemberId) {
+        // Current user is memberId, so other user is userId
+        otherUser = chatroom.userId;
+      } else {
+        // Fallback: if we can't determine, try to use the one that's not null
+        otherUser = chatroom.memberId || chatroom.userId;
+      }
+
+      // Ensure otherUser is an object, not just an ID string
+      if (otherUser && typeof otherUser === 'string') {
+        otherUser = null;
+      }
+
+      // Get profile image from userInfoId
+      const profileImage = otherUser && typeof otherUser === 'object' 
+        ? (otherUser.userInfoId?.profileImage || otherUser.userInfo?.profileImage || null)
+        : null;
 
       const conversation = {
         id: chatroom._id || chatroom.id,
@@ -167,8 +188,8 @@ function Messages() {
         initials: otherUser
           ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase()
           : 'U',
-        hasPhoto: false,
-        photoUrl: null,
+        hasPhoto: !!profileImage,
+        photoUrl: profileImage || null,
         unread: chatroom.unreadCount || 0,
         property: '',
         message: (() => {
@@ -280,6 +301,17 @@ function Messages() {
       }
     });
 
+    // Listen for messages marked as read
+    const unsubscribeMessagesMarkedRead = on(SOCKET_EVENTS.MESSAGES_MARKED_READ, (data) => {
+      if (data && data.success && data.data) {
+        const { chatroomId } = data.data;
+        if (chatroomId) {
+          // Update unread count to 0 when messages are marked as read
+          updateChatroomUnreadCount(chatroomId, 0);
+        }
+      }
+    });
+
     // Listen for chatroom updates
     const unsubscribeChatroomUpdate = on(SOCKET_EVENTS.CHATROOM_UPDATED, (data) => {
       if (data && data.data) {
@@ -300,6 +332,7 @@ function Messages() {
     return () => {
       unsubscribeNewMessage();
       unsubscribeMessageSent();
+      unsubscribeMessagesMarkedRead();
       unsubscribeChatroomUpdate();
       unsubscribeNewChatroom();
     };
@@ -519,11 +552,27 @@ function Messages() {
 
   const handleSelectConversation = (chatroom) => {
     // Normalize IDs for comparison
-    const currentUserId = String(currentUser?._id || currentUser?.id || '');
+    const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
     const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
-    const otherUser = currentUserId && chatroomUserId && currentUserId === chatroomUserId
-      ? chatroom.memberId
-      : chatroom.userId;
+    const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
+    
+    // Determine the other user - check if current user is userId or memberId
+    let otherUser = null;
+    if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
+      // Current user is userId, so other user is memberId
+      otherUser = chatroom.memberId;
+    } else if (currentUserId && chatroomMemberId && currentUserId === chatroomMemberId) {
+      // Current user is memberId, so other user is userId
+      otherUser = chatroom.userId;
+    } else {
+      // Fallback: if we can't determine, try to use the one that's not null
+      otherUser = chatroom.memberId || chatroom.userId;
+    }
+
+    // Ensure otherUser is an object, not just an ID string
+    if (otherUser && typeof otherUser === 'string') {
+      otherUser = null;
+    }
 
     // Determine block status using timestamp fields (handles mutual blocking)
     const isCurrentUserUserId = currentUserId === String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
@@ -549,6 +598,11 @@ function Messages() {
     // Legacy field for backward compatibility (but we use timestamp-based logic above)
     const isBlocked = isBlockedByCurrentUser || isCurrentUserBlocked;
 
+    // Get profile image from userInfoId
+    const profileImage = otherUser && typeof otherUser === 'object' 
+      ? (otherUser.userInfoId?.profileImage || otherUser.userInfo?.profileImage || null)
+      : null;
+
     const conversation = {
       id: chatroom._id || chatroom.id,
       chatroomId: chatroom._id || chatroom.id,
@@ -558,8 +612,8 @@ function Messages() {
       initials: otherUser
         ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase()
         : 'U',
-      hasPhoto: false,
-      photoUrl: null,
+      hasPhoto: !!profileImage,
+      photoUrl: profileImage || null,
       unread: chatroom.unreadCount || 0,
       property: '',
       message: chatroom.lastMessage?.text || '',
@@ -832,14 +886,17 @@ function Messages() {
           const userData = await getUserById(userId);
           
           // Format user data to match TenantProfileDetail expected structure
+          // Get name - prioritize first name + last name, fallback to email only if no name available
+          const userName = userData.userInfo?.name?.first && userData.userInfo?.name?.last
+            ? `${userData.userInfo.name.first} ${userData.userInfo.name.last}`.trim()
+            : userData.firstName && userData.lastName
+            ? `${userData.firstName} ${userData.lastName}`.trim()
+            : null; // Don't use email as name, will show initials instead
+          
           const formattedTenantData = {
             id: userData._id || userData.id, // Add user ID for references
-            name: userData.userInfo?.name?.first && userData.userInfo?.name?.last
-              ? `${userData.userInfo.name.first} ${userData.userInfo.name.last}`.trim()
-              : userData.firstName && userData.lastName
-              ? `${userData.firstName} ${userData.lastName}`.trim()
-              : userData.email || 'N/A',
-            profileImage: userData.userInfo?.profileImage || '/default-avatar.png',
+            name: userName || 'User', // Use 'User' as fallback instead of email
+            profileImage: userData.userInfo?.profileImage || null, // Use null instead of default path
             verified: userData.isEmailVerified || userData.userInfo?.verificationStatus === 'verified',
             description: userData.userInfo?.bio || '',
             designation: userData.userInfo?.employment?.jobTitle || 'N/A',
@@ -909,10 +966,13 @@ function Messages() {
         console.error('Error fetching tenant profile:', error);
         toast.error('Failed to load tenant profile');
         // Still show profile detail with basic info
+        // Get name - prioritize first name + last name
+        const fallbackUserName = `${selectedConversation.otherUser.firstName || ''} ${selectedConversation.otherUser.lastName || ''}`.trim() || 'User';
+        
         setTenantProfileData({
           id: selectedConversation.otherUser._id || selectedConversation.otherUser.id,
-          name: `${selectedConversation.otherUser.firstName || ''} ${selectedConversation.otherUser.lastName || ''}`.trim() || selectedConversation.otherUser.email,
-          profileImage: '/default-avatar.png',
+          name: fallbackUserName,
+          profileImage: null, // Use null instead of default path to show initials
           verified: false,
           description: '',
           designation: 'N/A',
@@ -923,7 +983,7 @@ function Messages() {
           creditRating: 'N/A',
           creditDescription: '',
           identity: {
-            fullName: `${selectedConversation.otherUser.firstName || ''} ${selectedConversation.otherUser.lastName || ''}`.trim() || selectedConversation.otherUser.email,
+            fullName: fallbackUserName,
             dateOfBirth: 'N/A',
             nationalInsurance: 'N/A',
             phone: selectedConversation.otherUser.phone || 'N/A',
@@ -1122,15 +1182,31 @@ function Messages() {
     // Filter by search query
     if (searchQuery.trim()) {
       // Normalize IDs for comparison to correctly identify the other user
-      const currentUserId = String(currentUser?._id || currentUser?.id || '');
+      const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
       const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
-      const otherUser = currentUserId && chatroomUserId && currentUserId === chatroomUserId
-        ? chatroom.memberId
-        : chatroom.userId;
+      const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
+      
+      // Determine the other user - check if current user is userId or memberId
+      let otherUser = null;
+      if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
+        // Current user is userId, so other user is memberId
+        otherUser = chatroom.memberId;
+      } else if (currentUserId && chatroomMemberId && currentUserId === chatroomMemberId) {
+        // Current user is memberId, so other user is userId
+        otherUser = chatroom.userId;
+      } else {
+        // Fallback: if we can't determine, try to use the one that's not null
+        otherUser = chatroom.memberId || chatroom.userId;
+      }
+
+      // Ensure otherUser is an object, not just an ID string
+      if (otherUser && typeof otherUser === 'string') {
+        otherUser = null;
+      }
 
       const searchLower = searchQuery.toLowerCase();
       const name = otherUser
-        ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email
+        ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email || ''
         : '';
 
       return name.toLowerCase().includes(searchLower) ||
@@ -1322,25 +1398,50 @@ function Messages() {
                 ) : (
                   filteredChatrooms.map((chatroom) => {
                     // Normalize IDs for comparison to correctly identify the other user
-                    const currentUserId = String(currentUser?._id || currentUser?.id || '');
+                    const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
                     const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
-                    const otherUser = currentUserId && chatroomUserId && currentUserId === chatroomUserId
-                      ? chatroom.memberId
-                      : chatroom.userId;
+                    const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
+                    
+                    // Determine the other user - check if current user is userId or memberId
+                    let otherUser = null;
+                    if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
+                      // Current user is userId, so other user is memberId
+                      otherUser = chatroom.memberId;
+                    } else if (currentUserId && chatroomMemberId && currentUserId === chatroomMemberId) {
+                      // Current user is memberId, so other user is userId
+                      otherUser = chatroom.userId;
+                    } else {
+                      // Fallback: if we can't determine, try to use the one that's not null
+                      // This handles cases where currentUser might not be set yet
+                      otherUser = chatroom.memberId || chatroom.userId;
+                    }
+
+                    // Ensure otherUser is an object, not just an ID string
+                    if (otherUser && typeof otherUser === 'string') {
+                      // If it's just an ID, we can't display user info
+                      otherUser = null;
+                    }
 
                     const name = otherUser
-                      ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email
+                      ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email || 'Unknown User'
                       : 'Unknown User';
 
                     const initials = otherUser
-                      ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase()
+                      ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase() || 'U'
                       : 'U';
 
-                    // Check verification status for renters
-                    const otherUserType = otherUser?.userType || null;
-                    const isOtherUserVerified = otherUser?.userInfoId?.verificationStatus === 'verified' || 
-                                                 otherUser?.userInfo?.verificationStatus === 'verified' ||
-                                                 false;
+                    // Get profile image from userInfoId
+                    const profileImage = otherUser && typeof otherUser === 'object' 
+                      ? (otherUser.userInfoId?.profileImage || otherUser.userInfo?.profileImage || null)
+                      : null;
+
+                    // Check verification status for renters (only if otherUser is a valid object)
+                    const otherUserType = otherUser && typeof otherUser === 'object' ? (otherUser.userType || null) : null;
+                    const isOtherUserVerified = otherUser && typeof otherUser === 'object' 
+                      ? (otherUser.userInfoId?.verificationStatus === 'verified' || 
+                         otherUser.userInfo?.verificationStatus === 'verified' ||
+                         false)
+                      : false;
                     const showVerificationIcon = otherUserType === 'renter';
                     const isVerified = isOtherUserVerified;
 
@@ -1357,7 +1458,24 @@ function Messages() {
                       >
                         <div className="flex items-start gap-3">
                           <div className="relative flex-shrink-0">
-                            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#6B4EFF] font-bold border border-lightGray">
+                            {profileImage ? (
+                              <img
+                                src={profileImage}
+                                alt={name}
+                                className="w-12 h-12 rounded-full object-cover border border-lightGray"
+                                onError={(e) => {
+                                  // Fallback to initials if image fails to load
+                                  e.target.style.display = 'none';
+                                  const initialsDiv = e.target.parentElement.querySelector('.initials-fallback');
+                                  if (initialsDiv) {
+                                    initialsDiv.style.display = 'flex';
+                                  }
+                                }}
+                              />
+                            ) : null}
+                            <div 
+                              className={`w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#6B4EFF] font-bold border border-lightGray initials-fallback ${profileImage ? 'hidden' : ''}`}
+                            >
                               {initials}
                             </div>
                             {/* Show verification icon for renters: cross if not verified, checkmark if verified */}
