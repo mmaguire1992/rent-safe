@@ -52,18 +52,6 @@ function UploadVerificationDocuments({
     
     // Validate form
     if (!validateForm()) {
-      // Show a single combined error message
-      const errorMessages = [];
-      if (!reuploadMode && !selectedDocumentType) {
-        errorMessages.push('select a document type');
-      }
-      if (!uploadedFiles || uploadedFiles.length === 0) {
-        errorMessages.push('upload at least one file');
-      }
-      
-      if (errorMessages.length > 0) {
-        toast.error(`Please ${errorMessages.join(' and ')}`);
-      }
       return;
     }
     
