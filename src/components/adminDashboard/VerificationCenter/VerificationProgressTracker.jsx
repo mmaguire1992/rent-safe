@@ -60,9 +60,8 @@ function VerificationProgressTracker({ currentStep }) {
                           <FiLoader className=" text-white text-lg" />
                         ) : (
                           <Icon
-                            className={`text-lg ${
-                              isActive ? "text-white" : "text-gray-400"
-                            }`}
+                            className="text-lg"
+                            style={isActive ? { color: "#FFFFFF" } : { color: "#9FA3AA" }}
                           />
                         )}
                       </div>

@@ -302,7 +302,7 @@ function PlansSection({ currentPlan, onSwitchPlan, onPlansLoaded }) {
                 </span>
               </div>
 
-              <div className={`flex-1 space-y-2 mb-6 ${isDisabled ? 'opacity-75' : ''}`}>
+              <div className={`space-y-2 mb-6 h-[200px] overflow-y-auto ${isDisabled ? 'opacity-75' : ''}`}>
                 {plan.features.map((feature, index) => (
                   <div key={index} className="flex items-start gap-2">
                     <FiCheck
@@ -349,7 +349,7 @@ function PlansSection({ currentPlan, onSwitchPlan, onPlansLoaded }) {
               )}
               
               {isCurrentPlan && (
-                <div className="w-full py-3 rounded-[10px] bg-white/20 text-white text-center font-bold text-base font-nunito">
+                <div className="w-full py-3  rounded-[10px] bg-white/20 text-white text-center font-bold text-base font-nunito">
                   Current Plan
                 </div>
               )}

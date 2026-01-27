@@ -64,7 +64,7 @@ function Sidebar({ onClose }) {
     <div
       className={`${
         isCollapsed ? "w-20" : "w-64"
-      } bg-mainBlue min-h-screen text-white relative transition-all duration-300 flex flex-col`}
+      } bg-mainBlue h-full text-white relative transition-all duration-300 flex flex-col`}
     >
       {/* Toggle Button - Top Right Corner */}
       <button

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { FiSearch, FiPlus, FiDownload, FiFilter } from "react-icons/fi";
 import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";
 import { statusOptions, typeOptions, sortOptions } from "@/constant";
-import BlueSearchIcon from "@/svg/blueSearchIcon";
 import { GoPlus } from "react-icons/go";
 import ButtonDropdown from "@/components/adminDashboard/common/buttonDropdown";
 import VerticalFilterIcon from "@/svg/verticalFilterIcon";
@@ -96,23 +95,6 @@ function PropertiesActionBar({
   return (
     <div className="block mb-3">
       <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-        {/* Search Bar */}
-        <div className="hidden md:block flex-1 max-w-md">
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lg md:text-xl">
-              <BlueSearchIcon />
-            </span>
-
-            <input
-              type="text"
-              placeholder="Search anything"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 md:pl-10 pr-3 h-12 md:pr-4 py-1.5 md:py-2 border border-lightGray rounded-xl focus:outline-none focus:ring-0 text-sm md:text-base"
-            />
-          </div>
-        </div>
-
         {/* Mobile Filter Button */}
 
         {/* Mobile Filter Panel - Slides down from top */}

@@ -9,6 +9,7 @@ import PropertiesActionBar from "@/components/adminDashboard/MyProperties/Proper
 import PropertiesTable from "@/components/adminDashboard/MyProperties/PropertiesTable";
 import PropertiesMobileCards from "@/components/adminDashboard/MyProperties/PropertiesMobileCards";
 import HouseIcon from "@/svg/websiteSvg/houseIcon";
+import BlueSearchIcon from "@/svg/blueSearchIcon";
 import { fetchMyProperties } from '@/redux/slices/propertySlice';
 import { getMyProperties } from '@/api/properties';
 import { toast } from 'react-toastify';
@@ -293,13 +294,31 @@ function MyProperties() {
     <DashboardLayout>
       <div className="block">
         {/* Page Header */}
-        <div className="mb-3">
-          <h1 className="text-xl md:text-2xl font-bold text-secondary mb-2">
-            My Properties
-          </h1>
-          <p className="text-sm md:text-base text-darkGray">
-            Manage and track your rental listings
-          </p>
+        <div className="mb-3 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-secondary mb-2">
+              My Properties
+            </h1>
+            <p className="text-sm md:text-base text-darkGray">
+              Manage and track your rental listings
+            </p>
+          </div>
+          
+          {/* Search Bar - Right Side */}
+          <div className="hidden md:block flex-1 max-w-md">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lg md:text-xl">
+                <BlueSearchIcon />
+              </span>
+              <input
+                type="text"
+                placeholder="Search anything"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 md:pl-10 pr-3 h-12 md:pr-4 py-1.5 md:py-2 border border-lightGray rounded-xl focus:outline-none focus:ring-0 text-sm md:text-base"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Action Bar */}
