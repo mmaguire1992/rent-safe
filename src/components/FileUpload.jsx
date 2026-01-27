@@ -140,32 +140,32 @@ function FileUpload({
     if (uploadingFiles.length === 0) return;
 
     const interval = setInterval(() => {
+      let didUpdate = false;
+
       const updatedFiles = uploadedFiles.map((file) => {
         if (file.uploading && file.progress < 100) {
-          const newProgress = Math.min(file.progress + 10, 100);
+          const prevProgress = file.progress || 0;
+          const prevUploading = !!file.uploading;
+          const newProgress = Math.min(prevProgress + 10, 100);
+
           // Update properties directly on the File instance to preserve File prototype
           file.progress = newProgress;
           file.uploading = newProgress < 100;
+
+          if (newProgress !== prevProgress || file.uploading !== prevUploading) {
+            didUpdate = true;
+          }
         }
         return file;
       });
 
-      // Only update if there are changes
-      const hasChanges = updatedFiles.some((file, index) => {
-        const original = uploadedFiles[index];
-        return (
-          file.progress !== original?.progress ||
-          file.uploading !== original?.uploading
-        );
-      });
-
-      if (hasChanges && onFilesChange) {
+      if (didUpdate && onFilesChange) {
         onFilesChange(updatedFiles);
       }
     }, 500);
 
     return () => clearInterval(interval);
-  }, [uploadedFiles]);
+  }, [uploadedFiles, onFilesChange]);
 
   const handleRemove = (index) => {
     const newFiles = uploadedFiles.filter((_, i) => i !== index);
