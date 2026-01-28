@@ -67,9 +67,20 @@ function ProfileSettings() {
     }
   }, [activeTab, dispatch]); // Only depend on activeTab to avoid loops
 
+  const formatFullName = (first, last) => {
+    const safeFirst = String(first || '').trim();
+    const safeLast = String(last || '').trim();
+    if (!safeFirst && !safeLast) return '';
+    if (!safeLast || safeFirst.toLowerCase() === safeLast.toLowerCase()) return safeFirst;
+    return `${safeFirst} ${safeLast}`.trim();
+  };
+
   // Transform userInfo to profileSettingsData format
   const profileSettingsData = userInfo ? {
-    fullName: `${userInfo.firstName || userInfo.userInfo?.name?.first || ''} ${userInfo.lastName || userInfo.userInfo?.name?.last || ''}`.trim() || '',
+    fullName: formatFullName(
+      userInfo.firstName || userInfo.userInfo?.name?.first,
+      userInfo.lastName || userInfo.userInfo?.name?.last
+    ),
     email: userInfo.email || '',
     phoneNumber: userInfo.phone || userInfo.userInfo?.phone || '',
     businessName: userInfo.userInfo?.businessName || '',
@@ -107,10 +118,11 @@ function ProfileSettings() {
       
       const updateData = {
         firstName: firstName,
+        lastName: lastName,
         userInfo: {
           name: {
             first: firstName || undefined,
-            last: lastName || undefined,
+            last: lastName,
           },
           address: {
             street: data.address || '',
