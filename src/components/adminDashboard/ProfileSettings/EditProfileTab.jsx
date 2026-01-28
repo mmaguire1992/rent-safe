@@ -83,7 +83,8 @@ function EditProfileTab({ profileData, onSave, loading = false, error = null }) 
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const nextValue = name === 'fullName' ? value.replace(/^\s+/, '') : value;
+    setFormData((prev) => ({ ...prev, [name]: nextValue }));
     // Clear field error as user edits
     if (fieldErrors[name]) {
       setFieldErrors((prev) => ({ ...prev, [name]: "" }));
