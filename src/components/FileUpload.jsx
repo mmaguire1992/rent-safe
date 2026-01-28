@@ -54,6 +54,16 @@ function FileUpload({
   const handleFiles = (files) => {
     const acceptedExtensions = acceptedTypes.split(",").map(ext => ext.trim().toLowerCase());
     const allFiles = Array.from(files);
+
+    if (!allowMultiple) {
+      if (uploadedFiles.length >= 1) {
+        toast.warning('Only one document can be uploaded at a time.');
+        return;
+      }
+      if (allFiles.length > 1) {
+        toast.warning('Only one document can be uploaded at a time.');
+      }
+    }
     
     // MIME type mapping for validation
     const mimeTypeMap = {
