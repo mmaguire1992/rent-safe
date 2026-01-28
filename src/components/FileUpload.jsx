@@ -14,6 +14,7 @@ function FileUpload({
   maxSize = 10 * 1024 * 1024, // 10MB (matches backend)
   onFilesChange,
   uploadedFiles = [],
+  allowMultiple = true,
 }) {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
@@ -93,7 +94,7 @@ function FileUpload({
         }
         return isValidSize;
       })
-      .slice(0, maxFiles - uploadedFiles.length);
+      .slice(0, allowMultiple ? (maxFiles - uploadedFiles.length) : 1);
 
     // Show toast error messages for invalid files
     if (invalidFiles.length > 0) {
@@ -109,7 +110,7 @@ function FileUpload({
     }
     
     // Check if max files limit reached
-    const remainingSlots = maxFiles - uploadedFiles.length;
+    const remainingSlots = allowMultiple ? (maxFiles - uploadedFiles.length) : 1;
     if (validFiles.length > remainingSlots && remainingSlots > 0) {
       toast.warning(`Only ${remainingSlots} more file(s) can be uploaded. Maximum ${maxFiles} files allowed.`);
     } else if (remainingSlots === 0) {
@@ -129,7 +130,7 @@ function FileUpload({
         }
         return file;
       });
-      onFilesChange([...uploadedFiles, ...filesWithUploadState]);
+      onFilesChange(allowMultiple ? [...uploadedFiles, ...filesWithUploadState] : filesWithUploadState);
     }
   };
 
@@ -244,7 +245,7 @@ function FileUpload({
             type="file"
             id={`file-input-${label}`}
             className="hidden"
-            multiple
+            multiple={allowMultiple && maxFiles > 1}
             accept={acceptedTypes}
             onChange={handleFileInput}
             disabled={uploadedFiles.length >= maxFiles}

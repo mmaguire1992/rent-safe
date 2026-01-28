@@ -119,10 +119,11 @@ function UploadVerificationDocuments({
           <FileUpload
             label=""
             acceptedTypes=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp"
-            maxFiles={3}
+            maxFiles={1}
             maxSize={10 * 1024 * 1024}
             onFilesChange={handleFilesChange}
             uploadedFiles={uploadedFiles}
+            allowMultiple={false}
           />
           {errors.files && (
             <p className="mt-1 text-sm text-red-600">{errors.files}</p>
