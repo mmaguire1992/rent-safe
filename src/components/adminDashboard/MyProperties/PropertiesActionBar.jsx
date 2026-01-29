@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FiSearch, FiPlus, FiDownload, FiFilter } from "react-icons/fi";
 import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";
 import { statusOptions, typeOptions, sortOptions } from "@/constant";
@@ -27,9 +27,16 @@ function PropertiesActionBar({
   const [showModal, setShowModal] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [needsSubscription, setNeedsSubscription] = useState(false);
+  const [subscriptionData, setSubscriptionData] = useState(null); // Store subscription data to pass to modal
   const { checkStatus } = useVerificationSubscription();
+  const isProcessingRef = useRef(false); // Prevent multiple simultaneous calls
 
   const handleAddProperty = async () => {
+    // Prevent multiple simultaneous calls
+    if (isProcessingRef.current) {
+      return;
+    }
+
     // Only check for owners
     if (userType !== 'owner') {
       navigate("/dashboard/properties/add");
@@ -37,20 +44,38 @@ function PropertiesActionBar({
     }
 
     try {
+      isProcessingRef.current = true;
+      
       // Check verification and subscription status
       const status = await checkStatus();
       
+      // Check if subscription limit has expired (has subscription but remainingProperties === 0)
+      // Use subscription data from checkStatus to avoid duplicate API call
+      let hasSubscriptionLimitExpired = false;
+      if (status.hasSubscription && !status.needsSubscription && status.subscription) {
+        const subscription = status.subscription;
+        const isActiveStatus = subscription?.status === 'active' || subscription?.status === 'activate';
+        if (subscription && isActiveStatus && 
+            subscription.remainingProperties !== undefined && 
+            subscription.remainingProperties === 0) {
+          hasSubscriptionLimitExpired = true;
+        }
+      }
+      
       // Set modal state based on what's needed
       setNeedsVerification(status.needsVerification);
-      setNeedsSubscription(status.needsSubscription);
+      // If subscription limit expired, also set needsSubscription to true to show modal
+      setNeedsSubscription(status.needsSubscription || hasSubscriptionLimitExpired);
+      // Pass subscription data to modal to avoid duplicate API call
+      setSubscriptionData(status.subscription || null);
       
-      // If user needs verification or subscription, show modal
-      if (status.needsVerification || status.needsSubscription) {
+      // If user needs verification, subscription, or limit expired, show modal
+      if (status.needsVerification || status.needsSubscription || hasSubscriptionLimitExpired) {
         setShowModal(true);
         return;
       }
       
-      // If verified and subscribed, proceed
+      // If everything is okay (verified + has active subscription with remaining properties), proceed
       navigate("/dashboard/properties/add");
     } catch (error) {
       console.error('Error checking verification and subscription:', error);
@@ -58,6 +83,8 @@ function PropertiesActionBar({
       setNeedsVerification(true);
       setNeedsSubscription(true);
       setShowModal(true);
+    } finally {
+      isProcessingRef.current = false;
     }
   };
 
@@ -257,6 +284,7 @@ function PropertiesActionBar({
         onClose={() => setShowModal(false)}
         needsVerification={needsVerification}
         needsSubscription={needsSubscription}
+        subscriptionData={subscriptionData}
       />
     </div>
   );

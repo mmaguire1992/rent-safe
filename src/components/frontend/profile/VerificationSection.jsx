@@ -346,12 +346,13 @@ function VerificationSection() {
     const hasRejectedDocs = transformedDocuments.rejected.length > 0;
     const hasUnderReviewDocs = transformedDocuments.underReview.length > 0;
 
-    if (hasRejectedDocs || hasUnderReviewDocs) {
-      toast.warning('Please wait for verification then only proceed with payment');
-      return;
-    }
+    // if (hasRejectedDocs || hasUnderReviewDocs) {
+    //   toast.warning('Please wait for verification then only proceed with payment');
+    //   return;
+    // }
 
-    // If all documents are verified (or no documents), proceed with payment
+    // Allow payment even if admin has verified the profile
+    // User still needs to pay to get verified status benefits
     setShowPayment(true);
   };
 
@@ -493,19 +494,26 @@ function VerificationSection() {
 
       // Step 2: Store document metadata in database
       setStoring(true);
-      const documentsToStore = uploadResult.uploadResults.map((result) => ({
-        fileUrl: result.url,
-        docType: docType,
-        fileType: result.fileType || result.fileName?.split('.').pop() || 'pdf',
-        mime: result.mimeType || 'application/pdf',
-        metaData: {
-          s3Key: result.key,
-          s3Bucket: result.bucket,
-          originalFileName: result.fileName,
-          fileSize: result.size,
-          uploadedAt: new Date().toISOString(),
-        },
-      }));
+      const documentsToStore = uploadResult.uploadResults.map((result, index) => {
+        // Get the actual file size - prioritize original file size (most accurate), then backend result
+        // Backend returns fileSize field, but we use the original file.size as primary source
+        const originalFile = Array.isArray(fileObjects) ? fileObjects[index] : (fileObjects[0] || null);
+        const actualFileSize = originalFile?.size || result.fileSize || result.size || 0;
+        
+        return {
+          fileUrl: result.url,
+          docType: docType,
+          fileType: result.fileType || result.fileName?.split('.').pop() || 'pdf',
+          mime: result.mimeType || 'application/pdf',
+          metaData: {
+            s3Key: result.key,
+            s3Bucket: result.bucket,
+            originalFileName: result.fileName,
+            fileSize: actualFileSize, // Store actual file size in bytes
+            uploadedAt: new Date().toISOString(),
+          },
+        };
+      });
 
       await storeDocuments(documentsToStore);
       
@@ -582,13 +590,15 @@ function VerificationSection() {
           {/* Payment Section - Dynamic from subscription plan */}
           {renterPlan ? (
         // Check if user has already paid (one-time payment)
-        // Check: 1) userInfo.verificationStatus === 'verified' OR 2) verificationPayment exists
-        // Use currentUser (fresh data) or fallback to user from context
+        // Only show "Payment Completed" if there's an actual payment record
+        // If admin verified but no payment, show payment section so user can pay
         (() => {
           const userToCheck = currentUser || user;
           const isVerifiedByStatus = userToCheck?.userInfo?.verificationStatus === 'verified';
           const hasPayment = verificationPayment && verificationPayment.status === 'succeeded';
-          const hasPaid = isVerifiedByStatus || hasPayment;
+          // Only show "Payment Completed" if there's an actual payment record
+          // Don't show it just because admin verified the profile
+          const hasPaid = hasPayment;
           
           // Debug log
           if (process.env.NODE_ENV === 'development') {
@@ -597,7 +607,8 @@ function VerificationSection() {
               isVerifiedByStatus,
               hasPayment,
               hasPaid,
-              paymentStatus: verificationPayment?.status
+              paymentStatus: verificationPayment?.status,
+              paymentLoading
             });
           }
           
@@ -708,10 +719,29 @@ function VerificationSection() {
             </div>
           </section>
         ) : (
-          // Payment Section (User hasn't paid yet)
+          // Payment Section (User hasn't paid yet - even if admin verified)
           <section className="bg-white rounded-2xl border border-border p-4">
             <div className="block">
               <div>
+                {(() => {
+                  const userToCheck = currentUser || user;
+                  const isVerifiedByStatus = userToCheck?.userInfo?.verificationStatus === 'verified';
+                  
+                  // Show different message if admin verified but no payment
+                  if (isVerifiedByStatus && !paymentLoading) {
+                    return (
+                      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm font-semibold text-blue-800 mb-1">
+                          Profile Verified - Payment Required
+                        </p>
+                        <p className="text-xs text-blue-700">
+                          Your profile has been verified by admin. Complete payment to activate all verification benefits.
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
                 <p className="text-base font-normal font-nunito text-midGray mb-1">
                   <span className="text-xl font-bold text-mainBlue">
                     £{renterPlan.monthlyPrice?.toFixed(2) || '0.00'}

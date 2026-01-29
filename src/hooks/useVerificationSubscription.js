@@ -26,8 +26,9 @@ export const useVerificationSubscription = () => {
 
       // Check subscription status
       let hasActiveSubscription = false;
+      let subscription = null;
       try {
-        const subscription = await getCurrentSubscription();
+        subscription = await getCurrentSubscription();
         // Check if subscription exists and is active
         if (subscription && subscription.status === 'active') {
           hasActiveSubscription = true;
@@ -46,6 +47,7 @@ export const useVerificationSubscription = () => {
         hasSubscription: hasActiveSubscription,
         needsVerification: !verified,
         needsSubscription: !hasActiveSubscription,
+        subscription, // Return subscription data to avoid duplicate API calls
       };
     } catch (error) {
       console.error('Error checking verification and subscription:', error);
@@ -54,6 +56,7 @@ export const useVerificationSubscription = () => {
         hasSubscription: false,
         needsVerification: true,
         needsSubscription: true,
+        subscription: null,
       };
     } finally {
       setLoading(false);

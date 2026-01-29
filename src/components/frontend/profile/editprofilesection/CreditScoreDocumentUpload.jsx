@@ -104,6 +104,9 @@ function CreditScoreDocumentUpload({
       }
 
       const ext = file?.name?.includes('.') ? file.name.split('.').pop().toLowerCase() : '';
+      // Get actual file size - prioritize original file size (most accurate)
+      const actualFileSize = file?.size || first.fileSize || 0;
+      
       const docToStore = {
         fileUrl: first.url || first.fileUrl,
         docType: 'credit_score',
@@ -111,7 +114,7 @@ function CreditScoreDocumentUpload({
         mime: first.mimeType || file.type,
         metaData: {
           originalFileName: first.fileName || file.name,
-          fileSize: first.fileSize || file.size,
+          fileSize: actualFileSize, // Store actual file size in bytes
           s3Key: first.key,
           s3Bucket: first.bucket,
           uploadedAt: new Date().toISOString(),

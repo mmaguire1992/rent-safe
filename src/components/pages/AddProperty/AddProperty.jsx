@@ -915,10 +915,10 @@ function AddProperty() {
           {renderStepContent()}
 
           {/* Error Display */}
-          {(submitError || propertyError) && (
+          {(submitError || propertyError?.message) && (
             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-600 text-sm">
-                {submitError || propertyError?.message || "An error occurred. Please try again."}
+                {submitError || propertyError?.message}
               </p>
             </div>
           )}

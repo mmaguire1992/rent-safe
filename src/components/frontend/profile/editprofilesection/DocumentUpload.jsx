@@ -300,6 +300,10 @@ function DocumentUpload({
       // Prepare documents for database storage
       // Always use the docType prop, not the one from S3 response (which is based on field name)
       const documentsToStore = uploadResults.map((result, index) => {
+        // Get the actual file size - prioritize original file size, then result
+        // This ensures we always store the actual file size in bytes
+        const actualFileSize = validFiles[index]?.size || result.fileSize || result.size || 0;
+        
         const docToStore = {
           fileUrl: result.url || result.fileUrl,
           docType: docType, // Always use the docType prop passed to the component
@@ -307,7 +311,7 @@ function DocumentUpload({
           mime: result.mimeType || validFiles[index].type,
           metaData: {
             originalFileName: result.fileName || validFiles[index].name,
-            fileSize: result.fileSize || validFiles[index].size,
+            fileSize: actualFileSize, // Store actual file size in bytes
             s3Key: result.key,
             s3Bucket: result.bucket,
             uploadedAt: new Date().toISOString(),
