@@ -417,22 +417,27 @@ function VerificationCenter() {
               s3Key: uploadResult.uploadResults[0].key,
               s3Bucket: uploadResult.uploadResults[0].bucket,
               originalFileName: uploadResult.uploadResults[0].fileName,
-              fileSize: uploadResult.uploadResults[0].fileSize,
+              // Get actual file size from original file object (most accurate)
+              fileSize: fileObjects[0]?.size || uploadResult.uploadResults[0].fileSize || 0,
               documentIdToUpdate: reuploadingDocumentId, // Include documentIdToUpdate for re-upload
             },
           }]
-        : uploadResult.uploadResults.map((result) => ({
-            fileUrl: result.url,
-            docType: docType,
-            fileType: result.fileType,
-            mime: result.mimeType,
-            metaData: {
-              s3Key: result.key,
-              s3Bucket: result.bucket,
-              originalFileName: result.fileName,
-              fileSize: result.fileSize,
-            },
-          }));
+        : uploadResult.uploadResults.map((result, index) => {
+            // Get actual file size from original file object (most accurate)
+            const actualFileSize = fileObjects[index]?.size || result.fileSize || 0;
+            return {
+              fileUrl: result.url,
+              docType: docType,
+              fileType: result.fileType,
+              mime: result.mimeType,
+              metaData: {
+                s3Key: result.key,
+                s3Bucket: result.bucket,
+                originalFileName: result.fileName,
+                fileSize: actualFileSize, // Store actual file size in bytes
+              },
+            };
+          });
 
       toast.info(reuploadingDocumentId ? 'Updating document...' : 'Storing document information...');
       await dispatch(storeDocumentMetadata(documentsToStore)).unwrap();

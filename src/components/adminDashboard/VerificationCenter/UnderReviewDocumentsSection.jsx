@@ -1,5 +1,25 @@
 import { FiBell, FiX, FiFileText, FiDownload,FiInfo } from "react-icons/fi";
 
+// Helper function to format file size
+const formatFileSize = (size) => {
+  if (!size) return 'Unknown size';
+  
+  // If size is already a formatted string (contains 'MB', 'KB', etc.), return as is
+  if (typeof size === 'string' && (size.includes('MB') || size.includes('KB') || size.includes('GB') || size.includes('B'))) {
+    return size;
+  }
+  
+  // If size is a number (bytes), format it
+  const bytes = typeof size === 'number' ? size : parseFloat(size);
+  if (isNaN(bytes) || bytes === 0) return '0 B';
+  
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const formattedSize = (bytes / Math.pow(k, i)).toFixed(2);
+  
+  return `${formattedSize} ${sizes[i]}`;
+};
 
 function UnderReviewDocumentsSection({ documents, onDelete, onDownload }) {
   if (!documents || documents.length === 0) return null;
@@ -32,7 +52,7 @@ function UnderReviewDocumentsSection({ documents, onDelete, onDownload }) {
                     </span>
                   )}
                   <span className="text-xs font-normal font-nunito text-midGray whitespace-nowrap">
-                    {doc.size}
+                    {formatFileSize(doc.size || doc.metaData?.fileSize)}
                   </span>
                   <span className="text-xs relative before:content-[''] before:absolute before:left-[-8px] sm:before:left-[-11px] before:rounded-full before:w-[6px] before:bottom-1 before:h-[6px] before:bg-midGray font-normal font-nunito text-midGray whitespace-nowrap">
                     Uploaded {doc.uploadedDate}

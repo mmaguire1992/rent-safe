@@ -75,6 +75,15 @@ const VerificationSubscriptionModal = ({
            subscription.remainingProperties > 0;
   }, [subscription]);
 
+  // Check if subscription limit has expired (has subscription but remainingProperties === 0)
+  const hasSubscriptionLimitExpired = useMemo(() => {
+    if (!subscription) return false;
+    const isActiveStatus = subscription.status === 'active' || subscription.status === 'activate';
+    return isActiveStatus && 
+           subscription.remainingProperties !== undefined && 
+           subscription.remainingProperties === 0;
+  }, [subscription]);
+
   // Determine actual needs based on fetched data
   const actuallyNeedsVerification = useMemo(() => {
     if (userData) {
@@ -120,6 +129,10 @@ const VerificationSubscriptionModal = ({
     } else if (actuallyNeedsVerification) {
       return 'Verification Required';
     } else if (actuallyNeedsSubscription) {
+      // Check if subscription limit has expired
+      if (hasSubscriptionLimitExpired) {
+        return 'Subscription Property Limit Expired';
+      }
       return 'Subscription Required';
     }
     return 'Action Required';
@@ -131,6 +144,10 @@ const VerificationSubscriptionModal = ({
     } else if (actuallyNeedsVerification) {
       return 'To add properties, you need to verify your account:';
     } else if (actuallyNeedsSubscription) {
+      // Check if subscription limit has expired
+      if (hasSubscriptionLimitExpired) {
+        return 'Your subscription property limit has been reached. Please upgrade your plan to add more properties.';
+      }
       return 'To add properties, you need to subscribe to a plan:';
     }
     return 'To add properties, you need to complete the following:';
@@ -178,10 +195,14 @@ const VerificationSubscriptionModal = ({
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-secondary mb-1">
-                    Subscribe to a Plan
+                    {hasSubscriptionLimitExpired 
+                      ? 'Subscription Property Limit Expired' 
+                      : 'Subscribe to a Plan'}
                   </p>
                   <p className="text-xs text-darkGray">
-                    Please subscribe to a plan to start listing properties.
+                    {hasSubscriptionLimitExpired
+                      ? 'You have reached your property limit. Please upgrade your subscription plan to add more properties.'
+                      : 'Please subscribe to a plan to start listing properties.'}
                   </p>
                 </div>
               </div>
@@ -198,7 +219,9 @@ const VerificationSubscriptionModal = ({
                 ? 'Go to Verification' 
               : actuallyNeedsVerification 
                   ? 'Go to Verification' 
-                  : 'Go to Subscription'}
+                  : hasSubscriptionLimitExpired
+                    ? 'Upgrade Plan'
+                    : 'Go to Subscription'}
           </button>
           <button
             onClick={onClose}

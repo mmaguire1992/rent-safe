@@ -36,6 +36,8 @@ export const useSocket = () => {
   const socketRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [hasAttemptedConnection, setHasAttemptedConnection] = useState(false);
 
   useEffect(() => {
     // Only connect on client side
@@ -74,6 +76,8 @@ export const useSocket = () => {
     }
 
     console.log('🔌 Connecting to socket:', socketUrl);
+    setIsConnecting(true);
+    setHasAttemptedConnection(true);
 
     // Initialize socket connection
     const socket = io(socketUrl, {
@@ -93,12 +97,14 @@ export const useSocket = () => {
     socket.on('connect', () => {
       console.log('✅ Socket connected:', socket.id);
       setIsConnected(true);
+      setIsConnecting(false);
       setConnectionError(null);
     });
 
     socket.on('disconnect', (reason) => {
       console.log('❌ Socket disconnected:', reason);
       setIsConnected(false);
+      setIsConnecting(false);
       
       // "transport close" is normal when:
       // - User navigates away (e.g., redirected to Stripe)
@@ -118,11 +124,13 @@ export const useSocket = () => {
     // Reconnection events - these show the socket IS working
     socket.on('reconnect_attempt', (attemptNumber) => {
       console.log(`🔄 Socket reconnection attempt ${attemptNumber}/5...`);
+      setIsConnecting(true);
     });
 
     socket.on('reconnect', (attemptNumber) => {
       console.log(`✅ Socket reconnected successfully after ${attemptNumber} attempt(s)`);
       setIsConnected(true);
+      setIsConnecting(false);
       setConnectionError(null);
     });
 
@@ -141,6 +149,7 @@ export const useSocket = () => {
       console.error('Socket connection error:', error);
       setConnectionError(error.message);
       setIsConnected(false);
+      setIsConnecting(false);
     });
 
     // Cleanup on unmount
@@ -274,6 +283,8 @@ export const useSocket = () => {
   return {
     socket: socketRef.current,
     isConnected,
+    isConnecting,
+    hasAttemptedConnection,
     connectionError,
     sendMessage,
     joinChatroom,

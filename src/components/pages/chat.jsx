@@ -41,6 +41,8 @@ function ChatMessage() {
 
   const {
     isConnected,
+    isConnecting,
+    hasAttemptedConnection,
     sendMessage,
     joinChatroom,
     leaveChatroom,
@@ -997,7 +999,7 @@ function ChatMessage() {
 
           <div className="mb-6">
             <h1 className="text-2xl sm:text-3xl font-bold text-secondary mb-2">
-              Messages {!isConnected && <span className="text-xs font-normal text-red-500 ml-2">(Disconnected)</span>}
+              Messages {hasAttemptedConnection && !isConnecting && !isConnected && <span className="text-xs font-normal text-red-500 ml-2">(Disconnected)</span>}
             </h1>
             <p className="text-sm text-[#62748E] font-normal">Connect with property owners and manage your conversations</p>
           </div>
@@ -1104,6 +1106,7 @@ function ChatMessage() {
                     
                     const chatroomId = chatroom._id || chatroom.id;
                     const isSelected = selectedConversation?.id === chatroomId;
+                    const unreadCount = chatroom.unreadCount || 0;
 
                     return (
                       <div
@@ -1163,6 +1166,11 @@ function ChatMessage() {
                               }`}>
                                 {name}
                               </h3>
+                              {unreadCount > 0 && (
+                                <span className="text-white bg-[#009966] w-6 h-6 rounded-full flex items-center justify-center text-sm font-normal flex-shrink-0 ml-2">
+                                  {unreadCount > 99 ? '99+' : unreadCount}
+                                </span>
+                              )}
                             </div>
                             <p className="text-sm font-normal font-nunito text-[#45556C] truncate mb-2">
                               {typeof chatroom.lastMessage === 'string' 
