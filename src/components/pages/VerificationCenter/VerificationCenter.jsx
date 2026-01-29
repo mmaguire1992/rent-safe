@@ -597,7 +597,7 @@ function VerificationCenter() {
 
             {/* Heading */}
             <h2 className="text-2xl font-bold font-nunito text-secondary text-left mb-2">
-              Delete Document
+              Delete Documentsad
             </h2>
 
             {/* Description */}
@@ -615,7 +615,7 @@ function VerificationCenter() {
               </button>
               <button
                 onClick={confirmDeleteDocument}
-                className="flex-1 px-6 py-3 bg-blueGradient text-white rounded-[10px] font-bold shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors"
+                className="flex-1 px-6 py-3 bg-blueGradient text-white rounded-[10px] font-bold shadow-[0px_2px_10px_0px_#00000033] hover:opacity-90 transition-opacity"
               >
                 Delete
               </button>

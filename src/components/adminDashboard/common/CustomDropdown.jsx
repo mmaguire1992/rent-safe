@@ -85,10 +85,10 @@ function CustomDropdown({
               key={option.value}
               type="button"
               onClick={() => handleSelect(option.value)}
-              className={`w-full px-4 py-1.5 text-left text-sm md:text-base font-nunito font-normal hover:bg-gray-50 transition-colors ${
+              className={`w-full px-4 py-1.5 text-left text-sm md:text-base font-nunito font-normal  transition-colors ${
                 value === option.value
                   ? "bg-primary bg-opacity-10 text-primary"
-                  : "text-secondary"
+                  : "text-secondary hover:bg-gray-50"
               }`}
             >
               {option.label}

@@ -1005,9 +1005,7 @@ function ChatMessage() {
           </div>
 
           <div
-            className={`flex gap-0 bg-white rounded-3xl shadow-sm transition-all duration-300 ${
-              !selectedConversation && "border border-gray-100"
-            } overflow-hidden`}
+            className="flex gap-0 bg-white rounded-3xl shadow-sm border border-gray-100 transition-all duration-300 overflow-hidden"
           >
             {/* Left Panel - Message List */}
             <div
@@ -1016,7 +1014,7 @@ function ChatMessage() {
               } w-full md:w-96 lg:w-[400px] bg-white border-r border-gray-100 flex flex-col transition-all duration-300`}
             >
               {/* Header */}
-              <div className="p-5 border-b border-gray-100 bg-gradient-to-b from-gray-50/50 to-white">
+              <div className="p-3 border-b border-gray-100 bg-gradient-to-b from-gray-50/50 to-white">
                 {/* Search Bar */}
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lg md:text-xl z-10">

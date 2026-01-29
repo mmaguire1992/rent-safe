@@ -97,7 +97,7 @@ function ChatView({
   return (
     <>
       {/* Chat Header */}
-      <div className="p-3 border-b border-lightGray flex items-center justify-between relative">
+      <div className="p-3 border-b border-gray-200 flex items-center justify-between relative">
         <div
           onClick={onProfileClick}
           className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:opacity-80 transition-opacity flex-1 min-w-0"
@@ -342,7 +342,8 @@ function ChatView({
       />
 
       {/* Message Input */}
-      <div className="p-3 sm:p-4 md:p-6 border-t border-lightGray">
+      <div className="border-t-2 border-gray-200 bg-white relative z-10">
+        <div className="p-3">
         {isCurrentUserBlocked ? (
           <div className="text-center py-4">
             <p className="text-gray-600 text-sm mb-2">
@@ -420,6 +421,7 @@ function ChatView({
             </button>
           </div>
         )}
+        </div>
       </div>
 
     </>
