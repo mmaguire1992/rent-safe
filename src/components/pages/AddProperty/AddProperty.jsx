@@ -451,6 +451,9 @@ function AddProperty() {
     if (!formData.city || !formData.city.trim()) {
       errors.city = "City is required";
     }
+    if (!formData.state || !formData.state.trim()) {
+    errors.state = "State/Province is required";
+  }
     if (!formData.postcode || !formData.postcode.trim()) {
       errors.postcode = "Postcode is required";
     }

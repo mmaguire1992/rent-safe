@@ -70,6 +70,11 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
           error = "City is required";
         }
         break;
+   case "state":
+  if (!value || !value.trim()) {
+    error = "State/Province is required";   // ← fix this line
+  }
+  break;
       case "postcode":
         if (!value || !value.trim()) {
           error = "Postcode is required";
@@ -709,22 +714,32 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
               <p className="mt-1 text-xs text-gray-500">Auto-filled from address. You can edit if needed.</p>
             )}
           </div>
+<div>
+  <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-1">
+    State/Province <span className="text-red-500">*</span>
+    <span className="text-xs text-gray-500 font-normal">(Auto-filled)</span>
+  </label>
+  <input
+    type="text"
+    value={formData.state}
+    onChange={(e) => handleChange("state", e.target.value)}
+    onBlur={() => handleBlur("state")}
+    placeholder="State/Province (auto-filled from address)"
+    className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] focus:border-[#6B4EFF] ${
+      touched.state && errors?.state
+        ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+        : "border-lightGray"
+    }`}
+  />
+  {touched.state && errors?.state && (
+  <p className="mt-1 text-sm text-red-600">{errors.state}</p>
+)}
+  {formData.state && !errors?.state && (
+    <p className="mt-1 text-xs text-gray-500">Auto-filled from address. You can edit if needed.</p>
+  )}
+</div>
 
-          <div>
-            <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-1">
-              State/Province <span className="text-red-500">*</span><span className="text-xs text-gray-500 font-normal">(Auto-filled)</span>
-            </label>
-            <input
-              type="text"
-              value={formData.state}
-              onChange={(e) => handleChange("state", e.target.value)}
-              placeholder="State/Province (auto-filled from address)"
-              className="w-full px-4 py-3 border h-[52px] border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] focus:border-[#6B4EFF]"
-            />
-            {formData.state && (
-              <p className="mt-1 text-xs text-gray-500">Auto-filled from address. You can edit if needed.</p>
-            )}
-          </div>
+
 
           <div>
             <label className="block text-sm md:text-base font-nunito font-bold text-secondary mb-1">
@@ -764,13 +779,22 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
               type="text"
               value={formData.country}
               onChange={(e) => handleChange("country", e.target.value)}
+               onBlur={() => handleBlur("country")}
               placeholder="Country (auto-filled from address)"
-              className="w-full px-4 py-3 border h-[52px] border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] focus:border-[#6B4EFF]"
-            />
-            {formData.country && (
-              <p className="mt-1 text-xs text-gray-500">Auto-filled from address. You can edit if needed.</p>
-            )}
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] focus:border-[#6B4EFF] ${
+      touched.country && errors?.country
+        ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+        : "border-lightGray"
+    }`}
+  />
+  {touched.country && errors?.country && (
+    <p className="mt-1 text-sm text-red-600">{errors.country}</p>
+  )}
+  {formData.country && !errors?.country && (
+    <p className="mt-1 text-xs text-gray-500">Auto-filled from address. You can edit if needed.</p>
+  )}
           </div>
+
         </div>
 
         <div>
