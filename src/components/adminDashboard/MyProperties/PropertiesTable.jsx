@@ -6,6 +6,7 @@ import Pagination from "@/components/adminDashboard/common/Pagination";
 import ThreeDotsIcon from "@/svg/threeDotsIcon";
 import HouseIcon from "@/svg/websiteSvg/houseIcon";
 import { FiEdit, FiTrash2, FiShare2 } from "react-icons/fi";
+import { toast } from "react-toastify";
 
 function PropertiesTable({
   properties,
@@ -46,6 +47,17 @@ function PropertiesTable({
     if (e) e.stopPropagation();
     console.log(`${action} property:`, propertyId);
     if (action === "Edit") {
+      // Find the property to check its status
+      const property = properties.find(p => p.id === propertyId);
+      if (property) {
+        const status = property.status?.toLowerCase() || '';
+        // Only allow editing if status is pending_approval
+        if (status !== 'pending_approval' && status !== 'pending approval') {
+          toast.error('Only properties with pending approval status can be edited');
+          setOpenDropdownId(null);
+          return;
+        }
+      }
       navigate(`/dashboard/properties/edit/${propertyId}`);
     }
     setOpenDropdownId(null);
