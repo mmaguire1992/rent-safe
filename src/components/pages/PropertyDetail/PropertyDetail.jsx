@@ -263,7 +263,7 @@ function PropertyDetail() {
       renterProfileDescription: apiProperty.idealRenterProfile || '',
       // Dashboard specific fields
       leads: apiProperty.leadsCount || 0,
-      views: apiProperty.views || 0,
+      views: apiProperty.viewsCount || apiProperty.views || 0,
       dateAdded: dateAddedFormatted,
       approvedOn: approvedOnFormatted,
       // Full API data for components that need it

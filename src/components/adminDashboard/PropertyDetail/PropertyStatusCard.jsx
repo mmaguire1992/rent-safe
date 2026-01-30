@@ -100,11 +100,13 @@ function PropertyStatusCard({ propertyData, onStatusChange, onApprove, onReject,
 
   const availableOptions = getAvailableOptions();
   const displayLabel = formatStatus(currentStatus);
+  console.log("ptoperty data ::",propertyData);
+  
 
   return (
     <div className="bg-white rounded-[20px] border border-lightGray md:p-6 p-4">
       <h2 className="md:text-xl text-base font-bold font-nunito text-secondary mb-4">
-        Listing Status
+        Listing Status 
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
         <div className="flex items-center gap-4 justify-between relative">
@@ -192,9 +194,9 @@ function PropertyStatusCard({ propertyData, onStatusChange, onApprove, onReject,
           </div>
 
           <div className="flex items-center gap-2">
-            <p className="text-base font-bold text-secondary">
-              {propertyData.views}
-            </p>
+           <p className="text-base font-bold text-secondary">
+           {propertyData.views || 0}   
+           </p>
           </div>
         </div>
         <div className="flex items-center gap-4 justify-between mt-5">
