@@ -12,29 +12,49 @@ import LocationTwo from "@/svg/websiteSvg/locationTwo";
 import ApartmentIcon from "../../../svg/apartmentIcon";
 import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
 import { useAuth } from "@/context/AuthContext";
+import { recordPropertyView } from '@/api';
 
 function PropertyCard({ property, isFavorited = false, onToggleFavorite }) {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
-  const handleCardClick = (e) => {
+const handleCardClick = async (e) => {
     // Don't navigate if clicking on action buttons (share, heart)
     if (e.target.closest("button")) {
       return;
     }
-    // Navigate to property detail page with property ID
-    // Route is /properties/[id] (plural) not /property/[id] (singular)
-    // Preserve current page parameter from URL so user returns to same page
-    if (property?.id) {
-      const currentSearchParams = new URLSearchParams(window.location.search);
-      const currentPage = currentSearchParams.get("page");
-      const backUrl = currentPage && currentPage !== "1" 
-        ? `/properties/${property.id}?fromPage=${currentPage}` 
-        : `/properties/${property.id}`;
-      navigate(backUrl);
-    } else {
+
+    const propertyId = property?.id || property?._id;
+    if (!propertyId) {
       navigate("/properties");
+      return;
     }
+
+
+    // Record view BEFORE navigation
+    try {
+     const userId = isAuthenticated && user?.id ? user.id : null;
+      console.log("userid::",userId);
+      
+      
+      // Fire and forget – don't await if you don't want to delay navigation
+      recordPropertyView(propertyId, userId);
+      
+      // Optional: you could await it if you want to be sure it succeeds
+      // await recordPropertyView(propertyId, userId);
+    } catch (err) {
+      // Silent fail is fine – view count is not critical
+      console.warn('View recording failed', err);
+    }
+
+    // Now navigate
+    const currentSearchParams = new URLSearchParams(window.location.search);
+    const currentPage = currentSearchParams.get("page");
+    const backUrl = currentPage && currentPage !== "1" 
+      ? `/properties/${propertyId}?fromPage=${currentPage}` 
+      : `/properties/${propertyId}`;
+    
+    navigate(backUrl);
   };
 
   // Handle share button click - copy property link to clipboard

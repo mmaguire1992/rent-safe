@@ -23,6 +23,7 @@ export const properties = {
   uploadPropertyMedia: (id) => `/properties/${id}/media`,
   uploadMultiplePropertyMedia: (id) => `/properties/${id}/media/multiple`,
   deletePropertyMedia: (id, mediaId) => `/properties/${id}/media/${mediaId}`,
+  recordPropertyView: '/properties/view',
 };
 
 // Auth Routes (for reference)

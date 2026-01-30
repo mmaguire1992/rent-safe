@@ -521,3 +521,35 @@ export async function rejectProperty(propertyId, reason) {
     throw error;
   }
 }
+
+
+/**
+ * Record a property view
+ * @param {string} propertyId - The property ID
+ * @param {string} [userId] - Optional: authenticated user ID
+ * @returns {Promise<Object>} - API response
+ */
+export async function recordPropertyView(propertyId, userId = null) {
+  try {
+    if (!propertyId) {
+      throw new Error('Property ID is required');
+    }
+
+    const payload = {
+      property_id: propertyId,
+      ...(userId && { user_id: userId }),  
+    };
+
+    // Use public route → no auth required
+    const response = await usePostApi(
+      propertyRoutes.recordPropertyView,   
+      false,                             
+      payload
+    );
+
+    return response;
+  } catch (error) {
+    console.error('Error recording property view:', error);
+    return null;
+  }
+}
