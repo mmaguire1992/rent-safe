@@ -401,7 +401,9 @@ export async function deleteProperty(id) {
     if (responseData && responseData.success) {
       return responseData;
     }
-    
+    if (response.data?.success === false) {
+    throw new Error(response.data.error || "Failed to delete property");
+  }
     return responseData;
   } catch (error) {
     console.error('Error in deleteProperty:', error);

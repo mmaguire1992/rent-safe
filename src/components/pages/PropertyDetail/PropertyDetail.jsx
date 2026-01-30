@@ -310,8 +310,18 @@ function PropertyDetail() {
       navigate('/dashboard/properties');
     } catch (error) {
       console.error('Error deleting property:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to delete property';
-      toast.error(errorMessage);
+      // const errorMessage = error?.response?.data?.message || error?.message || 'Failed to delete property';
+      // toast.error(errorMessage);
+
+      // Replace your current line with this:
+  const errorMessage = error.message?.includes("Cannot remove")
+    ? error.message                                   // ← shows nice backend message
+    : error?.response?.data?.message 
+      || error?.response?.data?.error 
+      || error.message 
+      || "Failed to delete property";
+
+  toast.error(errorMessage);
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
