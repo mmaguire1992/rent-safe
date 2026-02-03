@@ -51,7 +51,7 @@ function RoleSelection() {
               onClick={() => setSelectedRole("renter")}
               className={`w-full px-4 py-2 border-2 h-[52px] rounded-xl text-left transition-all flex items-center sm:justify-between justify-center ${
                 selectedRole === "renter"
-                  ? "border-primary bg-white"
+                  ? "bg-blueGradient !text-white"
                   : "border-lightGray bg-white"
               }`}
             >
@@ -59,7 +59,7 @@ function RoleSelection() {
                 <span
                   className={`text-sm sm:text-base font-medium ${
                     selectedRole === "renter"
-                      ? "text-primary"
+                      ? "text-white"
                       : "text-secondary"
                   }`}
                 >
@@ -78,14 +78,14 @@ function RoleSelection() {
               onClick={() => setSelectedRole("owner")}
               className={`w-full px-2 sm:px-4 py-2 border-2 h-[52px] rounded-xl text-left transition-all flex items-center sm:justify-between justify-center ${
                 selectedRole === "owner"
-                  ? "border-primary bg-white"
+                  ? "bg-blueGradient !text-white"
                   : "border-lightGray bg-white"
               }`}
             >
               <div className="flex items-center sm:justify-between justify-center">
                 <span
                   className={`text-sm sm:text-base font-medium ${
-                    selectedRole === "owner" ? "text-primary" : "text-secondary"
+                    selectedRole === "owner" ? "text-white" : "text-secondary"
                   }`}
                 >
                   I am an Owner/Agent

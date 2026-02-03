@@ -62,7 +62,7 @@ function ShareThoughts() {
           <div>
             <label
               htmlFor="renterHistory"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Add Previous Renter History
             </label>

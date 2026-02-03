@@ -18,7 +18,7 @@ function PropertyHistoryCard({ property }) {
   return (
     <div
       onClick={handleCardClick}
-      className="bg-white rounded-[20px] shadow-[0px_4px_20px_0px_rgba(0,0,0,0.08)] border border-lightGray relative cursor-pointer overflow-hidden p-4"
+      className="bg-white rounded-[20px] shadow-[0px_4px_20px_0px_rgba(0,0,0,0.08)] border border-lightGray relative cursor-pointer overflow-hidden p-4 hover:shadow-lg"
     >
       {/* Image Container */}
       <div className="relative">

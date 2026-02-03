@@ -108,7 +108,7 @@ const handleCardClick = async (e) => {
   return (
     <div
       onClick={handleCardClick}
-      className="bg-white rounded-[20px] shadow-[0px_4px_20px_0px_rgba(0,0,0,0.08)] border border-lightGray relative cursor-pointer overflow-hidden p-4"
+      className="bg-white rounded-[20px] shadow-[0px_4px_20px_0px_rgba(0,0,0,0.08)] border border-lightGray relative cursor-pointer overflow-hidden p-4 hover:shadow-lg"
     >
       <div>
         <div className="">
@@ -172,7 +172,7 @@ const handleCardClick = async (e) => {
           </h3>
 
           {/* Address */}
-          <div className="flex items-start gap-2 mb-2 text-[#5A5E67] text-sm sm:text-base font-nunito">
+          <div className="flex items-start gap-2 mb-2 text-[#5A5E67] text-sm sm:text-base font-nunito h-[55px]">
             <span className="mt-0.5 shrink-0">
               <LocationTwo />
             </span>

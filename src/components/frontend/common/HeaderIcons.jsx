@@ -51,7 +51,7 @@ function HeaderIcons({
       {isAuthenticated && (
         <button
           onClick={handleHeartClick}
-          className={`relative transition-colors ${
+          className={`relative transition-colors  flex items-center gap-2 ${
             isSavedView ? "text-red-500" : "text-gray-600 hover:text-primary flex items-center gap-1"
           }`}
         >
