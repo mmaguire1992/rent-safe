@@ -109,8 +109,8 @@ function Hero() {
           {/* Right Image */}
           <div className="flex-1 relative w-full lg:w-auto lg:max-w-4xl mt-10 lg:mt-0">
             <div className="relative">
-              <div className="rounded-tl-full rounded-tr-full">
-                <img src="/images/website/hero-image.png" alt="Modern house" className="w-full" />
+              <div className="">
+                <img src="/images/website/front-door-city-house.jpg" alt="Modern house" className="w-full rounded-tl-[160px] rounded-r-[30px]" />
               </div>
               <ImageBadge
                 icon={<ShielIcon />}
