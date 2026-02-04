@@ -1636,7 +1636,7 @@ function Messages() {
               {allMessagesCount}
             </span>
           </button>
-          <button
+          {/* <button
             onClick={() => {
               const newTab = "requests";
               setActiveTab(newTab);
@@ -1662,7 +1662,34 @@ function Messages() {
                 {messageRequestsUnreadCount > 99 ? '99+' : messageRequestsUnreadCount}
               </span>
             )}
-          </button>
+          </button> */}
+
+          <button
+  onClick={() => {
+    const newTab = "requests";
+    setActiveTab(newTab);
+    localStorage.setItem('messagesActiveTab', newTab);
+    setSelectedConversation(null);
+  }}
+  className={`relative pb-2 font-semibold px-2 text-base xl:text-lg font-nunito flex items-center gap-2 transition-colors border-b-2 ${
+    activeTab === "requests"
+      ? "text-[#6B4EFF] border-[#6B4EFF]"
+      : "text-darkGray border-transparent"
+  }`}
+>
+  Message Requests
+  {messageRequestsCount > 0 && (
+    <span
+      className={`${
+        activeTab === "requests"
+          ? "text-white bg-[#6B4EFF]"
+          : "text-[#4A2FCC] bg-[#E8E2FF]"
+      } relative text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center`}
+    >
+      {messageRequestsCount > 99 ? '99+' : messageRequestsCount}
+    </span>
+  )}
+</button>
         </div>
         )}
 
