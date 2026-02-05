@@ -18,8 +18,10 @@ import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
 function PropertiesList() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  // Initialize search query from URL (prioritize 'q' param, fallback to 'city' param)
+  const initialQuery = searchParams.get("q") || searchParams.get("city") || "";
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(initialQuery);
   const [isDebouncedSearchFromUser, setIsDebouncedSearchFromUser] = useState(false);
   const searchTimeoutRef = useRef(null);
   const [favoritedIds, setFavoritedIds] = useState(new Set());
@@ -185,11 +187,13 @@ function PropertiesList() {
     }
     
     const queryParam = searchParams.get("q");
+    const cityParam = searchParams.get("city");
     const typeParam = searchParams.get("type");
     
     // Only update if values actually changed to prevent unnecessary re-renders
     const currentType = typeParam ? typeParam.toLowerCase() : null;
-    const currentQuery = queryParam || "";
+    // Prioritize 'q' param, but if city param exists and no 'q', use city
+    const currentQuery = queryParam || cityParam || "";
     
     // Check if we need to update - compare with both current state and debounced state
     // Normalize propertyType for comparison (convert array to string for comparison)
@@ -392,20 +396,38 @@ function PropertiesList() {
     // Store the source for this specific debounce operation
     const sourceForThisUpdate = isUserInput ? 'user' : 'url';
 
-    searchTimeoutRef.current = setTimeout(() => {
-      // Set the source right before updating debouncedSearchQuery
+    // If search is cleared (empty), update immediately without debounce
+    const isCleared = searchQuery.trim() === '';
+    
+    if (isCleared) {
+      // Update immediately when cleared to avoid showing stale data
       debouncedSearchSourceRef.current = sourceForThisUpdate;
       setIsDebouncedSearchFromUser(sourceForThisUpdate === 'user');
       if (sourceForThisUpdate === 'user') {
         isUserInitiatedSearchRef.current = true;
       }
-      // Only reset to page 1 if search actually changed and it was user-initiated
-      const searchChanged = searchQuery !== debouncedSearchQuery;
-      if (searchChanged && sourceForThisUpdate === 'user') {
+      // Reset to page 1 if search was cleared by user
+      if (sourceForThisUpdate === 'user') {
         setPagination(prev => ({ ...prev, page: 1 }));
       }
-      setDebouncedSearchQuery(searchQuery);
-    }, 500); // 500ms debounce delay
+      setDebouncedSearchQuery('');
+    } else {
+      // Debounce for non-empty search queries (when user is typing)
+      searchTimeoutRef.current = setTimeout(() => {
+        // Set the source right before updating debouncedSearchQuery
+        debouncedSearchSourceRef.current = sourceForThisUpdate;
+        setIsDebouncedSearchFromUser(sourceForThisUpdate === 'user');
+        if (sourceForThisUpdate === 'user') {
+          isUserInitiatedSearchRef.current = true;
+        }
+        // Only reset to page 1 if search actually changed and it was user-initiated
+        const searchChanged = searchQuery !== debouncedSearchQuery;
+        if (searchChanged && sourceForThisUpdate === 'user') {
+          setPagination(prev => ({ ...prev, page: 1 }));
+        }
+        setDebouncedSearchQuery(searchQuery);
+      }, 500); // 500ms debounce delay for typing
+    }
 
     return () => {
       if (searchTimeoutRef.current) {
@@ -428,10 +450,11 @@ function PropertiesList() {
     }
 
     const currentQueryParam = searchParams.get("q") || "";
+    const currentCityParam = searchParams.get("city") || "";
     const newQuery = debouncedSearchQuery.trim();
 
     // Always update URL if source is 'user' and query changed (including clearing)
-    if (currentQueryParam !== newQuery) {
+    if (currentQueryParam !== newQuery || currentCityParam !== newQuery) {
       isUserInitiatedUrlUpdateRef.current = true;
       isUserInitiatedSearchRef.current = true; // Keep this true to prevent URL-reading effect from interfering
       lastUrlUpdateTimeRef.current = Date.now(); // Record when we update the URL
@@ -440,10 +463,13 @@ function PropertiesList() {
         const newParams = new URLSearchParams(prev);
         
         if (newQuery) {
+          // Set both 'q' and 'city' params when user types
           newParams.set("q", newQuery);
+          newParams.set("city", newQuery);
         } else {
-          // Remove q parameter if search is cleared
+          // Remove both parameters if search is cleared
           newParams.delete("q");
+          newParams.delete("city");
         }
         
         return newParams;
@@ -544,7 +570,8 @@ function PropertiesList() {
           search: debouncedSearchQuery || '',
         };
 
-        // Add city filter if present
+        // Add city filter if present (from URL parameter)
+        // cityParam will be empty/null when user clears search and URL is updated
         if (cityParam) {
           apiParams.city = cityParam;
         }

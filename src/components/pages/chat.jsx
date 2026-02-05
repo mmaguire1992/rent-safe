@@ -15,18 +15,21 @@ import { getWishlistPropertyIds } from "@/api/wishlists";
 import { useSocket, SOCKET_EVENTS } from "@/hooks/useSocket";
 import { toast } from "react-toastify";
 import { isAuthenticated } from "@/utils/auth";
+import { useAuth } from "@/context/AuthContext";
 import RedCrossIcon from "@/svg/redCrossIcon";
 
 function ChatMessage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const chatroomIdFromUrl = searchParams?.get('chatroomId');
+  const { user: authUser } = useAuth();
   
   const [chatrooms, setChatrooms] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [messageText, setMessageText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [chatroomsLoading, setChatroomsLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,6 +41,8 @@ function ChatMessage() {
   const messagesTopRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const messagesContainerRef = useRef(null);
+  const hasSentInitialMessageRef = useRef(new Set()); // Track chatrooms where initial message was sent
+  const isNewChatroomRef = useRef(false); // Track if current chatroom is new
 
   const {
     isConnected,
@@ -52,27 +57,27 @@ function ChatMessage() {
     on,
   } = useSocket();
 
-  // Fetch all initial data in parallel for better performance
+  // Set current user from auth context immediately (no API call needed)
   useEffect(() => {
-    const fetchInitialData = async () => {
+    if (authUser) {
+      setCurrentUser(authUser);
+    } else if (isAuthenticated()) {
+      // Fallback: fetch user if not in context (shouldn't happen normally)
+      getCurrentUser()
+        .then(user => setCurrentUser(user))
+        .catch(() => {});
+    }
+  }, [authUser]);
+
+  // Fetch chatrooms immediately (most critical data)
+  useEffect(() => {
+    const fetchChatrooms = async () => {
       try {
-        setLoading(true);
+        setChatroomsLoading(true);
+        const chatroomsData = await getChatrooms().catch(() => []);
         
-        // Fetch all data in parallel
-        const [user, chatroomsData, wishlistData] = await Promise.allSettled([
-          getCurrentUser().catch(() => null),
-          getChatrooms().catch(() => []),
-          isAuthenticated() ? getWishlistPropertyIds().catch(() => []) : Promise.resolve([])
-        ]);
-        
-        // Set user
-        if (user.status === 'fulfilled' && user.value) {
-          setCurrentUser(user.value);
-        }
-        
-        // Set chatrooms
-        if (chatroomsData.status === 'fulfilled' && chatroomsData.value) {
-          const normalizedChatrooms = (chatroomsData.value || []).map(chatroom => {
+        if (chatroomsData && Array.isArray(chatroomsData)) {
+          const normalizedChatrooms = chatroomsData.map(chatroom => {
             if (chatroom.lastMessage && typeof chatroom.lastMessage === 'object') {
               return {
                 ...chatroom,
@@ -83,20 +88,29 @@ function ChatMessage() {
           });
           setChatrooms(normalizedChatrooms);
         }
-        
-        // Set wishlist count
-        if (wishlistData.status === 'fulfilled' && wishlistData.value) {
-          setFavoriteCount(wishlistData.value?.length || 0);
-        }
       } catch (error) {
-        console.error('Error fetching initial data:', error);
-        toast.error('Failed to load page');
+        console.error('Error fetching chatrooms:', error);
+        toast.error('Failed to load chatrooms');
       } finally {
-        setLoading(false);
+        setChatroomsLoading(false);
       }
     };
     
-    fetchInitialData();
+    fetchChatrooms();
+  }, []);
+
+  // Fetch wishlist count in background (non-blocking, low priority)
+  useEffect(() => {
+    if (!isAuthenticated()) return;
+    
+    // Defer wishlist fetch to not block initial render
+    const timer = setTimeout(() => {
+      getWishlistPropertyIds()
+        .then(ids => setFavoriteCount(ids?.length || 0))
+        .catch(() => {});
+    }, 500); // Small delay to prioritize chatrooms
+    
+    return () => clearTimeout(timer);
   }, []);
 
   // Handle chatroomId from URL
@@ -116,6 +130,8 @@ function ChatMessage() {
       });
       
       if (chatroom) {
+        // Mark as new chatroom if it came from URL (likely from "Contact Owner" button)
+        isNewChatroomRef.current = true;
         handleSelectConversation(chatroom);
         // Remove chatroomId from URL
         if (typeof window !== 'undefined') {
@@ -419,6 +435,56 @@ function ChatMessage() {
         setCurrentPage(page);
         setHasMoreMessages(result.pagination?.hasMore || false);
         
+        // Check if this is a new chatroom (no messages) and initial message hasn't been sent
+        const isNewChatroom = formattedMessages.length === 0;
+        const hasSentInitial = hasSentInitialMessageRef.current.has(chatroomId);
+        
+        // Auto-send initial message if:
+        // 1. It's a new chatroom (no messages)
+        // 2. Initial message hasn't been sent yet
+        // 3. It was opened from URL (isNewChatroomRef.current is true)
+        // 4. User is connected
+        if (isNewChatroom && !hasSentInitial && isNewChatroomRef.current && isConnected) {
+          // Mark as sent immediately to prevent duplicate sends
+          hasSentInitialMessageRef.current.add(chatroomId);
+          isNewChatroomRef.current = false; // Reset flag
+          
+          // Auto-send initial message after a short delay to ensure everything is ready
+          setTimeout(() => {
+            // Use the chatroomId from the conversation parameter, not from state
+            if (chatroomId && chatroomId !== 'undefined' && chatroomId !== 'null' && isConnected) {
+              const initialMessage = "Hi, I'm interested in this property";
+              
+              const uniqueId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+              const tempMessage = {
+                id: uniqueId,
+                tempId: uniqueId,
+                message: initialMessage,
+                sender: "you",
+                senderInitials: (currentUser?.firstName?.[0] || '') + (currentUser?.lastName?.[0] || ''),
+                time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+                type: 'text',
+                isRead: false,
+                isDelivered: false,
+              };
+
+              setChatMessages(prev => [...prev, tempMessage]);
+              setMessageText("");
+              scrollToBottom();
+
+              // Send via socket
+              try {
+                sendMessage(chatroomId, initialMessage, 'text', uniqueId);
+              } catch (error) {
+                console.error('Error sending initial message:', error);
+                toast.error('Failed to send initial message');
+                // Remove temporary message on error
+                setChatMessages(prev => prev.filter(m => m.id !== tempMessage.id));
+              }
+            }
+          }, 800);
+        }
+        
         // Scroll to bottom after messages are set (newest messages)
         setTimeout(() => {
           scrollToBottom();
@@ -428,6 +494,49 @@ function ChatMessage() {
         setChatMessages([]);
         setCurrentPage(page);
         setHasMoreMessages(false);
+        
+        // Check if this is a new chatroom and auto-send initial message
+        const hasSentInitial = hasSentInitialMessageRef.current.has(chatroomId);
+        if (!hasSentInitial && isNewChatroomRef.current && isConnected) {
+          // Mark as sent immediately to prevent duplicate sends
+          hasSentInitialMessageRef.current.add(chatroomId);
+          isNewChatroomRef.current = false; // Reset flag
+          
+          // Auto-send initial message after a short delay to ensure everything is ready
+          setTimeout(() => {
+            // Use the chatroomId from the conversation parameter, not from state
+            if (chatroomId && chatroomId !== 'undefined' && chatroomId !== 'null' && isConnected) {
+              const initialMessage = "Hi, I'm interested in this property";
+              
+              const uniqueId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+              const tempMessage = {
+                id: uniqueId,
+                tempId: uniqueId,
+                message: initialMessage,
+                sender: "you",
+                senderInitials: (currentUser?.firstName?.[0] || '') + (currentUser?.lastName?.[0] || ''),
+                time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+                type: 'text',
+                isRead: false,
+                isDelivered: false,
+              };
+
+              setChatMessages(prev => [...prev, tempMessage]);
+              setMessageText("");
+              scrollToBottom();
+
+              // Send via socket
+              try {
+                sendMessage(chatroomId, initialMessage, 'text', uniqueId);
+              } catch (error) {
+                console.error('Error sending initial message:', error);
+                toast.error('Failed to send initial message');
+                // Remove temporary message on error
+                setChatMessages(prev => prev.filter(m => m.id !== tempMessage.id));
+              }
+            }
+          }, 800);
+        }
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -1033,7 +1142,7 @@ function ChatMessage() {
 
               {/* Message List */}
               <div className="flex-1 overflow-y-auto max-h-[calc(100vh-280px)] sm:max-h-[calc(100vh-300px)] md:max-h-[calc(100vh-200px)] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-                {loading ? (
+                {chatroomsLoading ? (
                   <div className="flex items-center justify-center py-16">
                     <div className="relative">
                       <div className="animate-spin rounded-full h-10 w-10 border-3 border-[#6B4EFF]/20"></div>

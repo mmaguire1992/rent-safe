@@ -89,6 +89,7 @@ function DocumentsSection({
             placeholder="DD/MM/YYYY"
             // Expiry date must never be in the past (Passport / Driving License / ID Card)
             minDate={new Date().toISOString().split('T')[0]}
+            error={errors.documentExpire}
           />
           {errors.documentExpire && (
             <p className="mt-1 text-sm text-errorColor">{errors.documentExpire}</p>

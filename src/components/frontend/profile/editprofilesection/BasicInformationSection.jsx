@@ -6,6 +6,7 @@ import GreenCheckedIcon from "@/svg/greenCheckedIcon";
 import SectionHeader from "./SectionHeader";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { FiTrash2 } from "react-icons/fi";
+import { toast } from "react-toastify";
 
 function BasicInformationSection({
   formData,
@@ -51,8 +52,14 @@ function BasicInformationSection({
                   )}
                 </>
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <GrayUserIcon />
+                <div className="w-full h-full rounded-full bg-blueGradient flex items-center justify-center">
+                  {formData.fullName && formData.fullName.trim() ? (
+                    <span className="text-white text-2xl font-bold font-nunito">
+                      {formData.fullName.trim().charAt(0).toUpperCase()}
+                    </span>
+                  ) : (
+                    <GrayUserIcon />
+                  )}
                 </div>
               )}
             </div>
@@ -75,9 +82,30 @@ function BasicInformationSection({
               <input
                 id="profile-image-upload"
                 type="file"
-                accept=".heic,.webp,.png,.jpg"
+                accept="image/heic,image/webp,image/png,image/jpeg,image/jpg,.heic,.webp,.png,.jpg,.jpeg"
                 className="hidden"
-                onChange={(e) => handleImageUpload(e.target.files)}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    // Validate that the file is an image
+                    const validImageTypes = ['image/heic', 'image/webp', 'image/png', 'image/jpeg', 'image/jpg'];
+                    const fileType = file.type.toLowerCase();
+                    const fileName = file.name.toLowerCase();
+                    const isValidImage = validImageTypes.includes(fileType) || 
+                                       fileName.endsWith('.heic') || 
+                                       fileName.endsWith('.webp') || 
+                                       fileName.endsWith('.png') || 
+                                       fileName.endsWith('.jpg') || 
+                                       fileName.endsWith('.jpeg');
+                    
+                    if (!isValidImage) {
+                      toast.error('Please select only image files (HEIC, WEBP, PNG, or JPG)');
+                      e.target.value = ''; // Clear the input
+                      return;
+                    }
+                  }
+                  handleImageUpload(e.target.files);
+                }}
               />
               <p className="text-xs font-normal font-nunito text-center md:text-left text-[#BCBCBC] mt-2">
                 HEIC, WEBP, PNG, or JPG. Recommended: 512x512 pixels minimum.

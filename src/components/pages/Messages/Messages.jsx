@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import DashboardLayout from "@/components/adminDashboard/dashboard/DashboardLayout";
 import { FiSearch } from "react-icons/fi";
 import TenantProfileDetail from "@/components/adminDashboard/Messages/TenantProfileDetail";
@@ -53,6 +53,9 @@ function Messages() {
   const [checkedChatrooms, setCheckedChatrooms] = useState(new Set());
   // Force re-render when history status changes
   const [historyCheckVersion, setHistoryCheckVersion] = useState(0);
+  // PERMANENT history tracker using ref - never gets reset, persists across all operations
+  // This ensures conversations with history NEVER move back to "Message Requests"
+  const permanentHistoryRef = useRef(new Set());
   const messagesEndRef = useRef(null);
   const messagesTopRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -196,6 +199,9 @@ function Messages() {
           
           // Set initial history state for chatrooms where last message is from current user
           if (chatroomsWithUserHistory.size > 0) {
+            // PERMANENT MARK: Add all to permanent ref
+            chatroomsWithUserHistory.forEach(id => permanentHistoryRef.current.add(id));
+            
             setChatroomsWithHistory(prev => new Set([...prev, ...chatroomsWithUserHistory]));
           }
           
@@ -284,6 +290,9 @@ function Messages() {
                 });
                 
                 if (newHistoryChatrooms.size > 0) {
+                  // PERMANENT MARK: Add all to permanent ref
+                  newHistoryChatrooms.forEach(id => permanentHistoryRef.current.add(id));
+                  
                   setChatroomsWithHistory(prev => {
                     const updated = new Set([...prev, ...newHistoryChatrooms]);
                     setHistoryCheckVersion(prev => prev + 1);
@@ -431,6 +440,9 @@ function Messages() {
                   });
                   
                   if (hasCurrentUserMessage) {
+                    // PERMANENT MARK: Add to permanent ref
+                    permanentHistoryRef.current.add(chatroomIdStr);
+                    
                     setCheckedChatrooms(prev => new Set([...prev, chatroomIdStr]));
                     setChatroomsWithHistory(prev => {
                       const updated = new Set([...prev, chatroomIdStr]);
@@ -645,6 +657,11 @@ function Messages() {
 
 
   // Handle scroll to load more messages (infinite scroll)
+  // Memoize currentUserId to avoid recalculating it multiple times
+  const currentUserId = useMemo(() => {
+    return String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
+  }, [currentUser?._id, currentUser?.id, user?._id, user?.id]);
+
   const handleScroll = useCallback((e) => {
     const container = e.target || e.currentTarget;
     if (!container) return;
@@ -667,6 +684,47 @@ function Messages() {
     try {
       setMessagesLoading(true);
       setChatMessages([]); // Clear previous messages
+      
+      // CRITICAL: Check if chatroom already has history BEFORE fetching messages
+      // Use PERMANENT ref as primary source - this NEVER gets cleared
+      const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
+      const hasPermanentHistory = permanentHistoryRef.current.has(chatroomId);
+      const hasHistoryInState = chatroomsWithHistory.has(chatroomId);
+      
+      // Also check the chatroom in the list - if lastMessage is from current user, it has history
+      const chatroomInList = chatrooms.find(c => String(c._id || c.id || '') === chatroomId);
+      let hasHistoryFromLastMessage = false;
+      if (chatroomInList && chatroomInList.lastMessage && currentUserId) {
+        const lastMsgUserId = String(
+          chatroomInList.lastMessage.userId?._id || 
+          chatroomInList.lastMessage.userId?.id || 
+          chatroomInList.lastMessage.userId || 
+          ''
+        );
+        hasHistoryFromLastMessage = lastMsgUserId === currentUserId;
+      }
+      
+      const alreadyHasHistory = hasPermanentHistory || hasHistoryInState || hasHistoryFromLastMessage;
+      
+      // CRITICAL: If we detect history from any source, mark it permanently immediately
+      // This ensures the history is preserved before any async operations
+      if (alreadyHasHistory && !hasPermanentHistory) {
+        // PERMANENT MARK: Add to permanent ref - this NEVER gets cleared
+        permanentHistoryRef.current.add(chatroomId);
+        
+        if (!hasHistoryInState) {
+          setChatroomsWithHistory(prev => {
+            if (!prev.has(chatroomId)) {
+              const updated = new Set([...prev, chatroomId]);
+              setHistoryCheckVersion(prev => prev + 1);
+              return updated;
+            }
+            return prev;
+          });
+        }
+        setCheckedChatrooms(prev => new Set([...prev, chatroomId]));
+      }
+      
       const result = await getChatroomMessages(chatroomId, page, limit);
       if (result && result.messages) {
         // Messages are sorted newest first from backend - reverse to show newest at bottom
@@ -676,24 +734,91 @@ function Messages() {
         setHasMoreMessages(result.pagination?.hasMore || false);
 
         // CRITICAL: Check if current user has sent ANY messages in this chatroom (has chat history)
-        const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
         if (currentUserId) {
-          const hasCurrentUserMessages = result.messages.some(msg => {
-            const msgUserId = String(msg.userId?._id || msg.userId?.id || msg.userId || '');
-            return msgUserId === currentUserId;
-          });
-          
           // Mark as checked immediately
           setCheckedChatrooms(prev => new Set([...prev, chatroomId]));
           
-          // If found ANY message from current user, mark as having history
-          if (hasCurrentUserMessages) {
+          // CRITICAL: If chatroom already has history, preserve it (never remove)
+          // This prevents conversations from "All Messages" from moving back to "Message Requests"
+          
+          if (alreadyHasHistory) {
+            // PERMANENT MARK: Ensure it's in permanent ref
+            permanentHistoryRef.current.add(chatroomId);
+            
+            // Already marked as having history - ensure it stays that way PERMANENTLY
+            // No need to re-check, just ensure state is consistent
             setChatroomsWithHistory(prev => {
-              const updated = new Set([...prev, chatroomId]);
-              setHistoryCheckVersion(prev => prev + 1);
-              return updated;
+              if (!prev.has(chatroomId)) {
+                const updated = new Set([...prev, chatroomId]);
+                setHistoryCheckVersion(prev => prev + 1);
+                return updated;
+              }
+              return prev; // Keep existing history - NEVER remove
             });
+          } else {
+            // Check if current user has sent messages in this chatroom
+            // Check the first page (most recent messages) - if user has history, it's likely here
+            let hasCurrentUserMessages = result.messages.some(msg => {
+              const msgUserId = String(msg.userId?._id || msg.userId?.id || msg.userId || '');
+              return msgUserId === currentUserId;
+            });
+            
+            // If not found on first page and there are more pages, check the last page too
+            // (User's first message might be on the last page if it's an old conversation)
+            if (!hasCurrentUserMessages && result.pagination && result.pagination.pages > 1) {
+              try {
+                const lastPageResult = await getChatroomMessages(chatroomId, result.pagination.pages, 100);
+                if (lastPageResult && lastPageResult.messages) {
+                  hasCurrentUserMessages = lastPageResult.messages.some(msg => {
+                    const msgUserId = String(msg.userId?._id || msg.userId?.id || msg.userId || '');
+                    return msgUserId === currentUserId;
+                  });
+                }
+              } catch (error) {
+                console.error('Error checking last page for history:', error);
+                // If error, assume it has history (conservative approach)
+                hasCurrentUserMessages = true;
+              }
+            }
+            
+            // If found ANY message from current user, mark as having history PERMANENTLY
+            // This ensures the chatroom appears in "All Messages" tab and NEVER moves back
+            if (hasCurrentUserMessages) {
+              // PERMANENT MARK: Add to permanent ref - this NEVER gets cleared
+              permanentHistoryRef.current.add(chatroomId);
+              
+              setChatroomsWithHistory(prev => {
+                // Once added, it NEVER gets removed
+                const updated = new Set([...prev, chatroomId]);
+                setHistoryCheckVersion(prev => prev + 1);
+                return updated;
+              });
+            }
           }
+          
+          // Update the chatroom in the list to ensure UI reflects the latest message
+          setChatrooms(prev => prev.map(chatroom => {
+            const currentId = String(chatroom._id || chatroom.id || '');
+            if (currentId === chatroomId) {
+              // Ensure lastMessage reflects the latest message
+              const latestMessage = result.messages[0]; // Messages are sorted newest first
+              if (latestMessage) {
+                return {
+                  ...chatroom,
+                  lastMessage: {
+                    text: latestMessage.textDecrypted || latestMessage.textEncrypted || latestMessage.text || '',
+                    createdAt: latestMessage.createdAt || new Date(),
+                    userId: latestMessage.userId,
+                    type: latestMessage.type || 'text',
+                    fileUrl: latestMessage.fileUrl || null,
+                  },
+                  lastMessageAt: latestMessage.createdAt || new Date(),
+                };
+              }
+              return chatroom;
+            }
+            return chatroom;
+          }));
         }
 
         // Scroll to bottom after messages are set (newest messages)
@@ -760,11 +885,50 @@ function Messages() {
     };
   };
 
-  const handleSelectConversation = (chatroom) => {
-    // Normalize IDs for comparison
-    const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
+  const handleSelectConversation = useCallback((chatroom) => {
+    // Normalize IDs for comparison - use memoized currentUserId
+    const chatroomId = String(chatroom._id || chatroom.id || '');
     const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
     const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
+    
+    // CRITICAL: Mark conversations as having history when selected to prevent incorrect tab movement
+    // Strategy: If it's NOT a new message request, it has history - mark it permanently
+    if (chatroomId && currentUserId) {
+      // Check if lastMessage is from current user (definitive proof of history)
+      let hasHistoryFromLastMessage = false;
+      if (chatroom.lastMessage) {
+        const lastMsgUserId = String(
+          chatroom.lastMessage.userId?._id || 
+          chatroom.lastMessage.userId?.id || 
+          chatroom.lastMessage.userId || 
+          ''
+        );
+        hasHistoryFromLastMessage = lastMsgUserId === currentUserId;
+      }
+      
+      // Check if it's already marked as having history
+      const hasPermanentHistory = permanentHistoryRef.current.has(chatroomId);
+      const hasHistoryInState = chatroomsWithHistory.has(chatroomId);
+      
+      // If lastMessage is from current user, it DEFINITELY has history - mark permanently
+      // OR if we're in "All Messages" tab, it has history - mark permanently
+      // OR if it's already marked, ensure it stays marked
+      if (hasHistoryFromLastMessage || activeTab === 'all' || hasPermanentHistory || hasHistoryInState) {
+        if (!hasPermanentHistory) {
+          permanentHistoryRef.current.add(chatroomId);
+          if (!hasHistoryInState) {
+            setChatroomsWithHistory(prev => {
+              if (!prev.has(chatroomId)) {
+                const updated = new Set([...prev, chatroomId]);
+                setHistoryCheckVersion(prev => prev + 1);
+                return updated;
+              }
+              return prev;
+            });
+          }
+        }
+      }
+    }
     
     // Determine the other user - check if current user is userId or memberId
     let otherUser = null;
@@ -835,7 +999,7 @@ function Messages() {
     };
 
     setSelectedConversation(conversation);
-  };
+  }, [currentUserId, activeTab, chatroomsWithHistory]);
 
   const handleFileSelect = async (file) => {
     if (!selectedConversation || !isConnected) return;
@@ -1029,27 +1193,23 @@ function Messages() {
           // CRITICAL: If current user sent a message, mark this chatroom as having chat history
           // This means it's no longer a new user request, so it moves to "All Messages"
           if (!isFromOtherUser) {
-            // Mark as checked
+            // OPTIMISTIC UPDATE: Batch all state updates together for instant, smooth UX
+            // React 18+ automatically batches these updates for optimal performance
             setCheckedChatrooms(prev => new Set([...prev, chatroomIdStr]));
             
-            // Check if this was a message request (was in requests tab)
-            const wasMessageRequest = !chatroomsWithHistory.has(chatroomIdStr);
-            
-            // Mark chatroom as having chat history from current user
-            // This automatically moves it from "Message Requests" to "All Messages"
+            // CRITICAL: Once marked as having history, it NEVER gets removed
+            // This ensures conversations stay in "All Messages" and never move back to "Message Requests"
             setChatroomsWithHistory(prev => {
+              // If already has history, keep it (never remove)
+              if (prev.has(chatroomIdStr)) {
+                return prev;
+              }
+              // Otherwise, add it
               const updated = new Set([...prev, chatroomIdStr]);
-              // Force re-render to update filters immediately
               setHistoryCheckVersion(prev => prev + 1);
               return updated;
             });
-            
-            // If this was a message request and we're on the "requests" tab, switch to "all" tab
-            // This ensures the chatroom remains visible in the left panel
-            if (wasMessageRequest && activeTab === "requests") {
-              setActiveTab("all");
-              localStorage.setItem('messagesActiveTab', 'all');
-            }
+            // No backend refresh needed - state updates are instant and smooth
           }
           
           return {
@@ -1114,12 +1274,51 @@ function Messages() {
   };
 
   const handleProfileClick = async () => {
-    if (selectedConversation && selectedConversation.otherUser) {
-      try {
-        setLoadingProfile(true);
-        const userId = selectedConversation.otherUser._id || selectedConversation.otherUser.id;
-        if (userId) {
-          const userData = await getUserById(userId);
+    if (!selectedConversation) return;
+    
+    try {
+      setLoadingProfile(true);
+      
+      // Get user ID from otherUser if available, otherwise get from chatroom
+      let userId = null;
+      if (selectedConversation.otherUser) {
+        userId = selectedConversation.otherUser._id || selectedConversation.otherUser.id;
+      }
+      
+      // If otherUser is not available, get user ID from the chatroom data
+      if (!userId) {
+        // Find the chatroom in the chatrooms list to get the full data
+        const chatroom = chatrooms.find(c => 
+          (c._id || c.id) === (selectedConversation.id || selectedConversation.chatroomId)
+        );
+        
+        if (chatroom) {
+          // Determine which user is the "other user" (not the current user)
+          const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
+          const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
+          const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
+          
+          // Get the other user's ID
+          if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
+            // Current user is userId, so other user is memberId
+            userId = chatroomMemberId;
+          } else if (currentUserId && chatroomMemberId && currentUserId === chatroomMemberId) {
+            // Current user is memberId, so other user is userId
+            userId = chatroomUserId;
+          } else {
+            // Fallback: use the one that's not the current user
+            userId = currentUserId === chatroomUserId ? chatroomMemberId : chatroomUserId;
+          }
+          
+          // If userId is still a populated object, extract the ID
+          if (userId && typeof userId === 'object') {
+            userId = userId._id || userId.id;
+          }
+        }
+      }
+      
+      if (userId) {
+        const userData = await getUserById(userId);
           
           // Format user data to match TenantProfileDetail expected structure
           // Get name - prioritize first name + last name, fallback to email only if no name available
@@ -1197,17 +1396,20 @@ function Messages() {
           };
           setTenantProfileData(formattedTenantData);
           setShowProfileDetail(true);
+        } else {
+          toast.error('Unable to load user profile. User ID not found.');
         }
       } catch (error) {
         console.error('Error fetching tenant profile:', error);
         toast.error('Failed to load tenant profile');
-        // Still show profile detail with basic info
-        // Get name - prioritize first name + last name
-        const fallbackUserName = `${selectedConversation.otherUser.firstName || ''} ${selectedConversation.otherUser.lastName || ''}`.trim() || 'User';
-        
-        setTenantProfileData({
-          id: selectedConversation.otherUser._id || selectedConversation.otherUser.id,
-          name: fallbackUserName,
+        // Still show profile detail with basic info if we have otherUser data
+        if (selectedConversation.otherUser) {
+          // Get name - prioritize first name + last name
+          const fallbackUserName = `${selectedConversation.otherUser.firstName || ''} ${selectedConversation.otherUser.lastName || ''}`.trim() || 'User';
+          
+          setTenantProfileData({
+            id: selectedConversation.otherUser._id || selectedConversation.otherUser.id,
+            name: fallbackUserName,
           profileImage: null, // Use null instead of default path to show initials
           verified: false,
           description: '',
@@ -1248,22 +1450,22 @@ function Messages() {
           },
         });
         setShowProfileDetail(true);
+        }
       } finally {
         setLoadingProfile(false);
       }
-    }
   };
 
-  const handleBackToChat = () => {
+  const handleBackToChat = useCallback(() => {
     setShowProfileDetail(false);
     setTenantProfileData(null);
-  };
+  }, []);
 
-  const handleBackToMessageList = () => {
+  const handleBackToMessageList = useCallback(() => {
     setSelectedConversation(null);
     setShowProfileDetail(false);
     setTenantProfileData(null);
-  };
+  }, []);
 
   const handleDeleteChatroom = (chatroomId) => {
     setConfirmAction('delete');
@@ -1409,22 +1611,22 @@ function Messages() {
   // Helper function to check if a chatroom is a "new user" message request
   // A chatroom is a new user request if:
   // 1. The last message is from the OTHER user (not current user)
-  // 2. There are unread messages
+  // 2. There are unread messages (OR it's currently selected - to keep it visible when opened)
   // 3. The current user hasn't sent any messages yet (NO chat history from current user)
-  const isNewUserMessageRequest = (chatroom) => {
-    const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
+  // 4. It has been checked (to prevent flickering)
+  const isNewUserMessageRequest = useCallback((chatroom) => {
     if (!currentUserId) return false;
 
     const chatroomId = String(chatroom._id || chatroom.id || '');
     
-    // CRITICAL: If current user has already sent messages (has chat history),
-    // then it's NOT a new user request - EXCLUDE IMMEDIATELY
-    if (chatroomsWithHistory.has(chatroomId)) {
+    // CRITICAL: Check PERMANENT history first - this NEVER gets cleared
+    // If it's in permanent history, it's definitely NOT a new request
+    if (permanentHistoryRef.current.has(chatroomId)) {
       return false;
     }
-
-    // Must have unread messages - this is required for message requests
-    if (!chatroom.unreadCount || chatroom.unreadCount === 0) {
+    
+    // Also check state (for newly detected history)
+    if (chatroomsWithHistory.has(chatroomId)) {
       return false;
     }
 
@@ -1451,85 +1653,194 @@ function Messages() {
       return false;
     }
 
-    return true;
-  };
+    // CRITICAL: Must have unread messages (this ensures only NEW message requests are shown)
+    // EXCEPTION: If this is the currently selected conversation, show it even if unreadCount is 0
+    // (This keeps it visible when opened, but once user responds, chatroomsWithHistory will exclude it)
+    const isCurrentlySelected = selectedConversation && 
+                                 (selectedConversation.id === chatroomId || selectedConversation.chatroomId === chatroomId);
+    
+    if (!isCurrentlySelected && (!chatroom.unreadCount || chatroom.unreadCount === 0)) {
+      return false;
+    }
 
-  // Filter chatrooms based on search and active tab
-  const filteredChatrooms = chatrooms.filter(chatroom => {
-    const chatroomId = String(chatroom._id || chatroom.id || '');
-    const isChecked = checkedChatrooms.has(chatroomId);
-    const hasHistory = chatroomsWithHistory.has(chatroomId);
+    return true;
+  }, [currentUserId, chatroomsWithHistory, selectedConversation]);
+
+  // Helper function to check if a chatroom is a message request
+  // Only shows NEW message requests (where current user hasn't responded yet)
+  const isMessageRequestChatroom = useCallback((chatroom) => {
+    // Use the same logic as isNewUserMessageRequest - only show actual new requests
+    return isNewUserMessageRequest(chatroom);
+  }, [isNewUserMessageRequest]);
+
+  // Memoize history check logic to avoid recalculating
+  const checkHistoryFromLastMessage = useCallback((chatroom) => {
+    if (!chatroom.lastMessage || !currentUserId) return false;
+    const lastMsgUserId = String(
+      chatroom.lastMessage.userId?._id || 
+      chatroom.lastMessage.userId?.id || 
+      chatroom.lastMessage.userId || 
+      ''
+    );
+    return lastMsgUserId === currentUserId;
+  }, [currentUserId]);
+
+  // Filter chatrooms based on search and active tab - MEMOIZED for performance
+  const filteredChatrooms = useMemo(() => {
+    // Track chatrooms that need history marking (batch state updates)
+    const chatroomsToMark = [];
+    
+    const filtered = chatrooms.filter(chatroom => {
+      const chatroomId = String(chatroom._id || chatroom.id || '');
+      const isChecked = checkedChatrooms.has(chatroomId);
+      
+      // CRITICAL: Check PERMANENT history first - this is the most reliable source
+      // It NEVER gets cleared, so conversations with history stay in "All Messages" forever
+      const hasPermanentHistory = permanentHistoryRef.current.has(chatroomId);
+      const hasHistoryInState = chatroomsWithHistory.has(chatroomId);
+      
+      // Additional check - if lastMessage is from current user, it definitely has history
+      const hasHistoryFromLastMessage = checkHistoryFromLastMessage(chatroom);
+      
+      // If lastMessage indicates history, queue it for marking (batch update)
+      if (hasHistoryFromLastMessage && !hasPermanentHistory) {
+        chatroomsToMark.push(chatroomId);
+      }
+    
+    // Final history check: permanent ref OR state OR lastMessage
+    const finalHasHistory = hasPermanentHistory || hasHistoryInState || hasHistoryFromLastMessage;
     const isNewRequest = isNewUserMessageRequest(chatroom);
     
     // Filter by tab:
-    // - "requests" tab: Only show new user message requests (checked, no history, has unread)
+    // - "requests" tab: Only show NEW message requests (not responded to yet)
     // - "all" tab: Only show existing conversations (checked, has history, OR checked and no unread)
     
     if (activeTab === "requests") {
-      // Only show confirmed new user message requests
+      // STRICT FILTER: Only show NEW message requests (not responded to yet)
+      // This tab should NEVER show regular conversations or responded requests
       // CRITICAL: Must be checked first to prevent flickering
       if (!isChecked) {
         return false;
       }
+      // CRITICAL: If it has history (from state OR lastMessage), NEVER show in requests
+      if (finalHasHistory) {
+        return false;
+      }
+      // Show ONLY if it's a new message request (no history from current user)
+      // This ensures we only show actual message requests, not all messages
       if (!isNewRequest) {
         return false;
       }
     } else if (activeTab === "all") {
-      // Only show existing conversations
+      // Only show existing conversations (where current user has responded)
       // CRITICAL: Don't show unchecked chatrooms - wait for check to complete
       // This prevents new requests from appearing in "All Messages" before check completes
       if (!isChecked) {
         return false;
       }
-      // DO NOT show new user message requests in "All Messages"
-      if (isNewRequest) {
-        return false;
-      }
-    }
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      // Normalize IDs for comparison to correctly identify the other user
-      const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
-      const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
-      const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
       
-      // Determine the other user - check if current user is userId or memberId
-      let otherUser = null;
-      if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
-        // Current user is userId, so other user is memberId
-        otherUser = chatroom.memberId;
-      } else if (currentUserId && chatroomMemberId && currentUserId === chatroomMemberId) {
-        // Current user is memberId, so other user is userId
-        otherUser = chatroom.userId;
-      } else {
-        // Fallback: if we can't determine, try to use the one that's not null
-        otherUser = chatroom.memberId || chatroom.userId;
+    // PRIMARY CHECK: Show chatrooms that have history (current user has sent messages)
+    // PERMANENT ref check is the highest priority - if it's in permanent ref, ALWAYS show in "All Messages"
+    if (hasPermanentHistory) {
+      return true; // PERMANENTLY in "All Messages" - never moves back
+    }
+    
+    // SECONDARY CHECK: Use finalHasHistory which includes both state and lastMessage check
+    // This is the main criteria for "All Messages"
+    if (finalHasHistory) {
+      return true; // Definitely show it - user has responded
+    }
+      
+      // SECONDARY CHECK: If no history, only show if:
+      // 1. It's NOT a new request (safety check)
+      // 2. It has no unread messages (old conversation, not a new request)
+      // This handles edge cases where history check might not have completed yet
+      if (isNewRequest) {
+        return false; // Don't show new requests in "All Messages"
       }
-
-      // Ensure otherUser is an object, not just an ID string
-      if (otherUser && typeof otherUser === 'string') {
-        otherUser = null;
+      
+      // If it's checked, not a new request, and has no unread, it's likely an old conversation
+      // Show it in "All Messages" (this handles cases where history check is pending)
+      if (!chatroom.unreadCount || chatroom.unreadCount === 0) {
+        return true;
       }
-
-      const searchLower = searchQuery.toLowerCase();
-      const name = otherUser
-        ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email || ''
-        : '';
-
-      return name.toLowerCase().includes(searchLower) ||
-        (otherUser?.email || '').toLowerCase().includes(searchLower);
+      
+      // Default: don't show if we're not sure
+      return false;
     }
 
-    return true;
-  });
+      // Filter by search query
+      if (searchQuery.trim()) {
+        const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
+        const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
+        
+        // Determine the other user - check if current user is userId or memberId
+        let otherUser = null;
+        if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
+          // Current user is userId, so other user is memberId
+          otherUser = chatroom.memberId;
+        } else if (currentUserId && chatroomMemberId && currentUserId === chatroomMemberId) {
+          // Current user is memberId, so other user is userId
+          otherUser = chatroom.userId;
+        } else {
+          // Fallback: if we can't determine, try to use the one that's not null
+          otherUser = chatroom.memberId || chatroom.userId;
+        }
 
-  // Calculate counts for tabs
-  const allMessagesCount = chatrooms.filter(c => !isNewUserMessageRequest(c)).length;
-  const messageRequestsCount = chatrooms.filter(c => isNewUserMessageRequest(c)).length;
-  const messageRequestsUnreadCount = chatrooms
-    .filter(c => isNewUserMessageRequest(c))
-    .reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+        // Ensure otherUser is an object, not just an ID string
+        if (otherUser && typeof otherUser === 'string') {
+          otherUser = null;
+        }
+
+        const searchLower = searchQuery.toLowerCase();
+        const name = otherUser
+          ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email || ''
+          : '';
+
+        return name.toLowerCase().includes(searchLower) ||
+          (otherUser?.email || '').toLowerCase().includes(searchLower);
+      }
+
+      return true;
+    });
+    
+    // Batch update history marking (single state update instead of multiple)
+    if (chatroomsToMark.length > 0) {
+      // Use setTimeout to batch updates and avoid blocking render
+      setTimeout(() => {
+        chatroomsToMark.forEach(chatroomId => {
+          if (!permanentHistoryRef.current.has(chatroomId)) {
+            permanentHistoryRef.current.add(chatroomId);
+            setChatroomsWithHistory(prev => {
+              if (!prev.has(chatroomId)) {
+                const updated = new Set([...prev, chatroomId]);
+                setHistoryCheckVersion(prev => prev + 1);
+                return updated;
+              }
+              return prev;
+            });
+          }
+        });
+      }, 0);
+    }
+    
+    return filtered;
+  }, [chatrooms, activeTab, searchQuery, checkedChatrooms, chatroomsWithHistory, currentUserId, isNewUserMessageRequest, checkHistoryFromLastMessage]);
+
+  // Memoize counts for tabs - only recalculate when dependencies change
+  const { allMessagesCount, messageRequestsCount, messageRequestsUnreadCount } = useMemo(() => {
+    const all = chatrooms.filter(c => !isNewUserMessageRequest(c)).length;
+    const requests = chatrooms.filter(c => isNewUserMessageRequest(c)).length;
+    const unread = chatrooms
+      .filter(c => isNewUserMessageRequest(c))
+      .reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+    
+    return {
+      allMessagesCount: all,
+      messageRequestsCount: requests,
+      messageRequestsUnreadCount: unread
+    };
+  }, [chatrooms, isNewUserMessageRequest]);
 
   // Check verification status - use currentUser (fresh data) if available, otherwise use user from Redux
   const userForVerification = currentUser || user;
@@ -1619,7 +1930,54 @@ function Messages() {
               const newTab = "all";
               setActiveTab(newTab);
               localStorage.setItem('messagesActiveTab', newTab);
-              setSelectedConversation(null);
+              
+              // Smooth transition: Keep selected conversation if it belongs in "All Messages"
+              if (selectedConversation) {
+                const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
+                
+                // CRITICAL: Check permanent ref first (most reliable)
+                const hasPermanentHistory = permanentHistoryRef.current.has(chatroomId);
+                const hasHistoryInState = chatroomsWithHistory.has(chatroomId);
+                
+                // If it's being viewed in "All Messages" tab, it MUST have history
+                // Mark it permanently to prevent it from ever moving back to "Message Requests"
+                if (!hasPermanentHistory && !hasHistoryInState) {
+                  // Check if lastMessage indicates history
+                  const chatroom = chatrooms.find(c => String(c._id || c.id || '') === chatroomId);
+                  const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
+                  let hasHistoryFromLastMessage = false;
+                  if (chatroom && chatroom.lastMessage && currentUserId) {
+                    const lastMsgUserId = String(
+                      chatroom.lastMessage.userId?._id || 
+                      chatroom.lastMessage.userId?.id || 
+                      chatroom.lastMessage.userId || 
+                      ''
+                    );
+                    hasHistoryFromLastMessage = lastMsgUserId === currentUserId;
+                  }
+                  
+                  // If we're switching to "All Messages" and this conversation is selected,
+                  // it means it should have history - mark it permanently
+                  if (hasHistoryFromLastMessage || hasPermanentHistory || hasHistoryInState) {
+                    permanentHistoryRef.current.add(chatroomId);
+                    setChatroomsWithHistory(prev => {
+                      if (!prev.has(chatroomId)) {
+                        const updated = new Set([...prev, chatroomId]);
+                        setHistoryCheckVersion(prev => prev + 1);
+                        return updated;
+                      }
+                      return prev;
+                    });
+                  }
+                }
+                
+                const hasHistory = hasPermanentHistory || hasHistoryInState;
+                // Only clear if it's still a message request (no history)
+                // If it has history, keep it selected for smooth UX
+                if (!hasHistory) {
+                  setSelectedConversation(null);
+                }
+              }
             }}
             className={`relative pb-2 px-2 font-semibold text-base xl:text-lg font-nunito flex items-center gap-2 transition-colors border-b-2 ${activeTab === "all"
                 ? "text-[#6B4EFF] border-[#6B4EFF]"
@@ -1641,7 +1999,22 @@ function Messages() {
               const newTab = "requests";
               setActiveTab(newTab);
               localStorage.setItem('messagesActiveTab', newTab);
-              setSelectedConversation(null);
+              
+              // Smooth transition: Keep selected conversation if it's still a message request
+              if (selectedConversation) {
+                const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
+                
+                // CRITICAL: Check permanent ref first (most reliable)
+                const hasPermanentHistory = permanentHistoryRef.current.has(chatroomId);
+                const hasHistoryInState = chatroomsWithHistory.has(chatroomId);
+                const hasHistory = hasPermanentHistory || hasHistoryInState;
+                
+                // Only clear if it has history (user has responded)
+                // If no history, keep it selected for smooth UX
+                if (hasHistory) {
+                  setSelectedConversation(null);
+                }
+              }
             }}
             className={`relative pb-2 font-semibold px-2 text-base xl:text-lg font-nunito flex items-center gap-2 transition-colors border-b-2 ${activeTab === "requests"
                 ? "text-[#6B4EFF] border-[#6B4EFF]"
@@ -1657,11 +2030,11 @@ function Messages() {
             >
               {messageRequestsCount}
             </span>
-            {messageRequestsUnreadCount > 0 && (
+            {/* {messageRequestsUnreadCount > 0 && (
               <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                 {messageRequestsUnreadCount > 99 ? '99+' : messageRequestsUnreadCount}
               </span>
-            )}
+            )} */}
           </button>
         </div>
         )}
@@ -1669,12 +2042,14 @@ function Messages() {
         <div
           className={`flex gap-0 bg-white rounded-[20px] overflow-hidden ${!showProfileDetail && "border border-lightGray"
             }`}
+          style={{ position: 'relative' }}
         >
           {/* Left Panel - Message List */}
           {!showProfileDetail && (
             <div
               className={`${selectedConversation ? "hidden md:flex" : "flex"
-                } w-full md:w-96 lg:w-[400px] rounded-tl-[20px] rounded-bl-[20px] md:rounded-tr-none md:rounded-br-none rounded-[20px] md:rounded-[0] bg-white border-r border-lightGray md:border-r flex flex-col`}
+                } w-full md:w-96 lg:w-[400px] rounded-tl-[20px] rounded-bl-[20px] md:rounded-tr-none md:rounded-br-none rounded-[20px] md:rounded-[0] bg-white border-r border-lightGray md:border-r flex flex-col relative z-10`}
+              style={{ pointerEvents: 'auto' }}
             >
               {/* Header */}
               <div className="p-3 border-b border-lightGray">
@@ -1695,7 +2070,10 @@ function Messages() {
               </div>
 
               {/* Message List */}
-              <div className="flex-1 overflow-y-auto max-h-[calc(100vh-200px)]">
+              <div 
+                className="flex-1 overflow-y-auto max-h-[calc(100vh-200px)]"
+                style={{ pointerEvents: 'auto' }}
+              >
                 {loading ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6B4EFF]"></div>
@@ -1768,9 +2146,26 @@ function Messages() {
                     return (
                       <div
                         key={chatroomId}
-                        onClick={() => handleSelectConversation(chatroom)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          handleSelectConversation(chatroom);
+                        }}
                         className={`p-4 bg-[#F8F8F8] border-b border-lightGray cursor-pointer hover:bg-gray-50 transition-colors ${isSelected ? "bg-purple-50" : ""
                           }`}
+                        style={{ 
+                          pointerEvents: 'auto',
+                          opacity: 1,
+                          cursor: 'pointer'
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleSelectConversation(chatroom);
+                          }
+                        }}
                       >
                         <div className="flex items-start gap-3">
                           <div className="relative flex-shrink-0">
@@ -1884,7 +2279,8 @@ function Messages() {
                 ? "flex"
                 : "hidden md:flex"
               } flex-col bg-white rounded-tr-[20px] rounded-br-[20px] md:rounded-tl-none md:rounded-bl-none rounded-[20px] md:rounded-[0] overflow-y-auto ${showProfileDetail ? "w-full" : "flex-1"
-              }`}
+              } relative z-0`}
+            style={{ pointerEvents: 'auto' }}
           >
             {showProfileDetail && tenantProfileData ? (
               <TenantProfileDetail

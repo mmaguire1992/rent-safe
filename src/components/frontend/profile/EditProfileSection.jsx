@@ -775,6 +775,22 @@ function EditProfileSection() {
       }
       
       if (file) {
+        // Validate that the file is an image
+        const validImageTypes = ['image/heic', 'image/webp', 'image/png', 'image/jpeg', 'image/jpg'];
+        const fileType = file.type.toLowerCase();
+        const fileName = file.name.toLowerCase();
+        const isValidImage = validImageTypes.includes(fileType) || 
+                           fileName.endsWith('.heic') || 
+                           fileName.endsWith('.webp') || 
+                           fileName.endsWith('.png') || 
+                           fileName.endsWith('.jpg') || 
+                           fileName.endsWith('.jpeg');
+        
+        if (!isValidImage) {
+          toast.error('Please select only image files (HEIC, WEBP, PNG, or JPG)');
+          return;
+        }
+        
         setFormData((prev) => ({ ...prev, profileImage: file }));
       }
     } catch (error) {
