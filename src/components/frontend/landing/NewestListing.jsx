@@ -174,7 +174,7 @@ function NewestListing() {
           <div className="flex justify-center mb-4">
             <span className="border-[#6B4EFF33] border bg-badgeGradient rounded-2xl px-4 py-2 text-sm text-[#4A2FCC] font-semibold uppercase inline-flex items-center gap-2">
               <BlueTrustedIcon />
-              Trusted UK Renting
+             VERIFIED LISTING
             </span>
           </div>
 

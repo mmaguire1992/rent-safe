@@ -226,7 +226,7 @@ function BasicInformation() {
           <div>
             <label
               htmlFor="fullName"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Full Name
             </label>
@@ -250,7 +250,7 @@ function BasicInformation() {
           <div>
             <label
               htmlFor="email"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Email Address
             </label>
@@ -274,7 +274,7 @@ function BasicInformation() {
           <div>
             <label
               htmlFor="phoneNumber"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Phone Number
             </label>
@@ -300,7 +300,7 @@ function BasicInformation() {
           <div>
             <label
               htmlFor="state"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               State
             </label>
@@ -324,7 +324,7 @@ function BasicInformation() {
           <div>
             <label
               htmlFor="country"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Country
             </label>
@@ -348,7 +348,7 @@ function BasicInformation() {
           <div>
             <label
               htmlFor="companyName"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Company Name (if applicable)
             </label>
@@ -367,7 +367,7 @@ function BasicInformation() {
           <div>
             <label
               htmlFor="password"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Create Password
             </label>
@@ -404,7 +404,7 @@ function BasicInformation() {
           <div>
             <label
               htmlFor="confirmPassword"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Re-enter Password
             </label>

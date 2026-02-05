@@ -17,7 +17,7 @@ function ProfileSection() {
                 Create a profile to showcase to potential agents
               </h2>
 
-              <p className="text-base md:text-lg text-white max-w-2xl font-nunito opacity-90">
+              <p className="text-base md:text-lg !text-white max-w-2xl font-nunito">
                 Join thousands of renters and property owners who trust RentEase
                 for their rental needs
               </p>

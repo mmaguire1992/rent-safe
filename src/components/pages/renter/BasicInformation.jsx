@@ -243,7 +243,7 @@ function RenterBasicInformation() {
           <div>
             <label
               htmlFor="fullName"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Full Name <span className="text-errorColor">*</span>
             </label>
@@ -267,7 +267,7 @@ function RenterBasicInformation() {
           <div>
             <label
               htmlFor="email"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Email Address <span className="text-errorColor">*</span>
             </label>
@@ -291,7 +291,7 @@ function RenterBasicInformation() {
           <div>
             <label
               htmlFor="phoneNumber"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Phone Number
             </label>
@@ -317,7 +317,7 @@ function RenterBasicInformation() {
           <div>
             <label
               htmlFor="address"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Address
             </label>
@@ -341,7 +341,7 @@ function RenterBasicInformation() {
           <div>
             <label
               htmlFor="city"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               City
             </label>
@@ -365,7 +365,7 @@ function RenterBasicInformation() {
           <div>
             <label
               htmlFor="state"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               State
             </label>
@@ -389,7 +389,7 @@ function RenterBasicInformation() {
           <div>
             <label
               htmlFor="country"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Country
             </label>
@@ -413,7 +413,7 @@ function RenterBasicInformation() {
           <div>
             <label
               htmlFor="postalCode"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Postal Code
             </label>
@@ -439,7 +439,7 @@ function RenterBasicInformation() {
           <div>
             <label
               htmlFor="occupation"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Designation
             </label>
@@ -465,7 +465,7 @@ function RenterBasicInformation() {
           <div>
             <label
               htmlFor="monthlyIncome"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Monthly Income (£)
             </label>
@@ -491,7 +491,7 @@ function RenterBasicInformation() {
           <div>
             <label
               htmlFor="description"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Description
             </label>
@@ -509,7 +509,7 @@ function RenterBasicInformation() {
           <div>
             <label
               htmlFor="password"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Create Password <span className="text-errorColor">*</span>
             </label>
@@ -546,7 +546,7 @@ function RenterBasicInformation() {
           <div>
             <label
               htmlFor="confirmPassword"
-              className="block text-base font-medium text-secondary mb-1"
+              className="block text-base font-semibold text-secondary mb-1"
             >
               Re-enter Password
             </label>

@@ -189,7 +189,7 @@ function Login() {
               />
               <Link
                 to="/forgot-password"
-                className="text-sm text-primary font-semibold"
+                className="text-sm text-primary font-semibold hover:underline"
               >
                 Forgot Password?
               </Link>
@@ -211,7 +211,7 @@ function Login() {
           <span className="text-base font-normal text-darkGray">
             Don't have an account?{" "}
           </span>
-          <Link to="/signup" className="text-primary text-base font-bold">
+          <Link to="/signup" className="text-primary text-base font-bold hover:underline">
             Create an account
           </Link>
         </div>
@@ -219,11 +219,11 @@ function Login() {
         {/* Terms and Privacy */}
         <div className="mt-6 text-sm font-normal text-darkGray">
           By logging in, you agreed to our{" "}
-          <Link to="/terms" className="text-primary text-sm font-bold">
+          <Link to="/terms" className="text-primary text-sm font-bold hover:underline">
             Terms & Conditions
           </Link>{" "}
           and{" "}
-          <Link to="/privacy" className="text-primary text-sm font-bold">
+          <Link to="/privacy" className="text-primary text-sm font-bold hover:underline">
             Privacy Policy
           </Link>
         </div>

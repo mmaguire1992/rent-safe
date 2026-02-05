@@ -58,7 +58,7 @@ function VerifyAccount() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* ID Proof */}
           <div>
-            <label className="block text-base font-medium text-secondary mb-1">
+            <label className="block text-base font-semibold text-secondary mb-1">
               ID Proof
             </label>
             <div className="mb-3">
