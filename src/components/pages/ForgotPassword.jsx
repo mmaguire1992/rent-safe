@@ -230,7 +230,7 @@ function ForgotPassword() {
             </div>
 
             {/* Email Form */}
-            <form onSubmit={handleEmailSubmit} className="space-y-5">
+            <form onSubmit={handleEmailSubmit} className="space-y-5" noValidate>
               {/* Email Field */}
               <div>
                 <label
@@ -246,10 +246,19 @@ function ForgotPassword() {
                   value={email}
                   onChange={handleEmailChange}
                   placeholder="Enter your registered email address"
-                  className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0  ${
+                  // className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0  ${
+                  //   error ? "border-errorColor" : "border-lightGray"
+                  // }`}
+                  title=""
+                  className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
                     error ? "border-errorColor" : "border-lightGray"
                   }`}
                 />
+                {error && (
+    <p className="text-errorColor text-sm mt-1.5">
+      {error}
+    </p>
+  )}
               </div>
 
               {/* Continue Button */}
@@ -275,7 +284,7 @@ function ForgotPassword() {
             </div>
 
             {/* OTP Form */}
-            <form onSubmit={handleOtpSubmit} className="space-y-4">
+            <form onSubmit={handleOtpSubmit} className="space-y-4" noValidate>
               {/* OTP Input Fields */}
               <div>
                 <div className="flex justify-center gap-3">

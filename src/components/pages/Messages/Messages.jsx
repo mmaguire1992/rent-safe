@@ -112,7 +112,7 @@ function Messages() {
               lastMessage: null,
             };
           }
-          
+
           if (typeof chatroom.lastMessage === 'string') {
             return {
               ...chatroom,
@@ -122,14 +122,14 @@ function Messages() {
               },
             };
           }
-          
+
           if (typeof chatroom.lastMessage === 'object') {
             // Ensure it has a text property - check multiple possible fields
-            const text = chatroom.lastMessage.text || 
-                        chatroom.lastMessage.textDecrypted || 
-                        chatroom.lastMessage.textEncrypted || 
-                        '';
-            
+            const text = chatroom.lastMessage.text ||
+              chatroom.lastMessage.textDecrypted ||
+              chatroom.lastMessage.textEncrypted ||
+              '';
+
             return {
               ...chatroom,
               lastMessage: {
@@ -141,14 +141,14 @@ function Messages() {
               },
             };
           }
-          
+
           return {
             ...chatroom,
             lastMessage: null,
           };
         });
         setChatrooms(normalizedChatrooms);
-        
+
         // CRITICAL: Check which chatrooms have chat history (current user has sent messages)
         // This determines which chatrooms should appear in "All Messages" vs "Message Requests"
         const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
@@ -156,16 +156,16 @@ function Messages() {
           // First, mark chatrooms where last message is from current user (definitely has history)
           const chatroomsWithUserHistory = new Set();
           const potentialNewRequests = [];
-          
+
           normalizedChatrooms.forEach(chatroom => {
             const chatroomId = String(chatroom._id || chatroom.id || '');
-            
+
             // If lastMessage exists and is from current user, mark as having history
             if (chatroom.lastMessage && chatroom.lastMessage.userId) {
               const lastMessageUserId = String(
-                chatroom.lastMessage.userId?._id || 
-                chatroom.lastMessage.userId?.id || 
-                chatroom.lastMessage.userId || 
+                chatroom.lastMessage.userId?._id ||
+                chatroom.lastMessage.userId?.id ||
+                chatroom.lastMessage.userId ||
                 ''
               );
               if (lastMessageUserId === currentUserId) {
@@ -173,21 +173,21 @@ function Messages() {
                 setCheckedChatrooms(prev => new Set([...prev, chatroomId]));
               }
             }
-            
+
             // CRITICAL: Mark chatrooms without unread messages as checked immediately
             // These can't be new requests, so they should show in "All Messages" right away
             if (!chatroom.unreadCount || chatroom.unreadCount === 0) {
               setCheckedChatrooms(prev => new Set([...prev, chatroomId]));
             }
-            
+
             // Identify potential new requests: unread messages + last message from other user
             // These need async check before showing
             if (chatroom.unreadCount > 0 && !chatroomsWithUserHistory.has(chatroomId)) {
               if (chatroom.lastMessage && chatroom.lastMessage.userId) {
                 const lastMessageUserId = String(
-                  chatroom.lastMessage.userId?._id || 
-                  chatroom.lastMessage.userId?.id || 
-                  chatroom.lastMessage.userId || 
+                  chatroom.lastMessage.userId?._id ||
+                  chatroom.lastMessage.userId?.id ||
+                  chatroom.lastMessage.userId ||
                   ''
                 );
                 if (lastMessageUserId && lastMessageUserId !== currentUserId) {
@@ -196,53 +196,53 @@ function Messages() {
               }
             }
           });
-          
+
           // Set initial history state for chatrooms where last message is from current user
           if (chatroomsWithUserHistory.size > 0) {
             // PERMANENT MARK: Add all to permanent ref
             chatroomsWithUserHistory.forEach(id => permanentHistoryRef.current.add(id));
-            
+
             setChatroomsWithHistory(prev => new Set([...prev, ...chatroomsWithUserHistory]));
           }
-          
+
           // Check message history for potential new requests (optimized - check only first and last page)
           if (potentialNewRequests.length > 0) {
             console.log(`[History Check] Checking ${potentialNewRequests.length} potential new requests`);
             const PAGE_SIZE = 100;
             const MAX_PAGES_TO_CHECK = 2; // Only check first and last page for performance
-            
+
             // Process in batches to avoid overwhelming the server
             const BATCH_SIZE = 3; // Check 3 chatrooms at a time
             const batches = [];
             for (let i = 0; i < potentialNewRequests.length; i += BATCH_SIZE) {
               batches.push(potentialNewRequests.slice(i, i + BATCH_SIZE));
             }
-            
+
             // Process batches sequentially to avoid overwhelming the server
             const processBatch = async (batch) => {
               return Promise.all(
                 batch.map(async (chatroom) => {
                   try {
                     const chatroomId = String(chatroom._id || chatroom.id || '');
-                    
+
                     // Get first page to know total pages
                     const firstPageResult = await getChatroomMessages(chatroomId, 1, PAGE_SIZE);
                     if (!firstPageResult || !firstPageResult.messages || firstPageResult.messages.length === 0) {
                       setCheckedChatrooms(prev => new Set([...prev, chatroomId]));
                       return { chatroomId, hasHistory: false };
                     }
-                    
+
                     // Check first page (newest messages) - most likely to have user messages
                     let hasCurrentUserMessage = firstPageResult.messages.some(msg => {
                       const msgUserId = String(msg.userId?._id || msg.userId?.id || msg.userId || '');
                       return msgUserId === currentUserId;
                     });
-                    
+
                     if (hasCurrentUserMessage) {
                       setCheckedChatrooms(prev => new Set([...prev, chatroomId]));
                       return { chatroomId, hasHistory: true };
                     }
-                    
+
                     // Only check last page if there are multiple pages (optimization)
                     const totalPages = firstPageResult.pagination?.pages || 1;
                     if (totalPages > 1) {
@@ -252,14 +252,14 @@ function Messages() {
                           const msgUserId = String(msg.userId?._id || msg.userId?.id || msg.userId || '');
                           return msgUserId === currentUserId;
                         });
-                        
+
                         if (hasCurrentUserMessage) {
                           setCheckedChatrooms(prev => new Set([...prev, chatroomId]));
                           return { chatroomId, hasHistory: true };
                         }
                       }
                     }
-                    
+
                     // Mark as checked - if we got here, no messages from current user found
                     setCheckedChatrooms(prev => new Set([...prev, chatroomId]));
                     return { chatroomId, hasHistory: false };
@@ -273,14 +273,14 @@ function Messages() {
                 })
               );
             };
-            
+
             // Process all batches sequentially
             (async () => {
               const allResults = [];
               for (const batch of batches) {
                 const batchResults = await processBatch(batch);
                 allResults.push(...batchResults);
-                
+
                 // Update state after each batch for better UX
                 const newHistoryChatrooms = new Set();
                 batchResults.forEach((result) => {
@@ -288,11 +288,11 @@ function Messages() {
                     newHistoryChatrooms.add(result.chatroomId);
                   }
                 });
-                
+
                 if (newHistoryChatrooms.size > 0) {
                   // PERMANENT MARK: Add all to permanent ref
                   newHistoryChatrooms.forEach(id => permanentHistoryRef.current.add(id));
-                  
+
                   setChatroomsWithHistory(prev => {
                     const updated = new Set([...prev, ...newHistoryChatrooms]);
                     setHistoryCheckVersion(prev => prev + 1);
@@ -321,7 +321,7 @@ function Messages() {
       const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
       const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
       const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
-      
+
       // Determine the other user - check if current user is userId or memberId
       let otherUser = null;
       if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
@@ -341,7 +341,7 @@ function Messages() {
       }
 
       // Get profile image from userInfoId
-      const profileImage = otherUser && typeof otherUser === 'object' 
+      const profileImage = otherUser && typeof otherUser === 'object'
         ? (otherUser.userInfoId?.profileImage || otherUser.userInfo?.profileImage || null)
         : null;
 
@@ -424,7 +424,7 @@ function Messages() {
         // IMPORTANT: Update AFTER checking if selected, so unread count logic works correctly
         if (chatroomIdStr && chatroomIdStr !== 'undefined' && chatroomIdStr !== 'null' && !isFromCurrentUser) {
           updateChatroomLastMessage(chatroomIdStr, message, isForSelectedConversation);
-          
+
           // CRITICAL: Check for history when new messages arrive from other users
           // If chatroom hasn't been checked yet, check it now
           if (!checkedChatrooms.has(chatroomIdStr) && !chatroomsWithHistory.has(chatroomIdStr)) {
@@ -438,11 +438,11 @@ function Messages() {
                     const msgUserId = String(msg.userId?._id || msg.userId?.id || msg.userId || '');
                     return msgUserId === currentUserId;
                   });
-                  
+
                   if (hasCurrentUserMessage) {
                     // PERMANENT MARK: Add to permanent ref
                     permanentHistoryRef.current.add(chatroomIdStr);
-                    
+
                     setCheckedChatrooms(prev => new Set([...prev, chatroomIdStr]));
                     setChatroomsWithHistory(prev => {
                       const updated = new Set([...prev, chatroomIdStr]);
@@ -490,7 +490,7 @@ function Messages() {
           return [...filtered, formattedMessage];
         });
         scrollToBottom();
-        
+
         // Update chatroom list with last message (for sender's own messages)
         const chatroomIdStr = String(message.chatroomId || message.chatroom?._id || message.chatroom?.id || '');
         if (chatroomIdStr && chatroomIdStr !== 'undefined' && chatroomIdStr !== 'null') {
@@ -684,34 +684,34 @@ function Messages() {
     try {
       setMessagesLoading(true);
       setChatMessages([]); // Clear previous messages
-      
+
       // CRITICAL: Check if chatroom already has history BEFORE fetching messages
       // Use PERMANENT ref as primary source - this NEVER gets cleared
       const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
       const hasPermanentHistory = permanentHistoryRef.current.has(chatroomId);
       const hasHistoryInState = chatroomsWithHistory.has(chatroomId);
-      
+
       // Also check the chatroom in the list - if lastMessage is from current user, it has history
       const chatroomInList = chatrooms.find(c => String(c._id || c.id || '') === chatroomId);
       let hasHistoryFromLastMessage = false;
       if (chatroomInList && chatroomInList.lastMessage && currentUserId) {
         const lastMsgUserId = String(
-          chatroomInList.lastMessage.userId?._id || 
-          chatroomInList.lastMessage.userId?.id || 
-          chatroomInList.lastMessage.userId || 
+          chatroomInList.lastMessage.userId?._id ||
+          chatroomInList.lastMessage.userId?.id ||
+          chatroomInList.lastMessage.userId ||
           ''
         );
         hasHistoryFromLastMessage = lastMsgUserId === currentUserId;
       }
-      
+
       const alreadyHasHistory = hasPermanentHistory || hasHistoryInState || hasHistoryFromLastMessage;
-      
+
       // CRITICAL: If we detect history from any source, mark it permanently immediately
       // This ensures the history is preserved before any async operations
       if (alreadyHasHistory && !hasPermanentHistory) {
         // PERMANENT MARK: Add to permanent ref - this NEVER gets cleared
         permanentHistoryRef.current.add(chatroomId);
-        
+
         if (!hasHistoryInState) {
           setChatroomsWithHistory(prev => {
             if (!prev.has(chatroomId)) {
@@ -724,7 +724,7 @@ function Messages() {
         }
         setCheckedChatrooms(prev => new Set([...prev, chatroomId]));
       }
-      
+
       const result = await getChatroomMessages(chatroomId, page, limit);
       if (result && result.messages) {
         // Messages are sorted newest first from backend - reverse to show newest at bottom
@@ -737,14 +737,14 @@ function Messages() {
         if (currentUserId) {
           // Mark as checked immediately
           setCheckedChatrooms(prev => new Set([...prev, chatroomId]));
-          
+
           // CRITICAL: If chatroom already has history, preserve it (never remove)
           // This prevents conversations from "All Messages" from moving back to "Message Requests"
-          
+
           if (alreadyHasHistory) {
             // PERMANENT MARK: Ensure it's in permanent ref
             permanentHistoryRef.current.add(chatroomId);
-            
+
             // Already marked as having history - ensure it stays that way PERMANENTLY
             // No need to re-check, just ensure state is consistent
             setChatroomsWithHistory(prev => {
@@ -762,7 +762,7 @@ function Messages() {
               const msgUserId = String(msg.userId?._id || msg.userId?.id || msg.userId || '');
               return msgUserId === currentUserId;
             });
-            
+
             // If not found on first page and there are more pages, check the last page too
             // (User's first message might be on the last page if it's an old conversation)
             if (!hasCurrentUserMessages && result.pagination && result.pagination.pages > 1) {
@@ -780,13 +780,13 @@ function Messages() {
                 hasCurrentUserMessages = true;
               }
             }
-            
+
             // If found ANY message from current user, mark as having history PERMANENTLY
             // This ensures the chatroom appears in "All Messages" tab and NEVER moves back
             if (hasCurrentUserMessages) {
               // PERMANENT MARK: Add to permanent ref - this NEVER gets cleared
               permanentHistoryRef.current.add(chatroomId);
-              
+
               setChatroomsWithHistory(prev => {
                 // Once added, it NEVER gets removed
                 const updated = new Set([...prev, chatroomId]);
@@ -795,7 +795,7 @@ function Messages() {
               });
             }
           }
-          
+
           // Update the chatroom in the list to ensure UI reflects the latest message
           setChatrooms(prev => prev.map(chatroom => {
             const currentId = String(chatroom._id || chatroom.id || '');
@@ -890,7 +890,7 @@ function Messages() {
     const chatroomId = String(chatroom._id || chatroom.id || '');
     const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
     const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
-    
+
     // CRITICAL: Mark conversations as having history when selected to prevent incorrect tab movement
     // Strategy: If it's NOT a new message request, it has history - mark it permanently
     if (chatroomId && currentUserId) {
@@ -898,18 +898,18 @@ function Messages() {
       let hasHistoryFromLastMessage = false;
       if (chatroom.lastMessage) {
         const lastMsgUserId = String(
-          chatroom.lastMessage.userId?._id || 
-          chatroom.lastMessage.userId?.id || 
-          chatroom.lastMessage.userId || 
+          chatroom.lastMessage.userId?._id ||
+          chatroom.lastMessage.userId?.id ||
+          chatroom.lastMessage.userId ||
           ''
         );
         hasHistoryFromLastMessage = lastMsgUserId === currentUserId;
       }
-      
+
       // Check if it's already marked as having history
       const hasPermanentHistory = permanentHistoryRef.current.has(chatroomId);
       const hasHistoryInState = chatroomsWithHistory.has(chatroomId);
-      
+
       // If lastMessage is from current user, it DEFINITELY has history - mark permanently
       // OR if we're in "All Messages" tab, it has history - mark permanently
       // OR if it's already marked, ensure it stays marked
@@ -929,7 +929,7 @@ function Messages() {
         }
       }
     }
-    
+
     // Determine the other user - check if current user is userId or memberId
     let otherUser = null;
     if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
@@ -950,30 +950,30 @@ function Messages() {
 
     // Determine block status using timestamp fields (handles mutual blocking)
     const isCurrentUserUserId = currentUserId === String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
-    
+
     // Check if current user blocked the other user (using timestamp fields)
-    const blockedAtByCurrentUser = isCurrentUserUserId 
-      ? chatroom.blockedAtByUserId 
+    const blockedAtByCurrentUser = isCurrentUserUserId
+      ? chatroom.blockedAtByUserId
       : chatroom.blockedAtByMemberId;
-    const unblockedAtByCurrentUser = isCurrentUserUserId 
-      ? chatroom.unblockedAtByUserId 
+    const unblockedAtByCurrentUser = isCurrentUserUserId
+      ? chatroom.unblockedAtByUserId
       : chatroom.unblockedAtByMemberId;
     const isBlockedByCurrentUser = blockedAtByCurrentUser && !unblockedAtByCurrentUser;
-    
+
     // Check if current user is blocked by the other user (using timestamp fields)
-    const blockedAtByOtherUser = isCurrentUserUserId 
-      ? chatroom.blockedAtByMemberId 
+    const blockedAtByOtherUser = isCurrentUserUserId
+      ? chatroom.blockedAtByMemberId
       : chatroom.blockedAtByUserId;
-    const unblockedAtByOtherUser = isCurrentUserUserId 
-      ? chatroom.unblockedAtByMemberId 
+    const unblockedAtByOtherUser = isCurrentUserUserId
+      ? chatroom.unblockedAtByMemberId
       : chatroom.unblockedAtByUserId;
     const isCurrentUserBlocked = blockedAtByOtherUser && !unblockedAtByOtherUser;
-    
+
     // Legacy field for backward compatibility (but we use timestamp-based logic above)
     const isBlocked = isBlockedByCurrentUser || isCurrentUserBlocked;
 
     // Get profile image from userInfoId
-    const profileImage = otherUser && typeof otherUser === 'object' 
+    const profileImage = otherUser && typeof otherUser === 'object'
       ? (otherUser.userInfoId?.profileImage || otherUser.userInfo?.profileImage || null)
       : null;
 
@@ -1041,15 +1041,15 @@ function Messages() {
         if (msg.sender !== "you") {
           return false;
         }
-        
+
         // Check if message has the same file name and size, and same message type
         // This detects when old and new screenshots are the same
-        const sameFileName = msg.fileName && uploadResult.fileName && 
-                            msg.fileName.toLowerCase() === uploadResult.fileName.toLowerCase();
-        const sameFileSize = msg.fileSize && uploadResult.fileSize && 
-                            msg.fileSize === uploadResult.fileSize;
+        const sameFileName = msg.fileName && uploadResult.fileName &&
+          msg.fileName.toLowerCase() === uploadResult.fileName.toLowerCase();
+        const sameFileSize = msg.fileSize && uploadResult.fileSize &&
+          msg.fileSize === uploadResult.fileSize;
         const sameType = (msg.type === messageType || (msg.type === 'image' && messageType === 'image'));
-        
+
         return sameType && sameFileName && sameFileSize;
       });
 
@@ -1098,7 +1098,7 @@ function Messages() {
 
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedConversation || !isConnected) return;
-    
+
     // Check user verification status - use currentUser (fresh data) if available, otherwise use user from Redux
     const userForVerification = currentUser || user;
     if (!userForVerification) {
@@ -1109,7 +1109,7 @@ function Messages() {
       toast.error(getVerificationMessage('chat with other users'));
       return;
     }
-    
+
     // Don't allow sending if blocked
     if (selectedConversation.isBlockedByCurrentUser || selectedConversation.isCurrentUserBlocked) {
       return;
@@ -1178,25 +1178,25 @@ function Messages() {
           const messageUserId = String(message.userId?._id || message.userId?.id || message.userId || '');
           const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
           const isFromOtherUser = messageUserId && currentUserId && messageUserId !== currentUserId;
-          
+
           // Only increment unread if:
           // 1. Message is from other user (not current user)
           // 2. Conversation is NOT currently selected
           const shouldIncrementUnread = isFromOtherUser && !isSelected;
-          
+
           // Calculate new unread count
           const currentUnreadCount = chatroom.unreadCount || 0;
-          const newUnreadCount = shouldIncrementUnread 
-            ? currentUnreadCount + 1 
+          const newUnreadCount = shouldIncrementUnread
+            ? currentUnreadCount + 1
             : currentUnreadCount;
-          
+
           // CRITICAL: If current user sent a message, mark this chatroom as having chat history
           // This means it's no longer a new user request, so it moves to "All Messages"
           if (!isFromOtherUser) {
             // OPTIMISTIC UPDATE: Batch all state updates together for instant, smooth UX
             // React 18+ automatically batches these updates for optimal performance
             setCheckedChatrooms(prev => new Set([...prev, chatroomIdStr]));
-            
+
             // CRITICAL: Once marked as having history, it NEVER gets removed
             // This ensures conversations stay in "All Messages" and never move back to "Message Requests"
             setChatroomsWithHistory(prev => {
@@ -1211,7 +1211,7 @@ function Messages() {
             });
             // No backend refresh needed - state updates are instant and smooth
           }
-          
+
           return {
             ...chatroom,
             lastMessage: {
@@ -1275,29 +1275,29 @@ function Messages() {
 
   const handleProfileClick = async () => {
     if (!selectedConversation) return;
-    
+
     try {
       setLoadingProfile(true);
-      
+
       // Get user ID from otherUser if available, otherwise get from chatroom
       let userId = null;
       if (selectedConversation.otherUser) {
         userId = selectedConversation.otherUser._id || selectedConversation.otherUser.id;
       }
-      
+
       // If otherUser is not available, get user ID from the chatroom data
       if (!userId) {
         // Find the chatroom in the chatrooms list to get the full data
-        const chatroom = chatrooms.find(c => 
+        const chatroom = chatrooms.find(c =>
           (c._id || c.id) === (selectedConversation.id || selectedConversation.chatroomId)
         );
-        
+
         if (chatroom) {
           // Determine which user is the "other user" (not the current user)
           const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
           const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
           const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
-          
+
           // Get the other user's ID
           if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
             // Current user is userId, so other user is memberId
@@ -1309,107 +1309,107 @@ function Messages() {
             // Fallback: use the one that's not the current user
             userId = currentUserId === chatroomUserId ? chatroomMemberId : chatroomUserId;
           }
-          
+
           // If userId is still a populated object, extract the ID
           if (userId && typeof userId === 'object') {
             userId = userId._id || userId.id;
           }
         }
       }
-      
+
       if (userId) {
         const userData = await getUserById(userId);
-          
-          // Format user data to match TenantProfileDetail expected structure
-          // Get name - prioritize first name + last name, fallback to email only if no name available
-          const userName = userData.userInfo?.name?.first && userData.userInfo?.name?.last
-            ? `${userData.userInfo.name.first} ${userData.userInfo.name.last}`.trim()
-            : userData.firstName && userData.lastName
+
+        // Format user data to match TenantProfileDetail expected structure
+        // Get name - prioritize first name + last name, fallback to email only if no name available
+        const userName = userData.userInfo?.name?.first && userData.userInfo?.name?.last
+          ? `${userData.userInfo.name.first} ${userData.userInfo.name.last}`.trim()
+          : userData.firstName && userData.lastName
             ? `${userData.firstName} ${userData.lastName}`.trim()
             : null; // Don't use email as name, will show initials instead
-          
-          const formattedTenantData = {
-            id: userData._id || userData.id, // Add user ID for references
-            name: userName || 'User', // Use 'User' as fallback instead of email
-            profileImage: userData.userInfo?.profileImage || null, // Use null instead of default path
-            verified: userData.isEmailVerified || userData.userInfo?.verificationStatus === 'verified',
-            description: userData.userInfo?.bio || '',
-            designation: userData.userInfo?.employment?.jobTitle || 'N/A',
-            location: userData.userInfo?.address
-              ? [userData.userInfo.address.city, userData.userInfo.address.country]
-                  .filter(Boolean)
-                  .join(', ') || 'N/A'
-              : 'N/A',
-            monthlyIncome: userData.userInfo?.employment?.monthlyIncome 
-              ? `£${userData.userInfo.employment.monthlyIncome.toLocaleString()}` 
-              : userData.userInfo?.proofOfIncome?.grossMonthly 
+
+        const formattedTenantData = {
+          id: userData._id || userData.id, // Add user ID for references
+          name: userName || 'User', // Use 'User' as fallback instead of email
+          profileImage: userData.userInfo?.profileImage || null, // Use null instead of default path
+          verified: userData.isEmailVerified || userData.userInfo?.verificationStatus === 'verified',
+          description: userData.userInfo?.bio || '',
+          designation: userData.userInfo?.employment?.jobTitle || 'N/A',
+          location: userData.userInfo?.address
+            ? [userData.userInfo.address.city, userData.userInfo.address.country]
+              .filter(Boolean)
+              .join(', ') || 'N/A'
+            : 'N/A',
+          monthlyIncome: userData.userInfo?.employment?.monthlyIncome
+            ? `£${userData.userInfo.employment.monthlyIncome.toLocaleString()}`
+            : userData.userInfo?.proofOfIncome?.grossMonthly
               ? `£${userData.userInfo.proofOfIncome.grossMonthly.toLocaleString()}`
               : 'N/A',
-            creditScore: userData.userInfo?.creditScore || 0,
-            creditMax: 850,
-            creditRating: userData.userInfo?.creditRating || 'N/A',
-            creditDescription: userData.userInfo?.creditDescription || '',
-            identity: {
-              fullName: userData.userInfo?.name?.first && userData.userInfo?.name?.last
-                ? `${userData.userInfo.name.first} ${userData.userInfo.name.last}`.trim()
-                : userData.firstName && userData.lastName
+          creditScore: userData.userInfo?.creditScore || 0,
+          creditMax: 850,
+          creditRating: userData.userInfo?.creditRating || 'N/A',
+          creditDescription: userData.userInfo?.creditDescription || '',
+          identity: {
+            fullName: userData.userInfo?.name?.first && userData.userInfo?.name?.last
+              ? `${userData.userInfo.name.first} ${userData.userInfo.name.last}`.trim()
+              : userData.firstName && userData.lastName
                 ? `${userData.firstName} ${userData.lastName}`.trim()
                 : 'N/A',
-              dateOfBirth: userData.userInfo?.dateOfBirth 
-                ? new Date(userData.userInfo.dateOfBirth).toLocaleDateString()
-                : 'N/A',
-              nationalInsurance: userData.userInfo?.nationalInsurance || 'N/A',
-              phone: userData.phone || 'N/A',
-              email: userData.email || 'N/A',
-            },
-            currentAddress: {
-              address: userData.userInfo?.address?.street || 'N/A',
-              city: userData.userInfo?.address?.city || 'N/A',
-              country: userData.userInfo?.address?.country || 'N/A',
-              postcode: userData.userInfo?.address?.postcode || 'N/A',
-              livingPeriod: userData.userInfo?.address?.livingPeriod || 'N/A',
-            },
-            employment: {
-              jobTitle: userData.userInfo?.employment?.jobTitle || 'N/A',
-              employmentType: userData.userInfo?.employment?.employmentType || 'N/A',
-              company: userData.userInfo?.employment?.company || 'N/A',
-              annualSalary: userData.userInfo?.employment?.annualSalary 
-                ? `£${userData.userInfo.employment.annualSalary.toLocaleString()}`
-                : 'N/A',
-              startDate: userData.userInfo?.employment?.startDate
-                ? new Date(userData.userInfo.employment.startDate).toLocaleDateString()
-                : 'N/A',
-              workLocation: userData.userInfo?.employment?.workLocation || 'N/A',
-            },
-            proofOfIncome: {
-              type: userData.userInfo?.proofOfIncome?.type || 'N/A',
-              date: userData.userInfo?.proofOfIncome?.date
-                ? new Date(userData.userInfo.proofOfIncome.date).toLocaleDateString()
-                : 'N/A',
-              grossMonthly: userData.userInfo?.proofOfIncome?.grossMonthly 
-                ? `£${userData.userInfo.proofOfIncome.grossMonthly.toLocaleString()}`
-                : 'N/A',
-              netMonthly: userData.userInfo?.proofOfIncome?.netMonthly 
-                ? `£${userData.userInfo.proofOfIncome.netMonthly.toLocaleString()}`
-                : 'N/A',
-            },
-          };
-          setTenantProfileData(formattedTenantData);
-          setShowProfileDetail(true);
-        } else {
-          toast.error('Unable to load user profile. User ID not found.');
-        }
-      } catch (error) {
-        console.error('Error fetching tenant profile:', error);
-        toast.error('Failed to load tenant profile');
-        // Still show profile detail with basic info if we have otherUser data
-        if (selectedConversation.otherUser) {
-          // Get name - prioritize first name + last name
-          const fallbackUserName = `${selectedConversation.otherUser.firstName || ''} ${selectedConversation.otherUser.lastName || ''}`.trim() || 'User';
-          
-          setTenantProfileData({
-            id: selectedConversation.otherUser._id || selectedConversation.otherUser.id,
-            name: fallbackUserName,
+            dateOfBirth: userData.userInfo?.dateOfBirth
+              ? new Date(userData.userInfo.dateOfBirth).toLocaleDateString()
+              : 'N/A',
+            nationalInsurance: userData.userInfo?.nationalInsurance || 'N/A',
+            phone: userData.phone || 'N/A',
+            email: userData.email || 'N/A',
+          },
+          currentAddress: {
+            address: userData.userInfo?.address?.street || 'N/A',
+            city: userData.userInfo?.address?.city || 'N/A',
+            country: userData.userInfo?.address?.country || 'N/A',
+            postcode: userData.userInfo?.address?.postcode || 'N/A',
+            livingPeriod: userData.userInfo?.address?.livingPeriod || 'N/A',
+          },
+          employment: {
+            jobTitle: userData.userInfo?.employment?.jobTitle || 'N/A',
+            employmentType: userData.userInfo?.employment?.employmentType || 'N/A',
+            company: userData.userInfo?.employment?.company || 'N/A',
+            annualSalary: userData.userInfo?.employment?.annualSalary
+              ? `£${userData.userInfo.employment.annualSalary.toLocaleString()}`
+              : 'N/A',
+            startDate: userData.userInfo?.employment?.startDate
+              ? new Date(userData.userInfo.employment.startDate).toLocaleDateString()
+              : 'N/A',
+            workLocation: userData.userInfo?.employment?.workLocation || 'N/A',
+          },
+          proofOfIncome: {
+            type: userData.userInfo?.proofOfIncome?.type || 'N/A',
+            date: userData.userInfo?.proofOfIncome?.date
+              ? new Date(userData.userInfo.proofOfIncome.date).toLocaleDateString()
+              : 'N/A',
+            grossMonthly: userData.userInfo?.proofOfIncome?.grossMonthly
+              ? `£${userData.userInfo.proofOfIncome.grossMonthly.toLocaleString()}`
+              : 'N/A',
+            netMonthly: userData.userInfo?.proofOfIncome?.netMonthly
+              ? `£${userData.userInfo.proofOfIncome.netMonthly.toLocaleString()}`
+              : 'N/A',
+          },
+        };
+        setTenantProfileData(formattedTenantData);
+        setShowProfileDetail(true);
+      } else {
+        toast.error('Unable to load user profile. User ID not found.');
+      }
+    } catch (error) {
+      console.error('Error fetching tenant profile:', error);
+      toast.error('Failed to load tenant profile');
+      // Still show profile detail with basic info if we have otherUser data
+      if (selectedConversation.otherUser) {
+        // Get name - prioritize first name + last name
+        const fallbackUserName = `${selectedConversation.otherUser.firstName || ''} ${selectedConversation.otherUser.lastName || ''}`.trim() || 'User';
+
+        setTenantProfileData({
+          id: selectedConversation.otherUser._id || selectedConversation.otherUser.id,
+          name: fallbackUserName,
           profileImage: null, // Use null instead of default path to show initials
           verified: false,
           description: '',
@@ -1450,10 +1450,10 @@ function Messages() {
           },
         });
         setShowProfileDetail(true);
-        }
-      } finally {
-        setLoadingProfile(false);
       }
+    } finally {
+      setLoadingProfile(false);
+    }
   };
 
   const handleBackToChat = useCallback(() => {
@@ -1483,7 +1483,7 @@ function Messages() {
     try {
       setIsProcessing(true);
       await updateChatroom(chatroomId, 'unblock');
-      
+
       // Refresh chatrooms list
       const data = await getChatrooms();
       const normalizedChatrooms = (data || []).map(chatroom => {
@@ -1512,7 +1512,7 @@ function Messages() {
         return { ...chatroom, lastMessage: null };
       });
       setChatrooms(normalizedChatrooms);
-      
+
       // Update selected conversation if it's the unblocked one
       if (selectedConversation && (selectedConversation.id === chatroomId || selectedConversation.chatroomId === chatroomId)) {
         const updatedChatroom = normalizedChatrooms.find(c => (c._id || c.id) === chatroomId);
@@ -1533,11 +1533,11 @@ function Messages() {
     try {
       setIsProcessing(true);
       await updateChatroom(confirmChatroomId, confirmAction);
-      
+
       if (confirmAction === 'delete') {
         // Remove chatroom from list
         setChatrooms(prev => prev.filter(c => (c._id || c.id) !== confirmChatroomId));
-        
+
         // If deleted chatroom is currently selected, clear selection
         if (selectedConversation && (selectedConversation.id === confirmChatroomId || selectedConversation.chatroomId === confirmChatroomId)) {
           setSelectedConversation(null);
@@ -1574,7 +1574,7 @@ function Messages() {
           return { ...chatroom, lastMessage: null };
         });
         setChatrooms(normalizedChatrooms);
-        
+
         // Update selected conversation if it's the blocked one
         if (selectedConversation && (selectedConversation.id === confirmChatroomId || selectedConversation.chatroomId === confirmChatroomId)) {
           const updatedChatroom = normalizedChatrooms.find(c => (c._id || c.id) === confirmChatroomId);
@@ -1583,7 +1583,7 @@ function Messages() {
           }
         }
       }
-      
+
       setShowConfirmModal(false);
       setConfirmAction(null);
       setConfirmChatroomId(null);
@@ -1618,13 +1618,13 @@ function Messages() {
     if (!currentUserId) return false;
 
     const chatroomId = String(chatroom._id || chatroom.id || '');
-    
+
     // CRITICAL: Check PERMANENT history first - this NEVER gets cleared
     // If it's in permanent history, it's definitely NOT a new request
     if (permanentHistoryRef.current.has(chatroomId)) {
       return false;
     }
-    
+
     // Also check state (for newly detected history)
     if (chatroomsWithHistory.has(chatroomId)) {
       return false;
@@ -1642,9 +1642,9 @@ function Messages() {
 
     // Get the last message user ID
     const lastMessageUserId = String(
-      chatroom.lastMessage.userId?._id || 
-      chatroom.lastMessage.userId?.id || 
-      chatroom.lastMessage.userId || 
+      chatroom.lastMessage.userId?._id ||
+      chatroom.lastMessage.userId?.id ||
+      chatroom.lastMessage.userId ||
       ''
     );
 
@@ -1656,9 +1656,9 @@ function Messages() {
     // CRITICAL: Must have unread messages (this ensures only NEW message requests are shown)
     // EXCEPTION: If this is the currently selected conversation, show it even if unreadCount is 0
     // (This keeps it visible when opened, but once user responds, chatroomsWithHistory will exclude it)
-    const isCurrentlySelected = selectedConversation && 
-                                 (selectedConversation.id === chatroomId || selectedConversation.chatroomId === chatroomId);
-    
+    const isCurrentlySelected = selectedConversation &&
+      (selectedConversation.id === chatroomId || selectedConversation.chatroomId === chatroomId);
+
     if (!isCurrentlySelected && (!chatroom.unreadCount || chatroom.unreadCount === 0)) {
       return false;
     }
@@ -1677,9 +1677,9 @@ function Messages() {
   const checkHistoryFromLastMessage = useCallback((chatroom) => {
     if (!chatroom.lastMessage || !currentUserId) return false;
     const lastMsgUserId = String(
-      chatroom.lastMessage.userId?._id || 
-      chatroom.lastMessage.userId?.id || 
-      chatroom.lastMessage.userId || 
+      chatroom.lastMessage.userId?._id ||
+      chatroom.lastMessage.userId?.id ||
+      chatroom.lastMessage.userId ||
       ''
     );
     return lastMsgUserId === currentUserId;
@@ -1689,91 +1689,91 @@ function Messages() {
   const filteredChatrooms = useMemo(() => {
     // Track chatrooms that need history marking (batch state updates)
     const chatroomsToMark = [];
-    
+
     const filtered = chatrooms.filter(chatroom => {
       const chatroomId = String(chatroom._id || chatroom.id || '');
       const isChecked = checkedChatrooms.has(chatroomId);
-      
+
       // CRITICAL: Check PERMANENT history first - this is the most reliable source
       // It NEVER gets cleared, so conversations with history stay in "All Messages" forever
       const hasPermanentHistory = permanentHistoryRef.current.has(chatroomId);
       const hasHistoryInState = chatroomsWithHistory.has(chatroomId);
-      
+
       // Additional check - if lastMessage is from current user, it definitely has history
       const hasHistoryFromLastMessage = checkHistoryFromLastMessage(chatroom);
-      
+
       // If lastMessage indicates history, queue it for marking (batch update)
       if (hasHistoryFromLastMessage && !hasPermanentHistory) {
         chatroomsToMark.push(chatroomId);
       }
-    
-    // Final history check: permanent ref OR state OR lastMessage
-    const finalHasHistory = hasPermanentHistory || hasHistoryInState || hasHistoryFromLastMessage;
-    const isNewRequest = isNewUserMessageRequest(chatroom);
-    
-    // Filter by tab:
-    // - "requests" tab: Only show NEW message requests (not responded to yet)
-    // - "all" tab: Only show existing conversations (checked, has history, OR checked and no unread)
-    
-    if (activeTab === "requests") {
-      // STRICT FILTER: Only show NEW message requests (not responded to yet)
-      // This tab should NEVER show regular conversations or responded requests
-      // CRITICAL: Must be checked first to prevent flickering
-      if (!isChecked) {
+
+      // Final history check: permanent ref OR state OR lastMessage
+      const finalHasHistory = hasPermanentHistory || hasHistoryInState || hasHistoryFromLastMessage;
+      const isNewRequest = isNewUserMessageRequest(chatroom);
+
+      // Filter by tab:
+      // - "requests" tab: Only show NEW message requests (not responded to yet)
+      // - "all" tab: Only show existing conversations (checked, has history, OR checked and no unread)
+
+      if (activeTab === "requests") {
+        // STRICT FILTER: Only show NEW message requests (not responded to yet)
+        // This tab should NEVER show regular conversations or responded requests
+        // CRITICAL: Must be checked first to prevent flickering
+        if (!isChecked) {
+          return false;
+        }
+        // CRITICAL: If it has history (from state OR lastMessage), NEVER show in requests
+        if (finalHasHistory) {
+          return false;
+        }
+        // Show ONLY if it's a new message request (no history from current user)
+        // This ensures we only show actual message requests, not all messages
+        if (!isNewRequest) {
+          return false;
+        }
+      } else if (activeTab === "all") {
+        // Only show existing conversations (where current user has responded)
+        // CRITICAL: Don't show unchecked chatrooms - wait for check to complete
+        // This prevents new requests from appearing in "All Messages" before check completes
+        if (!isChecked) {
+          return false;
+        }
+
+        // PRIMARY CHECK: Show chatrooms that have history (current user has sent messages)
+        // PERMANENT ref check is the highest priority - if it's in permanent ref, ALWAYS show in "All Messages"
+        if (hasPermanentHistory) {
+          return true; // PERMANENTLY in "All Messages" - never moves back
+        }
+
+        // SECONDARY CHECK: Use finalHasHistory which includes both state and lastMessage check
+        // This is the main criteria for "All Messages"
+        if (finalHasHistory) {
+          return true; // Definitely show it - user has responded
+        }
+
+        // SECONDARY CHECK: If no history, only show if:
+        // 1. It's NOT a new request (safety check)
+        // 2. It has no unread messages (old conversation, not a new request)
+        // This handles edge cases where history check might not have completed yet
+        if (isNewRequest) {
+          return false; // Don't show new requests in "All Messages"
+        }
+
+        // If it's checked, not a new request, and has no unread, it's likely an old conversation
+        // Show it in "All Messages" (this handles cases where history check is pending)
+        if (!chatroom.unreadCount || chatroom.unreadCount === 0) {
+          return true;
+        }
+
+        // Default: don't show if we're not sure
         return false;
       }
-      // CRITICAL: If it has history (from state OR lastMessage), NEVER show in requests
-      if (finalHasHistory) {
-        return false;
-      }
-      // Show ONLY if it's a new message request (no history from current user)
-      // This ensures we only show actual message requests, not all messages
-      if (!isNewRequest) {
-        return false;
-      }
-    } else if (activeTab === "all") {
-      // Only show existing conversations (where current user has responded)
-      // CRITICAL: Don't show unchecked chatrooms - wait for check to complete
-      // This prevents new requests from appearing in "All Messages" before check completes
-      if (!isChecked) {
-        return false;
-      }
-      
-    // PRIMARY CHECK: Show chatrooms that have history (current user has sent messages)
-    // PERMANENT ref check is the highest priority - if it's in permanent ref, ALWAYS show in "All Messages"
-    if (hasPermanentHistory) {
-      return true; // PERMANENTLY in "All Messages" - never moves back
-    }
-    
-    // SECONDARY CHECK: Use finalHasHistory which includes both state and lastMessage check
-    // This is the main criteria for "All Messages"
-    if (finalHasHistory) {
-      return true; // Definitely show it - user has responded
-    }
-      
-      // SECONDARY CHECK: If no history, only show if:
-      // 1. It's NOT a new request (safety check)
-      // 2. It has no unread messages (old conversation, not a new request)
-      // This handles edge cases where history check might not have completed yet
-      if (isNewRequest) {
-        return false; // Don't show new requests in "All Messages"
-      }
-      
-      // If it's checked, not a new request, and has no unread, it's likely an old conversation
-      // Show it in "All Messages" (this handles cases where history check is pending)
-      if (!chatroom.unreadCount || chatroom.unreadCount === 0) {
-        return true;
-      }
-      
-      // Default: don't show if we're not sure
-      return false;
-    }
 
       // Filter by search query
       if (searchQuery.trim()) {
         const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
         const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
-        
+
         // Determine the other user - check if current user is userId or memberId
         let otherUser = null;
         if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
@@ -1803,7 +1803,7 @@ function Messages() {
 
       return true;
     });
-    
+
     // Batch update history marking (single state update instead of multiple)
     if (chatroomsToMark.length > 0) {
       // Use setTimeout to batch updates and avoid blocking render
@@ -1823,7 +1823,7 @@ function Messages() {
         });
       }, 0);
     }
-    
+
     return filtered;
   }, [chatrooms, activeTab, searchQuery, checkedChatrooms, chatroomsWithHistory, currentUserId, isNewUserMessageRequest, checkHistoryFromLastMessage]);
 
@@ -1834,7 +1834,7 @@ function Messages() {
     const unread = chatrooms
       .filter(c => isNewUserMessageRequest(c))
       .reduce((sum, c) => sum + (c.unreadCount || 0), 0);
-    
+
     return {
       allMessagesCount: all,
       messageRequestsCount: requests,
@@ -1845,10 +1845,10 @@ function Messages() {
   // Check verification status - use currentUser (fresh data) if available, otherwise use user from Redux
   const userForVerification = currentUser || user;
   const isVerified = isUserVerified(userForVerification);
-  
+
   // Check if user has chat history
   const hasChatHistory = chatrooms && chatrooms.length > 0;
-  
+
   // Show verification page only if: not verified AND no chat history
   // If not verified BUT has chat history, allow viewing but sending is blocked in handleSendMessage
   const showVerificationPage = !isVerified && !hasChatHistory;
@@ -1893,108 +1893,108 @@ function Messages() {
           <div className="block">
             {/* Mobile: Show back button when conversation is selected */}
             {selectedConversation && (
-          <button
-            onClick={handleBackToMessageList}
-            className="md:hidden flex items-center gap-2 mb-4 text-secondary hover:text-primary transition-colors"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12.5 15L7.5 10L12.5 5"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span className="text-base font-semibold font-nunito">Back</span>
-          </button>
-        )}
+              <button
+                onClick={handleBackToMessageList}
+                className="md:hidden flex items-center gap-2 mb-4 text-secondary hover:text-primary transition-colors"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12.5 15L7.5 10L12.5 5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span className="text-base font-semibold font-nunito">Back</span>
+              </button>
+            )}
 
-        {!showProfileDetail && (
-          <h1 className="text-xl xl:text-2xl font-bold text-secondary mb-4">
-            Messages {mounted && hasAttemptedConnection && !isConnecting && !isConnected && <span className="text-xs text-red-500">(Disconnected)</span>}
-          </h1>
-        )}
+            {!showProfileDetail && (
+              <h1 className="text-xl xl:text-2xl font-bold text-secondary mb-4">
+                Messages {mounted && hasAttemptedConnection && !isConnecting && !isConnected && <span className="text-xs text-red-500">(Disconnected)</span>}
+              </h1>
+            )}
 
-        {/* Tabs */}
-        {!showProfileDetail && (
-        <div className="flex gap-4 mb-4">
-          <button
-            onClick={() => {
-              const newTab = "all";
-              setActiveTab(newTab);
-              localStorage.setItem('messagesActiveTab', newTab);
-              
-              // Smooth transition: Keep selected conversation if it belongs in "All Messages"
-              if (selectedConversation) {
-                const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
-                
-                // CRITICAL: Check permanent ref first (most reliable)
-                const hasPermanentHistory = permanentHistoryRef.current.has(chatroomId);
-                const hasHistoryInState = chatroomsWithHistory.has(chatroomId);
-                
-                // If it's being viewed in "All Messages" tab, it MUST have history
-                // Mark it permanently to prevent it from ever moving back to "Message Requests"
-                if (!hasPermanentHistory && !hasHistoryInState) {
-                  // Check if lastMessage indicates history
-                  const chatroom = chatrooms.find(c => String(c._id || c.id || '') === chatroomId);
-                  const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
-                  let hasHistoryFromLastMessage = false;
-                  if (chatroom && chatroom.lastMessage && currentUserId) {
-                    const lastMsgUserId = String(
-                      chatroom.lastMessage.userId?._id || 
-                      chatroom.lastMessage.userId?.id || 
-                      chatroom.lastMessage.userId || 
-                      ''
-                    );
-                    hasHistoryFromLastMessage = lastMsgUserId === currentUserId;
-                  }
-                  
-                  // If we're switching to "All Messages" and this conversation is selected,
-                  // it means it should have history - mark it permanently
-                  if (hasHistoryFromLastMessage || hasPermanentHistory || hasHistoryInState) {
-                    permanentHistoryRef.current.add(chatroomId);
-                    setChatroomsWithHistory(prev => {
-                      if (!prev.has(chatroomId)) {
-                        const updated = new Set([...prev, chatroomId]);
-                        setHistoryCheckVersion(prev => prev + 1);
-                        return updated;
+            {/* Tabs */}
+            {!showProfileDetail && (
+              <div className="flex gap-4 mb-4">
+                <button
+                  onClick={() => {
+                    const newTab = "all";
+                    setActiveTab(newTab);
+                    localStorage.setItem('messagesActiveTab', newTab);
+
+                    // Smooth transition: Keep selected conversation if it belongs in "All Messages"
+                    if (selectedConversation) {
+                      const chatroomId = String(selectedConversation.id || selectedConversation.chatroomId || '');
+
+                      // CRITICAL: Check permanent ref first (most reliable)
+                      const hasPermanentHistory = permanentHistoryRef.current.has(chatroomId);
+                      const hasHistoryInState = chatroomsWithHistory.has(chatroomId);
+
+                      // If it's being viewed in "All Messages" tab, it MUST have history
+                      // Mark it permanently to prevent it from ever moving back to "Message Requests"
+                      if (!hasPermanentHistory && !hasHistoryInState) {
+                        // Check if lastMessage indicates history
+                        const chatroom = chatrooms.find(c => String(c._id || c.id || '') === chatroomId);
+                        const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
+                        let hasHistoryFromLastMessage = false;
+                        if (chatroom && chatroom.lastMessage && currentUserId) {
+                          const lastMsgUserId = String(
+                            chatroom.lastMessage.userId?._id ||
+                            chatroom.lastMessage.userId?.id ||
+                            chatroom.lastMessage.userId ||
+                            ''
+                          );
+                          hasHistoryFromLastMessage = lastMsgUserId === currentUserId;
+                        }
+
+                        // If we're switching to "All Messages" and this conversation is selected,
+                        // it means it should have history - mark it permanently
+                        if (hasHistoryFromLastMessage || hasPermanentHistory || hasHistoryInState) {
+                          permanentHistoryRef.current.add(chatroomId);
+                          setChatroomsWithHistory(prev => {
+                            if (!prev.has(chatroomId)) {
+                              const updated = new Set([...prev, chatroomId]);
+                              setHistoryCheckVersion(prev => prev + 1);
+                              return updated;
+                            }
+                            return prev;
+                          });
+                        }
                       }
-                      return prev;
-                    });
-                  }
-                }
-                
-                const hasHistory = hasPermanentHistory || hasHistoryInState;
-                // Only clear if it's still a message request (no history)
-                // If it has history, keep it selected for smooth UX
-                if (!hasHistory) {
-                  setSelectedConversation(null);
-                }
-              }
-            }}
-            className={`relative pb-2 px-2 font-semibold text-base xl:text-lg font-nunito flex items-center gap-2 transition-colors border-b-2 ${activeTab === "all"
-                ? "text-[#6B4EFF] border-[#6B4EFF]"
-                : "text-darkGray border-transparent"
-              }`}
-          >
-            All Messages
-            <span
-              className={`${activeTab === "all"
-                  ? "text-white bg-[#6B4EFF]"
-                  : "text-[#4A2FCC] bg-[#E8E2FF]"
-                } relative text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center`}
-            >
-              {allMessagesCount}
-            </span>
-          </button>
-          <button
+
+                      const hasHistory = hasPermanentHistory || hasHistoryInState;
+                      // Only clear if it's still a message request (no history)
+                      // If it has history, keep it selected for smooth UX
+                      if (!hasHistory) {
+                        setSelectedConversation(null);
+                      }
+                    }
+                  }}
+                  className={`relative pb-2 px-2 font-semibold text-base xl:text-lg font-nunito flex items-center gap-2 transition-colors border-b-2 ${activeTab === "all"
+                    ? "text-[#6B4EFF] border-[#6B4EFF]"
+                    : "text-darkGray border-transparent"
+                    }`}
+                >
+                  All Messages
+                  <span
+                    className={`${activeTab === "all"
+                      ? "text-white bg-[#6B4EFF]"
+                      : "text-[#4A2FCC] bg-[#E8E2FF]"
+                      } relative text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center`}
+                  >
+                    {allMessagesCount}
+                  </span>
+                </button>
+                {/* <button
             onClick={() => {
               const newTab = "requests";
               setActiveTab(newTab);
@@ -2034,326 +2034,351 @@ function Messages() {
               <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                 {messageRequestsUnreadCount > 99 ? '99+' : messageRequestsUnreadCount}
               </span>
-            )} */}
-          </button>
-        </div>
-        )}
+            )}
+          </button> */}
 
-        <div
-          className={`flex gap-0 bg-white rounded-[20px] overflow-hidden ${!showProfileDetail && "border border-lightGray"
-            }`}
-          style={{ position: 'relative' }}
-        >
-          {/* Left Panel - Message List */}
-          {!showProfileDetail && (
-            <div
-              className={`${selectedConversation ? "hidden md:flex" : "flex"
-                } w-full md:w-96 lg:w-[400px] rounded-tl-[20px] rounded-bl-[20px] md:rounded-tr-none md:rounded-br-none rounded-[20px] md:rounded-[0] bg-white border-r border-lightGray md:border-r flex flex-col relative z-10`}
-              style={{ pointerEvents: 'auto' }}
-            >
-              {/* Header */}
-              <div className="p-3 border-b border-lightGray">
-                {/* Search Bar */}
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lg md:text-xl">
-                    <BlueSearchIcon />
-                  </span>
-
-                  <input
-                    type="text"
-                    placeholder="Search Messages"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value.replace(/^\s+/, ''))}
-                    className="w-full pl-9 md:pl-10 pr-3 h-12 md:pr-4 py-1.5 md:py-2 border border-lightGray rounded-xl focus:outline-none focus:ring-0 text-sm md:text-base"
-                  />
-                </div>
+                <button
+                  onClick={() => {
+                    const newTab = "requests";
+                    setActiveTab(newTab);
+                    localStorage.setItem('messagesActiveTab', newTab);
+                    setSelectedConversation(null);
+                  }}
+                  className={`relative pb-2 font-semibold px-2 text-base xl:text-lg font-nunito flex items-center gap-2 transition-colors border-b-2 ${activeTab === "requests"
+                      ? "text-[#6B4EFF] border-[#6B4EFF]"
+                      : "text-darkGray border-transparent"
+                    }`}
+                >
+                  Message Requests
+                  {messageRequestsCount > 0 && (
+                    <span
+                      className={`${activeTab === "requests"
+                          ? "text-white bg-[#6B4EFF]"
+                          : "text-[#4A2FCC] bg-[#E8E2FF]"
+                        } relative text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center`}
+                    >
+                      {messageRequestsCount > 99 ? '99+' : messageRequestsCount}
+                    </span>
+                  )}
+                </button>
               </div>
+            )}
 
-              {/* Message List */}
-              <div 
-                className="flex-1 overflow-y-auto max-h-[calc(100vh-200px)]"
+            <div
+              className={`flex gap-0 bg-white rounded-[20px] overflow-hidden ${!showProfileDetail && "border border-lightGray"
+                }`}
+              style={{ position: 'relative' }}
+            >
+              {/* Left Panel - Message List */}
+              {!showProfileDetail && (
+                <div
+                  className={`${selectedConversation ? "hidden md:flex" : "flex"
+                    } w-full md:w-96 lg:w-[400px] rounded-tl-[20px] rounded-bl-[20px] md:rounded-tr-none md:rounded-br-none rounded-[20px] md:rounded-[0] bg-white border-r border-lightGray md:border-r flex flex-col relative z-10`}
+                  style={{ pointerEvents: 'auto' }}
+                >
+                  {/* Header */}
+                  <div className="p-3 border-b border-lightGray">
+                    {/* Search Bar */}
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lg md:text-xl">
+                        <BlueSearchIcon />
+                      </span>
+
+                      <input
+                        type="text"
+                        placeholder="Search Messages"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value.replace(/^\s+/, ''))}
+                        className="w-full pl-9 md:pl-10 pr-3 h-12 md:pr-4 py-1.5 md:py-2 border border-lightGray rounded-xl focus:outline-none focus:ring-0 text-sm md:text-base"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Message List */}
+                  <div
+                    className="flex-1 overflow-y-auto max-h-[calc(100vh-200px)]"
+                    style={{ pointerEvents: 'auto' }}
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6B4EFF]"></div>
+                      </div>
+                    ) : filteredChatrooms.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                        <ChatBlueStartIcon />
+                        <p className="text-darkGray text-base font-normal font-nunito mt-4">
+                          {searchQuery
+                            ? 'No messages found'
+                            : activeTab === "requests"
+                              ? 'No message requests'
+                              : 'No messages yet'}
+                        </p>
+                      </div>
+                    ) : (
+                      filteredChatrooms.map((chatroom) => {
+                        // Normalize IDs for comparison to correctly identify the other user
+                        const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
+                        const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
+                        const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
+
+                        // Determine the other user - check if current user is userId or memberId
+                        let otherUser = null;
+                        if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
+                          // Current user is userId, so other user is memberId
+                          otherUser = chatroom.memberId;
+                        } else if (currentUserId && chatroomMemberId && currentUserId === chatroomMemberId) {
+                          // Current user is memberId, so other user is userId
+                          otherUser = chatroom.userId;
+                        } else {
+                          // Fallback: if we can't determine, try to use the one that's not null
+                          // This handles cases where currentUser might not be set yet
+                          otherUser = chatroom.memberId || chatroom.userId;
+                        }
+
+                        // Ensure otherUser is an object, not just an ID string
+                        if (otherUser && typeof otherUser === 'string') {
+                          // If it's just an ID, we can't display user info
+                          otherUser = null;
+                        }
+
+                        const name = otherUser
+                          ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email || 'Unknown User'
+                          : 'Unknown User';
+
+                        const initials = otherUser
+                          ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase() || 'U'
+                          : 'U';
+
+                        // Get profile image from userInfoId
+                        const profileImage = otherUser && typeof otherUser === 'object'
+                          ? (otherUser.userInfoId?.profileImage || otherUser.userInfo?.profileImage || null)
+                          : null;
+
+                        // Check verification status for renters (only if otherUser is a valid object)
+                        const otherUserType = otherUser && typeof otherUser === 'object' ? (otherUser.userType || null) : null;
+                        const isOtherUserVerified = otherUser && typeof otherUser === 'object'
+                          ? (otherUser.userInfoId?.verificationStatus === 'verified' ||
+                            otherUser.userInfo?.verificationStatus === 'verified' ||
+                            false)
+                          : false;
+                        const showVerificationIcon = otherUserType === 'renter';
+                        const isVerified = isOtherUserVerified;
+
+                        const chatroomId = chatroom._id || chatroom.id;
+                        const isSelected = selectedConversation?.id === chatroomId;
+                        const unreadCount = chatroom.unreadCount || 0;
+
+                        return (
+                          <div
+                            key={chatroomId}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              handleSelectConversation(chatroom);
+                            }}
+                            className={`p-4 bg-[#F8F8F8] border-b border-lightGray cursor-pointer hover:bg-gray-50 transition-colors ${isSelected ? "bg-purple-50" : ""
+                              }`}
+                            style={{
+                              pointerEvents: 'auto',
+                              opacity: 1,
+                              cursor: 'pointer'
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleSelectConversation(chatroom);
+                              }
+                            }}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="relative flex-shrink-0">
+                                {profileImage ? (
+                                  <img
+                                    src={profileImage}
+                                    alt={name}
+                                    className="w-12 h-12 rounded-full object-cover border border-lightGray"
+                                    onError={(e) => {
+                                      // Fallback to initials if image fails to load
+                                      e.target.style.display = 'none';
+                                      const initialsDiv = e.target.parentElement.querySelector('.initials-fallback');
+                                      if (initialsDiv) {
+                                        initialsDiv.style.display = 'flex';
+                                      }
+                                    }}
+                                  />
+                                ) : null}
+                                <div
+                                  className={`w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#6B4EFF] font-bold border border-lightGray initials-fallback ${profileImage ? 'hidden' : ''}`}
+                                >
+                                  {initials}
+                                </div>
+                                {/* Show verification icon for renters: cross if not verified, checkmark if verified */}
+                                {showVerificationIcon && (
+                                  <span className="absolute -bottom-0 -right-1 bg-white rounded-full">
+                                    {isVerified ? (
+                                      <MediumCheckedIcon />
+                                    ) : (
+                                      <RedCrossIcon />
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-1">
+                                  <h3 className="font-normal font-nunito text-[#0F172B] text-base truncate">
+                                    {name}
+                                  </h3>
+                                  {unreadCount > 0 && (
+                                    <span className="text-white bg-[#009966] w-6 h-6 rounded-full flex items-center justify-center text-sm font-normal flex-shrink-0 ml-2">
+                                      {unreadCount}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm font-normal font-nunito text-[#45556C] mb-1 truncate">
+                                  {(() => {
+                                    const lastMsg = chatroom.lastMessage;
+
+                                    // If no lastMessage but lastMessageAt exists, there's a message but we don't have the data
+                                    if (!lastMsg && chatroom.lastMessageAt) {
+                                      return 'Message';
+                                    }
+
+                                    if (!lastMsg) return 'No messages yet';
+                                    if (typeof lastMsg === 'string') return lastMsg;
+                                    if (typeof lastMsg === 'object') {
+                                      // Check if it's a media message FIRST (has fileUrl or type indicates media)
+                                      const isMediaMessage = lastMsg.fileUrl ||
+                                        (lastMsg.type && lastMsg.type !== 'text' && lastMsg.type !== 'system');
+
+                                      if (isMediaMessage) {
+                                        // If there's text (caption), show it, otherwise show media type indicator
+                                        const text = lastMsg.text || '';
+                                        if (text.trim()) {
+                                          return text;
+                                        }
+                                        // Show appropriate media indicator
+                                        if (lastMsg.type === 'image') {
+                                          return '📷 Image';
+                                        } else if (lastMsg.type === 'video') {
+                                          return '🎥 Video';
+                                        } else if (lastMsg.type === 'document') {
+                                          return '📄 Document';
+                                        }
+                                        return '📎 Attachment';
+                                      }
+                                      // Regular text message - show text if available
+                                      const text = lastMsg.text || lastMsg.textDecrypted || lastMsg.textEncrypted || '';
+                                      return text.trim() || 'No messages yet';
+                                    }
+                                    return 'No messages yet';
+                                  })()}
+                                </p>
+                                <div>
+                                  <span className="text-sm text-[#62748E] font-normal font-nunito">
+                                    {chatroom.lastMessageAt
+                                      ? new Date(chatroom.lastMessageAt).toLocaleString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: 'numeric',
+                                        minute: '2-digit',
+                                        hour12: true
+                                      })
+                                      : ''}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Right Panel - Chat View or Profile Detail */}
+              <div
+                className={`${selectedConversation || showProfileDetail
+                  ? "flex"
+                  : "hidden md:flex"
+                  } flex-col bg-white rounded-tr-[20px] rounded-br-[20px] md:rounded-tl-none md:rounded-bl-none rounded-[20px] md:rounded-[0] overflow-y-auto ${showProfileDetail ? "w-full" : "flex-1"
+                  } relative z-0`}
                 style={{ pointerEvents: 'auto' }}
               >
-                {loading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6B4EFF]"></div>
-                  </div>
-                ) : filteredChatrooms.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-                    <ChatBlueStartIcon />
-                    <p className="text-darkGray text-base font-normal font-nunito mt-4">
-                      {searchQuery
-                        ? 'No messages found'
-                        : activeTab === "requests"
-                          ? 'No message requests'
-                          : 'No messages yet'}
-                    </p>
-                  </div>
-                ) : (
-                  filteredChatrooms.map((chatroom) => {
-                    // Normalize IDs for comparison to correctly identify the other user
-                    const currentUserId = String(currentUser?._id || currentUser?.id || user?._id || user?.id || '');
-                    const chatroomUserId = String(chatroom.userId?._id || chatroom.userId?.id || chatroom.userId || '');
-                    const chatroomMemberId = String(chatroom.memberId?._id || chatroom.memberId?.id || chatroom.memberId || '');
-                    
-                    // Determine the other user - check if current user is userId or memberId
-                    let otherUser = null;
-                    if (currentUserId && chatroomUserId && currentUserId === chatroomUserId) {
-                      // Current user is userId, so other user is memberId
-                      otherUser = chatroom.memberId;
-                    } else if (currentUserId && chatroomMemberId && currentUserId === chatroomMemberId) {
-                      // Current user is memberId, so other user is userId
-                      otherUser = chatroom.userId;
-                    } else {
-                      // Fallback: if we can't determine, try to use the one that's not null
-                      // This handles cases where currentUser might not be set yet
-                      otherUser = chatroom.memberId || chatroom.userId;
-                    }
-
-                    // Ensure otherUser is an object, not just an ID string
-                    if (otherUser && typeof otherUser === 'string') {
-                      // If it's just an ID, we can't display user info
-                      otherUser = null;
-                    }
-
-                    const name = otherUser
-                      ? `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email || 'Unknown User'
-                      : 'Unknown User';
-
-                    const initials = otherUser
-                      ? `${otherUser.firstName?.[0] || ''}${otherUser.lastName?.[0] || ''}`.toUpperCase() || otherUser.email?.[0]?.toUpperCase() || 'U'
-                      : 'U';
-
-                    // Get profile image from userInfoId
-                    const profileImage = otherUser && typeof otherUser === 'object' 
-                      ? (otherUser.userInfoId?.profileImage || otherUser.userInfo?.profileImage || null)
-                      : null;
-
-                    // Check verification status for renters (only if otherUser is a valid object)
-                    const otherUserType = otherUser && typeof otherUser === 'object' ? (otherUser.userType || null) : null;
-                    const isOtherUserVerified = otherUser && typeof otherUser === 'object' 
-                      ? (otherUser.userInfoId?.verificationStatus === 'verified' || 
-                         otherUser.userInfo?.verificationStatus === 'verified' ||
-                         false)
-                      : false;
-                    const showVerificationIcon = otherUserType === 'renter';
-                    const isVerified = isOtherUserVerified;
-
-                    const chatroomId = chatroom._id || chatroom.id;
-                    const isSelected = selectedConversation?.id === chatroomId;
-                    const unreadCount = chatroom.unreadCount || 0;
-
-                    return (
-                      <div
-                        key={chatroomId}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          handleSelectConversation(chatroom);
-                        }}
-                        className={`p-4 bg-[#F8F8F8] border-b border-lightGray cursor-pointer hover:bg-gray-50 transition-colors ${isSelected ? "bg-purple-50" : ""
-                          }`}
-                        style={{ 
-                          pointerEvents: 'auto',
-                          opacity: 1,
-                          cursor: 'pointer'
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            handleSelectConversation(chatroom);
-                          }
-                        }}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="relative flex-shrink-0">
-                            {profileImage ? (
-                              <img
-                                src={profileImage}
-                                alt={name}
-                                className="w-12 h-12 rounded-full object-cover border border-lightGray"
-                                onError={(e) => {
-                                  // Fallback to initials if image fails to load
-                                  e.target.style.display = 'none';
-                                  const initialsDiv = e.target.parentElement.querySelector('.initials-fallback');
-                                  if (initialsDiv) {
-                                    initialsDiv.style.display = 'flex';
-                                  }
-                                }}
-                              />
-                            ) : null}
-                            <div 
-                              className={`w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#6B4EFF] font-bold border border-lightGray initials-fallback ${profileImage ? 'hidden' : ''}`}
-                            >
-                              {initials}
-                            </div>
-                            {/* Show verification icon for renters: cross if not verified, checkmark if verified */}
-                            {showVerificationIcon && (
-                              <span className="absolute -bottom-0 -right-1 bg-white rounded-full">
-                                {isVerified ? (
-                                  <MediumCheckedIcon />
-                                ) : (
-                                  <RedCrossIcon />
-                                )}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <h3 className="font-normal font-nunito text-[#0F172B] text-base truncate">
-                                {name}
-                              </h3>
-                              {unreadCount > 0 && (
-                                <span className="text-white bg-[#009966] w-6 h-6 rounded-full flex items-center justify-center text-sm font-normal flex-shrink-0 ml-2">
-                                  {unreadCount}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-sm font-normal font-nunito text-[#45556C] mb-1 truncate">
-                              {(() => {
-                                const lastMsg = chatroom.lastMessage;
-                                
-                                // If no lastMessage but lastMessageAt exists, there's a message but we don't have the data
-                                if (!lastMsg && chatroom.lastMessageAt) {
-                                  return 'Message';
-                                }
-                                
-                                if (!lastMsg) return 'No messages yet';
-                                if (typeof lastMsg === 'string') return lastMsg;
-                                if (typeof lastMsg === 'object') {
-                                  // Check if it's a media message FIRST (has fileUrl or type indicates media)
-                                  const isMediaMessage = lastMsg.fileUrl || 
-                                                        (lastMsg.type && lastMsg.type !== 'text' && lastMsg.type !== 'system');
-                                  
-                                  if (isMediaMessage) {
-                                    // If there's text (caption), show it, otherwise show media type indicator
-                                    const text = lastMsg.text || '';
-                                    if (text.trim()) {
-                                      return text;
-                                    }
-                                    // Show appropriate media indicator
-                                    if (lastMsg.type === 'image') {
-                                      return '📷 Image';
-                                    } else if (lastMsg.type === 'video') {
-                                      return '🎥 Video';
-                                    } else if (lastMsg.type === 'document') {
-                                      return '📄 Document';
-                                    }
-                                    return '📎 Attachment';
-                                  }
-                                  // Regular text message - show text if available
-                                  const text = lastMsg.text || lastMsg.textDecrypted || lastMsg.textEncrypted || '';
-                                  return text.trim() || 'No messages yet';
-                                }
-                                return 'No messages yet';
-                              })()}
-                            </p>
-                            <div>
-                              <span className="text-sm text-[#62748E] font-normal font-nunito">
-                                {chatroom.lastMessageAt
-                                  ? new Date(chatroom.lastMessageAt).toLocaleString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    hour: 'numeric',
-                                    minute: '2-digit',
-                                    hour12: true
-                                  })
-                                  : ''}
-                              </span>
-                            </div>
-                          </div>
+                {showProfileDetail && tenantProfileData ? (
+                  <TenantProfileDetail
+                    tenantData={tenantProfileData}
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    onBack={handleBackToChat}
+                    onSendOffer={handleSendOffer}
+                    allMessagesCount={allMessagesCount}
+                    messageRequestsCount={messageRequestsCount}
+                  />
+                ) : selectedConversation ? (
+                  <>
+                    {messagesLoading && chatMessages.length === 0 ? (
+                      <div className="flex-1 flex items-center justify-center bg-[#F9F9FC]">
+                        <div className="text-center">
+                          <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-[#6B4EFF] border-t-transparent mb-4"></div>
+                          <p className="text-[#62748E] text-base font-normal font-nunito">Loading messages...</p>
                         </div>
                       </div>
-                    );
-                  })
+                    ) : (
+                      <>
+                        <ChatView
+                          selectedConversation={selectedConversation}
+                          chatMessages={chatMessages}
+                          messageText={messageText}
+                          setMessageText={(text) => {
+                            setMessageText(text);
+                            handleTyping();
+                          }}
+                          onSendMessage={handleSendMessage}
+                          onSendOffer={handleSendOffer}
+                          onProfileClick={handleProfileClick}
+                          messagesEndRef={messagesEndRef}
+                          messagesTopRef={messagesTopRef}
+                          onScroll={handleScroll}
+                          loadingMoreMessages={loadingMoreMessages}
+                          hasMoreMessages={hasMoreMessages}
+                          messagesContainerRef={messagesContainerRef}
+                          onFileSelect={handleFileSelect}
+                          onDeleteChatroom={handleDeleteChatroom}
+                          onBlockChatroom={handleBlockChatroom}
+                          onUnblockChatroom={handleUnblockChatroom}
+                          isBlocked={selectedConversation?.isBlocked || false}
+                          isBlockedByCurrentUser={selectedConversation?.isBlockedByCurrentUser || false}
+                          isCurrentUserBlocked={selectedConversation?.isCurrentUserBlocked || false}
+                        />
+                      </>
+                    )}
+                  </>
+                ) : (
+                  /* Empty State - Hidden on mobile when no conversation selected, or if there's only one conversation */
+                  filteredChatrooms.length > 1 && (
+                    <div className="hidden md:flex flex-1 items-center bg-[#F9F9FC] justify-center">
+                      <div className="text-center">
+                        <div className="flex items-center justify-center mx-auto mb-4">
+                          <ChatBlueStartIcon />
+                        </div>
+                        <h3 className="text-lg lg:text-2xl font-bold text-[#4A2FCC] mb-2">
+                          No conversation selected
+                        </h3>
+                        <p className="text-darkGray text-base font-normal font-nunito">
+                          {activeTab === "requests"
+                            ? "Select a message request to respond"
+                            : "Engage with potential renters"}
+                        </p>
+                      </div>
+                    </div>
+                  )
                 )}
               </div>
             </div>
-          )}
-
-          {/* Right Panel - Chat View or Profile Detail */}
-          <div
-            className={`${selectedConversation || showProfileDetail
-                ? "flex"
-                : "hidden md:flex"
-              } flex-col bg-white rounded-tr-[20px] rounded-br-[20px] md:rounded-tl-none md:rounded-bl-none rounded-[20px] md:rounded-[0] overflow-y-auto ${showProfileDetail ? "w-full" : "flex-1"
-              } relative z-0`}
-            style={{ pointerEvents: 'auto' }}
-          >
-            {showProfileDetail && tenantProfileData ? (
-              <TenantProfileDetail
-                tenantData={tenantProfileData}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                onBack={handleBackToChat}
-                onSendOffer={handleSendOffer}
-                allMessagesCount={allMessagesCount}
-                messageRequestsCount={messageRequestsCount}
-              />
-            ) : selectedConversation ? (
-              <>
-                {messagesLoading && chatMessages.length === 0 ? (
-                  <div className="flex-1 flex items-center justify-center bg-[#F9F9FC]">
-                    <div className="text-center">
-                      <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-[#6B4EFF] border-t-transparent mb-4"></div>
-                      <p className="text-[#62748E] text-base font-normal font-nunito">Loading messages...</p>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <ChatView
-                      selectedConversation={selectedConversation}
-                      chatMessages={chatMessages}
-                      messageText={messageText}
-                      setMessageText={(text) => {
-                        setMessageText(text);
-                        handleTyping();
-                      }}
-                      onSendMessage={handleSendMessage}
-                      onSendOffer={handleSendOffer}
-                      onProfileClick={handleProfileClick}
-                      messagesEndRef={messagesEndRef}
-                      messagesTopRef={messagesTopRef}
-                      onScroll={handleScroll}
-                      loadingMoreMessages={loadingMoreMessages}
-                      hasMoreMessages={hasMoreMessages}
-                      messagesContainerRef={messagesContainerRef}
-                      onFileSelect={handleFileSelect}
-                      onDeleteChatroom={handleDeleteChatroom}
-                      onBlockChatroom={handleBlockChatroom}
-                      onUnblockChatroom={handleUnblockChatroom}
-                      isBlocked={selectedConversation?.isBlocked || false}
-                      isBlockedByCurrentUser={selectedConversation?.isBlockedByCurrentUser || false}
-                      isCurrentUserBlocked={selectedConversation?.isCurrentUserBlocked || false}
-                    />
-                  </>
-                )}
-              </>
-            ) : (
-              /* Empty State - Hidden on mobile when no conversation selected, or if there's only one conversation */
-              filteredChatrooms.length > 1 && (
-                <div className="hidden md:flex flex-1 items-center bg-[#F9F9FC] justify-center">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mx-auto mb-4">
-                      <ChatBlueStartIcon />
-                    </div>
-                    <h3 className="text-lg lg:text-2xl font-bold text-[#4A2FCC] mb-2">
-                      No conversation selected
-                    </h3>
-                    <p className="text-darkGray text-base font-normal font-nunito">
-                      {activeTab === "requests"
-                        ? "Select a message request to respond"
-                        : "Engage with potential renters"}
-                    </p>
-                  </div>
-                </div>
-              )
-            )}
           </div>
-        </div>
-      </div>
           {/* Send Offer Modal */}
           <SendOfferModal
             isOpen={isOfferModalOpen}
@@ -2382,11 +2407,11 @@ function Messages() {
                 </h2>
 
                 <p className="text-base font-normal font-nunito text-darkGray text-left mb-6">
-                  {confirmAction === 'delete' 
+                  {confirmAction === 'delete'
                     ? 'Are you sure you want to delete this chatroom? This action cannot be undone.'
                     : confirmAction === 'block'
-                    ? 'Are you sure you want to block this user? You will not be able to send messages to them.'
-                    : ''}
+                      ? 'Are you sure you want to block this user? You will not be able to send messages to them.'
+                      : ''}
                 </p>
 
                 <div className="flex gap-3">

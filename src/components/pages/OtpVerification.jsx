@@ -51,11 +51,25 @@ function OtpVerification() {
     }
   };
 
-  const handleKeyDown = (index, e) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+  // const handleKeyDown = (index, e) => {
+  //   if (e.key === "Backspace" && !otp[index] && index > 0) {
+  //     inputRefs.current[index - 1]?.focus();
+  //   }
+  // };
+
+
+const handleKeyDown = (index, e) => {
+  // Block space and any non-digit key (except control keys)
+  if (e.key === " " || (e.key.length === 1 && !/[0-9]/.test(e.key))) {
+    if (!['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+      e.preventDefault();
     }
-  };
+  }
+
+  if (e.key === "Backspace" && !otp[index] && index > 0) {
+    inputRefs.current[index - 1]?.focus();
+  }
+};
 
   const handlePaste = (e) => {
     e.preventDefault();

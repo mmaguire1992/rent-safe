@@ -133,7 +133,7 @@ function MyProperties() {
           : "N/A",
         rent: rent,
         leads: property.leads || property.leadCount || 0,
-        views: property.views || property.viewCount || 0,
+        views: property.viewsCount || 0,
         status: status,
         // Keep original property data for reference
         _original: property,

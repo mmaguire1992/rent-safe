@@ -116,7 +116,7 @@ function FileUpload({
     if (oversizedFiles.length > 0) {
       const count = oversizedFiles.length;
       const fileText = count === 1 ? 'file' : 'files';
-      toast.error(`File too large. ${count} ${fileText} rejected. Maximum size: ${maxSize / (1024 * 1024)}MB`);
+      toast.error(`File too large. Maximum size: ${maxSize / (1024 * 1024)}MB`);
     }
     
     // Check if max files limit reached
