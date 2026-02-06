@@ -24,7 +24,7 @@ function ProfileSection() {
 
               <div className="!mt-4">
                 <button className="px-6 py-3 w-full md:w-auto rounded-lg font-bold font-nunito transition-all duration-200 bg-white  text-[#4A2FCC] ">
-                  Explore Services
+                  Explore Services tyhyh
                 </button>
               </div>
             </div>

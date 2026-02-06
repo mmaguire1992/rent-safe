@@ -75,7 +75,7 @@ const Features = () => {
 
               {/* <div className=" w-full  flex justify-center">
                 <button className="py-3 px-4 w-full md:w-1/2 mt-2 bg-white text-[#4A2FCC] font-bold text-sm lg:hidden  rounded-xl ">
-                  Explore Services
+                  Explore Services 
                 </button>
               </div> */}
             </div>

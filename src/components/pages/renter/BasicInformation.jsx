@@ -35,34 +35,63 @@ function RenterBasicInformation() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // const handleChange = (e) => {
+  //   const { name, value } = e.target;
+    
+  //   // For fullName field, prevent leading spaces
+  //   let processedValue = value;
+  //   if (name === 'fullName') {
+  //     // Remove leading spaces
+  //     processedValue = value.replace(/^\s+/, '');
+  //   }
+    
+  //   // For phoneNumber field, only allow numbers and common phone formatting characters
+  //   if (name === 'phoneNumber') {
+  //     // Allow only numbers, +, -, spaces, parentheses, and dots
+  //     processedValue = value.replace(/[^0-9+\-().\s]/g, '');
+  //   }
+    
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     [name]: processedValue,
+  //   }));
+  //   // Clear error when user starts typing
+  //   if (errors[name]) {
+  //     setErrors((prev) => ({
+  //       ...prev,
+  //       [name]: "",
+  //     }));
+  //   }
+  // };
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    
-    // For fullName field, prevent leading spaces
-    let processedValue = value;
-    if (name === 'fullName') {
-      // Remove leading spaces
-      processedValue = value.replace(/^\s+/, '');
-    }
-    
-    // For phoneNumber field, only allow numbers and common phone formatting characters
-    if (name === 'phoneNumber') {
-      // Allow only numbers, +, -, spaces, parentheses, and dots
-      processedValue = value.replace(/[^0-9+\-().\s]/g, '');
-    }
-    
-    setFormData((prev) => ({
+  const { name, value } = e.target;
+  let processedValue = value;
+
+  // 1. Phone number: keep only allowed characters
+  if (name === 'phoneNumber') {
+    processedValue = value.replace(/[^0-9+\-().\s]/g, '');
+  }
+
+  // 2. Remove leading whitespace from ALL fields except monthlyIncome
+  if (name !== 'monthlyIncome') {
+    processedValue = processedValue.replace(/^\s+/, '');
+  }
+
+  setFormData((prev) => ({
+    ...prev,
+    [name]: processedValue,
+  }));
+
+  // Clear error when user starts typing
+  if (errors[name]) {
+    setErrors((prev) => ({
       ...prev,
-      [name]: processedValue,
+      [name]: "",
     }));
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
-    }
-  };
+  }
+};
+
 
   const validateForm = () => {
     const newErrors = {};
