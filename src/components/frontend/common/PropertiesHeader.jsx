@@ -103,10 +103,17 @@ function PropertiesHeader({
       <header className="bg-white border-b border-lightGray sticky top-0 left-0 right-0 z-50">
         <div className="container mx-auto flex items-center justify-between h-[60px] sm:h-[70px] px-4 lg:px-6">
           <Link to="/" className="flex items-center gap-2">
+            {/* Mobile & Tablet Logo */}
+            <img
+              src="/images/moblogo.svg"
+              alt="Rent Safe logo"
+              className="lg:hidden h-10 w-auto object-contain"
+            />
+            {/* Desktop Logo */}
             <img
               src="/images/website/logo.svg"
               alt="Rent Safe logo"
-              className="h-6 sm:h-8 w-auto object-contain"
+              className="hidden lg:block h-6 sm:h-8 w-auto object-contain"
             />
           </Link>
 
@@ -162,7 +169,7 @@ function PropertiesHeader({
 
             {/* Mobile menu toggle */}
             <button
-              className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border border-[#E5E7EB] bg-white"
+              className="lg:hidden inline-flex items-center justify-center w-10 h-10"
               onClick={() => setIsMenuOpen((prev) => !prev)}
               aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             >

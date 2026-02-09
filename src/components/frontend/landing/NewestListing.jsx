@@ -236,7 +236,7 @@ function NewestListing() {
             variant="primary" 
             onClick={() => navigate('/properties')}
           >
-            Browse listings
+            Browse listing
           </Button>
         </div>
       </div>

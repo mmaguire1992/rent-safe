@@ -246,7 +246,7 @@ function MobileSidebar({ isOpen, onClose }) {
                     onClick={() => handleNavigation("/login")}
                     className="w-full px-4 py-2 text-[#4A2FCC] border border-[#4A2FCC] bg-white rounded-xl font-bold text-sm transition-colors hover:bg-[#4A2FCC] hover:text-white"
                   >
-                    Login
+                    Log In
                   </button>
                   <button
                     onClick={() => handleNavigation("/signup")}

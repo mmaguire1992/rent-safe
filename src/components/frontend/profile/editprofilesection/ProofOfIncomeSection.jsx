@@ -19,7 +19,7 @@ function ProofOfIncomeSection({
   errors = {},
 }) {
   return (
-    <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
+    <div className="bg-white border-b border-lightGray pb-4">
       <SectionHeader icon={BlueIncomeIcon} title="Proof of Income" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

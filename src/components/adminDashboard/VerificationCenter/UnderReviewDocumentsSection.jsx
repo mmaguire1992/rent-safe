@@ -1,3 +1,4 @@
+import FiInfoIcon from "@/svg/FiInfo";
 import { FiBell, FiX, FiFileText, FiDownload,FiInfo } from "react-icons/fi";
 
 // Helper function to format file size
@@ -38,7 +39,7 @@ const sortedDocuments = [...documents].sort((a, b) => {
         {sortedDocuments.map((doc, index) => (
           <div
             key={doc.id || index}
-            className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:p-4 p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[10px] overflow-hidden"
+            className="flex md:flex-row md:items-center md:justify-between gap-3 md:p-4 p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[10px] overflow-hidden"
           >
             <div className="flex items-center md:gap-4 gap-2 sm:gap-3 flex-1 min-w-0">
               <div className="w-10 h-10 bg-[#EEEAFF] rounded-[10px] flex items-center justify-center flex-shrink-0">
@@ -48,7 +49,7 @@ const sortedDocuments = [...documents].sort((a, b) => {
                 <p className="text-sm font-normal font-nunito text-secondary flex items-center gap-2">
                   <span className="truncate">{doc.name}</span>
                   {/* Pending / under review status icon */}
-                  <FiInfo className="text-xl flex-shrink-0" style={{ color: '#FFD700' }} />
+                  <FiInfoIcon />
                 </p>
                 <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mt-1 flex-wrap">
                   {doc.docTypeLabel && (
@@ -65,7 +66,7 @@ const sortedDocuments = [...documents].sort((a, b) => {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 md:flex-shrink-0 md:self-start md:mt-0">
+            <div className="flex items-start gap-2 sm:gap-3 md:flex-shrink-0 md:self-start md:mt-0">
               <button
                 onClick={() => onDownload(doc)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"

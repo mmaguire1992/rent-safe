@@ -297,16 +297,92 @@ const Navbar = () => {
     <>
       <header className="bg-white shadow-sm sticky top-0 left-0 right-0 z-50">
         <div className="container mx-auto flex items-center justify-between  h-[60px] sm:h-[70px] px-4 lg:px-6">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <Link to="/">
-              <img
-                src="/images/website/mainLogo.png"
-                alt="Rent Safe logo"
-                className="h-auto w-[180px] object-contain cursor-pointer"
-              />
-            </Link>
-          </div>
+          {/* Mobile Profile Page Header - Toggle on left, icons on right, no logo */}
+          {isProfilePage ? (
+            <>
+              {/* Left side - Hamburger menu (mobile only) */}
+              <button
+                className="lg:hidden inline-flex items-center justify-center w-10 h-10"
+                onClick={() => setIsOpen((prev) => !prev)}
+                aria-label={isOpen ? "Close menu" : "Open menu"}
+              >
+                {isOpen ? <IoClose size={22} /> : <HiBars3 size={24} />}
+              </button>
+
+              {/* Desktop Logo - Only show on desktop for profile pages */}
+              <div className="hidden lg:flex items-center gap-2">
+                <Link to="/">
+                  <img
+                    src="/images/website/mainLogo.png"
+                    alt="Rent Safe logo"
+                    className="h-auto w-[180px] object-contain cursor-pointer"
+                  />
+                </Link>
+              </div>
+
+              {/* Right side - Notification & Profile (mobile only) */}
+              <div className="lg:hidden flex items-center gap-3">
+                {/* Notification Bell */}
+                <div className="relative" ref={notificationRef}>
+                  <button
+                    onClick={() => setNotificationDropdownOpen((prev) => !prev)}
+                    className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    aria-label="Notifications"
+                  >
+                    <BellIcon />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                  <NotificationDropdown
+                    isOpen={notificationDropdownOpen}
+                    onClose={() => setNotificationDropdownOpen(false)}
+                    onUnreadCountChange={(count) => setUnreadCount(count)}
+                    viewAllPath={notificationsViewAllPath}
+                    previewLimit={3}
+                  />
+                </div>
+
+                {/* Profile Avatar */}
+                <button
+                  onClick={() => navigate('/profile')}
+                  className="flex items-center justify-center"
+                >
+                  {profileImage ? (
+                    <img
+                      src={profileImage}
+                      alt={userName || 'User'}
+                      className="w-9 h-9 rounded-full object-cover border-2 border-primary"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 bg-[#E8E2FF] rounded-full flex items-center justify-center text-primary font-bold text-lg border-2 border-[#E6E8EC]">
+                      {userName ? userName[0].toUpperCase() : 'U'}
+                    </div>
+                  )}
+                </button>
+              </div>
+            </>
+          ) : (
+            /* Regular Logo for non-profile pages */
+            <div className="flex items-center gap-2">
+              <Link to="/">
+                {/* Mobile & Tablet Logo */}
+                <img
+                  src="/images/moblogo.svg"
+                  alt="Rent Safe logo"
+                  className="lg:hidden h-10 w-auto object-contain cursor-pointer"
+                />
+                {/* Desktop Logo */}
+                <img
+                  src="/images/website/mainLogo.png"
+                  alt="Rent Safe logo"
+                  className="hidden lg:block h-auto w-[180px] object-contain cursor-pointer"
+                />
+              </Link>
+            </div>
+          )}
 
           {/* Desktop Links - Hide on profile page */}
           {!isProfilePage && (
@@ -613,15 +689,16 @@ const Navbar = () => {
             </div>
           )}
 
-          {/* Mobile menu toggle */}
-          <button
-            className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-full 
-                       border border-[#E5E7EB] bg-white"
-            onClick={() => setIsOpen((prev) => !prev)}
-            aria-label={isOpen ? "Close menu" : "Open menu"}
-          >
-            {isOpen ? <IoClose size={22} /> : <HiBars3 size={24} />}
-          </button>
+          {/* Mobile menu toggle - Hide on profile pages (already shown on left) */}
+          {!isProfilePage && (
+            <button
+              className="lg:hidden inline-flex items-center justify-center w-10 h-10"
+              onClick={() => setIsOpen((prev) => !prev)}
+              aria-label={isOpen ? "Close menu" : "Open menu"}
+            >
+              {isOpen ? <IoClose size={22} /> : <HiBars3 size={24} />}
+            </button>
+          )}
         </div>
       </header>
 

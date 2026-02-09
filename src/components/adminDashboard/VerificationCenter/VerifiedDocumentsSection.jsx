@@ -13,7 +13,7 @@ function VerifiedDocumentsSection({ documents, onDelete, onDownload }) {
         {documents.map((doc, index) => (
           <div
             key={index}
-            className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:p-4 p-3 bg-[#EDFFF4] border border-[#B6E9C9] rounded-[14px] overflow-hidden"
+            className="flex md:flex-row md:items-start md:justify-between gap-3 md:p-4 p-3 bg-[#EDFFF4] border border-[#B6E9C9] rounded-[14px] overflow-hidden"
           >
             <div className="flex items-center md:gap-4 gap-2 sm:gap-3 flex-1 min-w-0">
               <div className="w-10 h-10 bg-white rounded-[10px] flex items-center justify-center flex-shrink-0">
@@ -27,7 +27,7 @@ function VerifiedDocumentsSection({ documents, onDelete, onDownload }) {
                 <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mt-1 flex-wrap">
                   {doc.docTypeLabel && (
                     <span className="text-xs font-semibold font-nunito text-[#00893A] bg-white px-2 py-0.5 rounded border border-[#B6E9C9] whitespace-nowrap">
-                      {doc.docTypeLabel}
+                      {doc.docTypeLabel} 
                     </span>
                   )}
                   <span className="text-xs font-normal font-nunito text-midGray whitespace-nowrap">
@@ -39,7 +39,7 @@ function VerifiedDocumentsSection({ documents, onDelete, onDownload }) {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 md:flex-shrink-0 md:self-start md:mt-0">
+            <div className="flex items-start gap-2 sm:gap-3 md:flex-shrink-0 md:self-start md:mt-0">
               <button
                 onClick={() => onDownload(doc)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"

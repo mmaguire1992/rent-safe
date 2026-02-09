@@ -11,7 +11,7 @@ function ImageBadge({ icon, text, position = "top-left" }) {
 
   return (
     <div
-      className={`absolute ${positionClasses[position]} bg-white rounded-xl px-4 py-4 shadow-lg flex items-center gap-3`}
+      className={`lg:block hidden absolute ${positionClasses[position]} bg-white rounded-xl px-4 py-4 shadow-lg flex items-center gap-3`}
     >
       {/* Purple square with icon */}
       <div className="bg-blueGradient1 rounded-2xl p-2.5 flex-shrink-0 w-10 h-10 flex items-center justify-center">

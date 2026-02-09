@@ -35,7 +35,7 @@ function PropertyGallery({ images, isRecent = false, property }) {
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}
-                      className={`flex-shrink-0 overflow-hidden w-full h-[270px] rounded-lg transition-all ${
+                      className={`flex-shrink-0 overflow-hidden w-[70px] h-[70px] lg:w-full lg:h-[270px] rounded-lg transition-all ${
                         isSelected
                           ? "ring-2 ring-primary opacity-100"
                           : "opacity-70 hover:opacity-100"

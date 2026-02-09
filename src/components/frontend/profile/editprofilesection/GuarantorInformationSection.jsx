@@ -14,7 +14,7 @@ function GuarantorInformationSection({
   errors = {},
 }) {
   return (
-    <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
+    <div className="bg-white border-b border-lightGray pb-4">
       <div className="flex items-center gap-4 mb-6">
         <div className="bg-[#E8E2FF] w-[36px] h-[36px] flex items-center justify-center rounded-[10px] p-2">
           <BlueGrantorIcon />

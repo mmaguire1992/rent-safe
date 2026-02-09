@@ -18,7 +18,7 @@ function BasicInformationSection({
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [removing, setRemoving] = useState(false);
   return (
-    <div className="bg-white rounded-[20px] border border-lightGray p-3 sm:p-6">
+    <div className="bg-white border-b border-lightGray">
       <SectionHeader icon={BlueUserIcon} title="Basic Information" />
 
       <div className="space-y-4">
@@ -74,10 +74,11 @@ function BasicInformationSection({
                 }
                 className="px-6 py-2 w-[190px] bg-white border border-[#4A2FCC] text-white rounded-[10px] hover:bg-opacity-90 transition-colors font-semibold font-nunito flex items-center justify-center gap-2"
               >
+                 <BlueUploadIcon />
                 <span className="text-base font-bold font-nunito text-[#4A2FCC]">
                   Upload Image
                 </span>
-                <BlueUploadIcon />
+               
               </button>
               <input
                 id="profile-image-upload"

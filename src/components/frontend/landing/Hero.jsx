@@ -110,7 +110,7 @@ function Hero() {
           <div className="flex-1 relative w-full lg:w-auto lg:max-w-4xl mt-10 lg:mt-0">
             <div className="relative">
               <div className="">
-                <img src="/images/website/front-door-city-house.jpg" alt="Modern house" className="w-full rounded-tl-[160px] rounded-r-[30px]" />
+                <img src="/images/website/front-door-city-house.jpg" alt="Modern house" className="w-full rounded-tl-[90px] lg:rounded-tl-[160px] rounded-r-[20px] rounded-bl-[20px]" />
               </div>
               <ImageBadge
                 icon={<ShielIcon />}

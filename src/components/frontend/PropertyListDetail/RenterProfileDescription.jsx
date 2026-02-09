@@ -211,7 +211,7 @@ function RenterProfileDescription({
           <h2 className="text-lg sm:text-xl font-bold font-nunito text-secondary mb-2">
             Preferred Renter Type
           </h2>
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+          <div className="flex flex-col  lg:flex-row items-start lg:items-center gap-3 sm:gap-4">
             {formattedPreferredRenterTypes.map((type, index) => {
               const Icon = getPreferredRenterIcon(type.label || type.value);
               return (

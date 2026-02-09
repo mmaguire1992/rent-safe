@@ -114,44 +114,45 @@ function ProfileManagementPage() {
           <p className="text-xs sm:text-sm md:text-base text-darkGray mb-4 sm:mb-6">
             {getDescription()}
           </p>
-
-          <div className="bg-white rounded-[20px] p-4 sm:p-6 lg:p-8 border border-lightGray">
-            {/* Mobile: Dropdown for tabs */}
-            <div className="md:hidden mb-6">
-              <CustomDropdown
-                options={tabOptions}
-                value={activeTab}
-                onChange={(value) => {
-                  setActiveTab(value);
-                  setSearchParams({ tab: value });
-                }}
-                placeholder="Select a tab"
-              />
-            </div>
-
-            {/* Desktop: Tab buttons */}
-            <div className="hidden md:flex gap-2 mb-6 border-b border-lightGray">
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id);
-                    setSearchParams({ tab: tab.id });
+          <div className="md:hidden mb-6">
+                <CustomDropdown
+                  options={tabOptions}
+                  value={activeTab}
+                  onChange={(value) => {
+                    setActiveTab(value);
+                    setSearchParams({ tab: value });
                   }}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${
-                    activeTab === tab.id
-                      ? "text-[#4A2FCC] border-b-2 border-[#4A2FCC]"
-                      : "text-darkGray hover:text-secondary"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+                  placeholder="Select a tab"
+                />
+              </div>
+          <div className="bg-white rounded-[20px] p-4 sm:p-6 lg:p-8 border border-lightGray">
+            <div className="bg-white rounded-[20px] p-4 sm:p-6 lg:p-8 border border-lightGray">
+              {/* Mobile: Dropdown for tabs */}
+             
 
-            {/* Tab Content */}
-            <div className="mt-4 sm:mt-6">
-              {renderContent()}
+              {/* Desktop: Tab buttons */}
+              <div className="hidden md:flex gap-2 mb-6 border-b border-lightGray">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setSearchParams({ tab: tab.id });
+                    }}
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab.id
+                        ? "text-[#4A2FCC] border-b-2 border-[#4A2FCC]"
+                        : "text-darkGray hover:text-secondary"
+                      }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab Content */}
+              <div className="mt-4 sm:mt-6">
+                {renderContent()}
+              </div>
             </div>
           </div>
         </div>

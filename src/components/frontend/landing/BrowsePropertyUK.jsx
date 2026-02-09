@@ -210,7 +210,7 @@ function BrowsePropertyUK() {
   return (
     <section
       id="locations"
-      className="w-full py-6 md:pt-14 lg:pt-16 pb-0 bg-white scroll-mt-[88px]  overflow-hidden"
+      className="w-full pb-6 md:pt-14 lg:pt-16 pb-0 bg-white scroll-mt-[88px]  overflow-hidden"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}

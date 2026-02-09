@@ -524,7 +524,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                   type="date"
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  className="w-full px-3 py-2 pr-8 text-sm border border-lightGray rounded-[8px] focus:outline-none focus:ring-0 font-nunito"
+                  className="w-full px-3 py-2 pr-8 text-sm border border-lightGray !text-secondary rounded-[8px] focus:outline-none focus:ring-0 font-nunito"
                 />
                 {dateFilter && (
                   <button

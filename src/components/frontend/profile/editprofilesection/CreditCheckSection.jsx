@@ -13,7 +13,7 @@ function CreditCheckSection({
   errors = {},
 }) {
   return (
-    <div className="bg-white rounded-[20px] border border-lightGray p-3 md:p-6">
+    <div className="bg-white border-b border-lightGray pb-4">
       <SectionHeader icon={BlueCreditIcon} title="Credit Check" />
 
       <div className="mb-4 w-full md:max-w-[50%]">
