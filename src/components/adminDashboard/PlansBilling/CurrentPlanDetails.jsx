@@ -70,8 +70,8 @@ function CurrentPlanDetails({ currentPlan, onUpgrade }) {
               {plan.description || 'No description available'}
             </p>
             <div className="flex flex-wrap items-center md:gap-6 gap-2">
-              <div className="flex items-center gap-2">
-                <GreenClockIcon />
+              <div className="flex items-start gap-2">
+                <GreenClockIcon/>
                 <span className="text-base font-normal font-nunito text-secondary">
                   {currentPlan.currentPeriodEnd ? 'Expires:' : 'Payment Type:'}
                   <span className="font-bold ml-1">{renewalDate}</span>

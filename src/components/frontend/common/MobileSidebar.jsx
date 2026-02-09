@@ -125,7 +125,7 @@ function MobileSidebar({ isOpen, onClose }) {
           {/* Header with Logo */}
           <div className="flex items-center justify-between px-6 pt-6 pb-4">
             <div className="flex items-center gap-3">
-              <img src="/images/whiteLogo.png" alt="Rent Safe" className="" />
+             <a href="/" > <img src="/images/whiteLogo.png" alt="Rent Safe" className="" /></a>
             </div>
             <button
               onClick={onClose}
@@ -241,16 +241,16 @@ function MobileSidebar({ isOpen, onClose }) {
                   </button>
                 </>
               ) : (
-                <div className="px-4 space-y-2">
+                <div className="px-4 space-y-2 flex items-center justify-between gap-2">
                   <button
                     onClick={() => handleNavigation("/login")}
-                    className="w-full px-4 py-2 text-[#4A2FCC] border border-[#4A2FCC] bg-white rounded-xl font-bold text-sm transition-colors hover:bg-[#4A2FCC] hover:text-white"
+                    className="w-[50%] px-4 py-2 text-[#4A2FCC] border border-[#4A2FCC] bg-white rounded-xl font-bold text-sm transition-colors hover:bg-[#4A2FCC] hover:text-white"
                   >
                     Log In
                   </button>
                   <button
                     onClick={() => handleNavigation("/signup")}
-                    className="w-full px-4 py-2 text-white bg-gradient-to-l from-[#4A2FCC] to-[#6B4EFF] rounded-xl font-bold text-sm transition-colors hover:opacity-90"
+                    className="w-[50%] px-4 py-2 text-white bg-gradient-to-l from-[#4A2FCC] to-[#6B4EFF] rounded-xl font-bold text-sm transition-colors hover:opacity-90"
                   >
                     Sign Up
                   </button>

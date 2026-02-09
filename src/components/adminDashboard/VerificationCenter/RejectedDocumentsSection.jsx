@@ -15,7 +15,7 @@ function RejectedDocumentsSection({ documents, onReupload }) {
             className="bg-[#FEF2F2] border border-[#FFC9C9] rounded-[14px] pt-4 overflow-hidden"
           >
             {/* Header Section */}
-            <div className="flex items-start justify-between gap-4 mb-3 px-4">
+            <div className="flex flex-col lg:flex-row items-start justify-between gap-4 mb-3 px-4">
               <div className="flex items-start gap-3 flex-1 min-w-0">
                 {/* Red Icon with Exclamation */}
                 <div className="w-10 h-10 bg-[#D24343] rounded-[10px] flex items-center justify-center flex-shrink-0">
@@ -40,7 +40,7 @@ function RejectedDocumentsSection({ documents, onReupload }) {
               {onReupload && (
                 <button
                   onClick={() => onReupload(doc)}
-                  className="px-4 py-2 bg-blueGradient text-white rounded-[10px] text-sm font-bold font-nunito hover:bg-opacity-90 transition-colors whitespace-nowrap flex-shrink-0"
+                  className="px-4 py-2 bg-blueGradient text-white rounded-[10px] text-sm font-bold font-nunito hover:bg-opacity-90 transition-colors whitespace-nowrap flex-shrink-0 mx-auto "
                   title="Re-upload document"
                 >
                   Re-upload Document

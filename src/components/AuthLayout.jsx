@@ -1,6 +1,6 @@
 function AuthLayout({ children, headerText = "" }) {
   return (
-    <div className="min-h-screen bg-mainBgGradient">
+    <div className="bg-mainBgGradient">
       {/* Dark grey header */}
       {headerText && (
         <div className="bg-gray-800 h-10 md:h-12 flex items-center px-4 md:px-6">
@@ -13,7 +13,7 @@ function AuthLayout({ children, headerText = "" }) {
         className={`flex items-center justify-center ${
           headerText
             ? "min-h-[calc(100vh-2.5rem)] md:min-h-[calc(100vh-3rem)]"
-            : "min-h-screen"
+            : "lg:min-h-screen"
         } py-6 md:py-8 px-4 sm:px-6`}
       >
         <div className="w-full max-w-lg">{children}</div>

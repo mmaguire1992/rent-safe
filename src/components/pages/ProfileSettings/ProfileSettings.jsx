@@ -430,6 +430,7 @@ function ProfileSettings() {
             ))}
           </div>
           <div className="bg-white rounded-xl border border-lightGray p-4">
+          <div className="bg-white rounded-xl border border-lightGray p-4">
             {/* Loading State */}
             {loading && !userInfo && (
               <div className="flex items-center justify-center py-12">
@@ -462,6 +463,7 @@ function ProfileSettings() {
                 )}
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>

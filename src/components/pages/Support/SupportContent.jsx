@@ -476,7 +476,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
             </div>
             
             <div>
-              <label className="block text-xs font-semibold text-secondary mb-1">
+              <label className="block text-xs font-semibold text-secondary mb-3">
                 Status
               </label>
               <CustomDropdown
@@ -497,7 +497,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
             </div>
             
             <div>
-              <label className="block text-xs font-semibold text-secondary mb-1">
+              <label className="block text-xs font-semibold text-secondary mb-1 mt-2">
                 Priority
               </label>
               <CustomDropdown
@@ -516,7 +516,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
             </div>
             
             <div>
-              <label className="block text-xs font-semibold text-secondary mb-1">
+              <label className="block text-xs font-semibold text-secondary mb-1 mt-2">
                 Created Date
               </label>
               <div className="relative">
@@ -524,7 +524,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                   type="date"
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  className="w-full px-3 py-2 pr-8 text-sm border border-lightGray !text-secondary rounded-[8px] focus:outline-none focus:ring-0 font-nunito"
+                  className="w-full px-3 py-2 pr-8 text-sm border border-lightGray rounded-[8px] focus:outline-none focus:ring-0 font-nunito text-secondary"
                 />
                 {dateFilter && (
                   <button

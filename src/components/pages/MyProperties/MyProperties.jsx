@@ -364,7 +364,7 @@ function MyProperties() {
             />
 
             {/* Properties Mobile Cards */}
-            <div className="md:hidden bg-white rounded-lg border border-lightGray overflow-hidden">
+            <div className="md:hidden bg-white overflow-hidden">
               {loading ? (
                 <div className="p-8 text-center">
                   <div className="flex flex-col items-center justify-center">

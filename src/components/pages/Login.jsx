@@ -103,7 +103,7 @@ function Login() {
       <div className="block">
         {/* Logo */}
         <div className="mb-6">
-          <img src="/images/dashboard/mainLogoBK.png" alt="Logo" className="justify-center" />
+          <img src="/images/dashboard/mainLogoBK.svg" alt="Logo" className="justify-center" />
         </div>
 
         {/* Welcome Message */}
@@ -180,7 +180,7 @@ function Login() {
               )}
             </div>
             {/* Remember Me & Forgot Password */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mt-2">
+            <div className="flex  items-start sm:items-center justify-between gap-2 sm:gap-0 mt-2">
               <CustomCheckbox
                 id="rememberMe"
                 checked={rememberMe}

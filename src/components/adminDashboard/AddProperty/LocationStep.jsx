@@ -836,6 +836,7 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
           )}
         </div>
       </div>
+      
     </div>
   );
 }

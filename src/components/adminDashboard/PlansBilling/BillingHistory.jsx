@@ -216,7 +216,7 @@ function BillingHistory({ billingHistory, dateFilter, setDateFilter, statusFilte
         <h2 className="lg:text-2xl text-xl font-bold font-nunito text-secondary mb-0">
           Billing History
         </h2>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-col lg:flex-row">
           <div className="w-full sm:w-auto sm:min-w-[150px]">
             <ButtonDropdown
               options={dateOptions}
@@ -239,10 +239,10 @@ function BillingHistory({ billingHistory, dateFilter, setDateFilter, statusFilte
           </div>
           <button 
             onClick={handleExportCSV}
-            className="bg-white border border-[#4A2FCC] h-[38px] text-[#4A2FCC] px-3 md:px-6 py-1.5 md:py-2 rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors flex items-center gap-2 md:gap-3 text-sm md:text-base"
+            className="bg-white border border-[#4A2FCC] h-[38px] text-[#4A2FCC] px-3 md:px-6 py-1.5 md:py-2 rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors flex items-center gap-2 md:gap-3 text-sm md:text-base w-fit"
             title="Export to CSV"
           >
-            <span className="hidden sm:inline">Export</span>
+            <span>Export</span>
             <FiDownload className="text-sm md:text-base" />
           </button>
         </div>
@@ -343,7 +343,7 @@ function BillingHistory({ billingHistory, dateFilter, setDateFilter, statusFilte
                     <div className="flex items-end justify-between mb-2">
                       <div className="block">
                         <div className="flex items-start gap-2 mb-2">
-                          <span className="text-midGray text-sm font-nunito">
+                          <span className="text-midGray text-base font-nunito">
                             #{index + 1}
                           </span>
                           <span className="text-secondary text-base font-nunito font-bold">

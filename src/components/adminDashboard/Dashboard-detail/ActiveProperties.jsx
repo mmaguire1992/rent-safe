@@ -310,7 +310,7 @@ function ActiveProperties() {
               <SortingIcon />
             </button>
             {showSortDropdown && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-lightGray rounded-lg shadow-lg z-50">
+              <div className="absolute right-0 top-full mt-2 w-[6rem] lg:w-48 bg-white border border-lightGray rounded-lg shadow-lg z-50">
                 {sortOptions.map((option) => (
                   <button
                     key={option.value}

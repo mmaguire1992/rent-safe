@@ -9,7 +9,7 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 !mt-0 ">
-      <div className="bg-white rounded-[20px] p-6 max-w-[650px] w-full mx-4 relative">
+      <div className="bg-white rounded-[20px] p-3 lg:p-6 max-w-[650px] w-full mx-4 relative">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -41,16 +41,16 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm }) {
         </p>
 
         {/* Buttons */}
-        <div className="flex gap-4 flex-wrap md:flex-nowrap">
+        <div className="flex gap-2 flex-wrap md:flex-nowrap">
           <button
             onClick={onClose}
-            className="px-4 sm:px-8 flex-1 py-3 bg-blueGradient text-white rounded-[10px] text-sm sm:text-base shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors font-bold font-nunito"
+            className="px-3 sm:px-8 flex-1 py-3 bg-blueGradient text-white rounded-[10px] text-sm sm:text-base shadow-[0px_2px_10px_0px_#00000033] hover:bg-opacity-90 transition-colors font-bold font-nunito"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 px-4 sm:px-6 py-3 border-2 border-[#4A2FCC] text-[#4A2FCC] rounded-[10px]  transition-colors text-sm sm:text-base font-bold font-nunito"
+            className="flex-1 px-3 sm:px-6 py-3 border-2 border-[#4A2FCC] text-[#4A2FCC] rounded-[10px]  transition-colors text-sm sm:text-base font-bold font-nunito"
           >
             Delete Account
           </button>

@@ -1924,7 +1924,7 @@ function Messages() {
 
             {/* Tabs */}
             {!showProfileDetail && (
-              <div className="flex gap-4 mb-4">
+              <div className="flex gap-2 mb-4">
                 <button
                   onClick={() => {
                     const newTab = "all";
@@ -2061,23 +2061,23 @@ function Messages() {
                     </span>
                   )}
                 </button>
-              </div>
+              </div>  
             )}
 
             <div
-              className={`flex gap-0 bg-white rounded-[20px] overflow-hidden ${!showProfileDetail && "border border-lightGray"
+              className={`flex gap-0 bg-white lg:rounded-[20px] overflow-hidden ${!showProfileDetail && "lg:border lg:border-lightGray"
                 }`}
               style={{ position: 'relative' }}
             >
               {/* Left Panel - Message List */}
               {!showProfileDetail && (
                 <div
-                  className={`${selectedConversation ? "hidden md:flex" : "flex"
-                    } w-full md:w-96 lg:w-[400px] rounded-tl-[20px] rounded-bl-[20px] md:rounded-tr-none md:rounded-br-none rounded-[20px] md:rounded-[0] bg-white border-r border-lightGray md:border-r flex flex-col relative z-10`}
+                  className={`${selectedConversation ? "hidden lg:flex" : "flex"
+                    } w-full lg:w-96 lg:w-[400px] rounded-tl-[20px] rounded-bl-[20px] lg:rounded-tr-none lg:rounded-br-none lg:rounded-[20px] lg:rounded-[0] border-r-0  bg-white lg:border-r border-lightGray lg:border-r flex flex-col relative z-10`}
                   style={{ pointerEvents: 'auto' }}
                 >
                   {/* Header */}
-                  <div className="p-3 border-b border-lightGray">
+                  <div className="p-3 lg:border-b border-lightGray">
                     {/* Search Bar */}
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lg md:text-xl">
@@ -2176,7 +2176,7 @@ function Messages() {
                               e.preventDefault();
                               handleSelectConversation(chatroom);
                             }}
-                            className={`p-4 bg-[#F8F8F8] border-b border-lightGray cursor-pointer hover:bg-gray-50 transition-colors ${isSelected ? "bg-purple-50" : ""
+                            className={`p-3 border-b border-lightGray cursor-pointer hover:bg-gray-50 transition-colors ${isSelected ? "bg-purple-50" : ""
                               }`}
                             style={{
                               pointerEvents: 'auto',
