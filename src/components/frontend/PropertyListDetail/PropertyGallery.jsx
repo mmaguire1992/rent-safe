@@ -21,7 +21,7 @@ function PropertyGallery({ images, isRecent = false, property }) {
             <img
               src={images[selectedImage]}
               alt="Property"
-              className="w-full h-[240px] sm:h-[300px] md:h-[360px] object-cover rounded-xl md:rounded-tl-xl md:rounded-bl-xl"
+              className="w-full h-[240px] sm:h-[300px] md:h-[460px] object-unset rounded-xl md:rounded-tl-xl md:rounded-bl-xl"
             />
           </div>
 
@@ -35,7 +35,7 @@ function PropertyGallery({ images, isRecent = false, property }) {
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}
-                      className={`flex-shrink-0 overflow-hidden w-full h-full rounded-lg transition-all ${
+                      className={`flex-shrink-0 overflow-hidden w-full h-[270px] rounded-lg transition-all ${
                         isSelected
                           ? "ring-2 ring-primary opacity-100"
                           : "opacity-70 hover:opacity-100"
@@ -44,7 +44,7 @@ function PropertyGallery({ images, isRecent = false, property }) {
                       <img
                         src={img}
                         alt={`Thumbnail ${index + 1}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full"
                       />
                     </button>
                   );

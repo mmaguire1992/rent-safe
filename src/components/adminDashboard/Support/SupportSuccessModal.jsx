@@ -8,8 +8,8 @@ function SupportSuccessModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-[20px] p-6 max-w-2xl w-full mx-4 relative">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 !mt-0">
+      <div className="bg-white rounded-[20px] p-6 max-w-xl w-full mx-4 relative">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -24,12 +24,12 @@ function SupportSuccessModal({ isOpen, onClose }) {
         </div>
 
         {/* Heading */}
-        <h2 className="text-2xl lg:text-3xl font-bold font-nunito text-secondary text-left mb-2">
+        <h2 className="text-2xl font-bold font-nunito text-secondary text-left mb-2">
           Your Support Request Has Been Submitted
         </h2>
 
         {/* Description */}
-        <p className="text-base lg:text-lg font-normal font-nunito text-darkGray text-left mb-4">
+        <p className="text-base font-normal font-nunito text-darkGray text-left mb-4">
           Thanks for reaching out! Our team has received your query and will get
           back to you. You'll be notified via email.
         </p>

@@ -90,7 +90,7 @@ function ProfileOtpModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-3">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 !mt-0 px-3">
       <div className="bg-white rounded-[20px] p-6 md:p-7 lg:p-8 w-full max-w-[600px] relative">
         {/* Close */}
         <button

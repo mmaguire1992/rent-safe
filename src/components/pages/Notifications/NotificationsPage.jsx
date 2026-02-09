@@ -8,6 +8,7 @@ import Footer from '@/components/frontend/common/footer';
 import { getNotifications, markNotificationAsRead } from '@/api/notifications';
 import { FiCheck, FiFilter, FiSearch, FiCheckCircle, FiChevronLeft } from 'react-icons/fi';
 import Pagination from '@/components/adminDashboard/common/Pagination';
+import CustomDropdown from '@/components/adminDashboard/common/CustomDropdown';
 
 // Notification type options based on enum
 const NOTIFICATION_TYPES = [
@@ -223,24 +224,11 @@ function NotificationsPage({ layout = 'dashboard' }) {
         </div>
 
         {/* Filter Tabs */}
-        <div className="mb-6 flex flex-wrap gap-2">
-          {STATUS_FILTERS.map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => setStatusFilter(filter.value)}
-              className={`px-4 py-2 rounded-lg font-medium text-sm font-nunito transition-colors ${
-                statusFilter === filter.value
-                  ? 'bg-primary text-white'
-                  : 'bg-white text-secondary hover:bg-gray-100 border border-lightGray'
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
+
 
         {/* Search and Type Filter */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-4">
+       <div className='flex items-center justify-between gap-2'>
+       <div className="mb-6 flex flex-col sm:flex-row gap-4">
           {/* Search Bar */}
           <div className="sm:w-80 relative">
             <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-midGray text-lg" />
@@ -263,19 +251,31 @@ function NotificationsPage({ layout = 'dashboard' }) {
 
           {/* Type Filter */}
           <div className="sm:w-64">
-            <select
+            <CustomDropdown
+              options={NOTIFICATION_TYPES}
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full px-4 py-2.5 border border-lightGray rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-nunito bg-white"
-            >
-              {NOTIFICATION_TYPES.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setTypeFilter(value)}
+              placeholder="All Types"
+              className="h-[42px]"
+            />
           </div>
         </div>
+        <div className="mb-6 flex flex-wrap gap-2">
+          {STATUS_FILTERS.map((filter) => (
+            <button
+              key={filter.value}
+              onClick={() => setStatusFilter(filter.value)}
+              className={`px-4 py-2 rounded-lg font-medium text-sm font-nunito transition-colors ${
+                statusFilter === filter.value
+                  ? 'bg-primary text-white'
+                  : 'bg-white text-secondary hover:bg-gray-100 border border-lightGray'
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+       </div>
 
         {/* Notifications List */}
         <div className="bg-white rounded-lg border border-lightGray shadow-sm">

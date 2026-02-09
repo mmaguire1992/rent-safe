@@ -115,7 +115,7 @@ function ProfileManagementPage() {
             {getDescription()}
           </p>
 
-          <div className="bg-white rounded-[20px] p-4 sm:p-6 lg:p-8">
+          <div className="bg-white rounded-[20px] p-4 sm:p-6 lg:p-8 border border-lightGray">
             {/* Mobile: Dropdown for tabs */}
             <div className="md:hidden mb-6">
               <CustomDropdown
@@ -140,7 +140,7 @@ function ProfileManagementPage() {
                   }}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     activeTab === tab.id
-                      ? "text-primary border-b-2 border-primary"
+                      ? "text-[#4A2FCC] border-b-2 border-[#4A2FCC]"
                       : "text-darkGray hover:text-secondary"
                   }`}
                 >

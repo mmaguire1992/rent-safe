@@ -141,7 +141,7 @@ function RentOutModal({ isOpen, onClose, propertyId, onSuccess }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 !mt-0">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 !mt-0 p-4 !mt-0">
       <div className="bg-white rounded-[20px] border border-lightGray md:p-6 p-4 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">

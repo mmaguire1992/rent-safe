@@ -24,13 +24,13 @@ const Footer = () => {
             <img
               src="/images/dashboard/Container.png"
               alt="Rent Safe"
-              className="h-auto w-[200px] object-contain block md:hidden"
+              className="h-auto w-[200px] object-contain block lg:hidden"
             />
             {/* Desktop/Web Logo */}
             <img
               src="/images/website/footerLogo.png"
               alt="Rent Safe"
-              className="h-auto w-[200px] object-contain hidden md:block"
+              className="h-auto w-[200px] object-contain hidden lg:block"
             />
             <p className="text-base font-nunito font-normal text-[#E6E8EC] leading-5 w-full lg:max-w-[320px]">
               Lorem Ipsum is simply dummy text of the printing and typesetting

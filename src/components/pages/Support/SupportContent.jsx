@@ -7,6 +7,7 @@ import SupportSuccessModal from "@/components/adminDashboard/Support/SupportSucc
 import { createSupportTicket, getSupportTicketById, uploadSupportTicketMedia, getMySupportTickets } from "@/api/supportTickets";
 import { FiPlus, FiDownload, FiX } from "react-icons/fi";
 import Pagination from "@/components/adminDashboard/common/Pagination";
+import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";
 
 function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) {
   const [showForm, setShowForm] = useState(false);
@@ -360,22 +361,23 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                   <label className="block text-base font-semibold text-secondary mb-1">
                     Priority<span className="text-errorColor">*</span>
                   </label>
-                  <select
-                    name="priority"
+                  <CustomDropdown
+                    options={[
+                      { value: "low", label: "Low" },
+                      { value: "medium", label: "Medium" },
+                      { value: "high", label: "High" },
+                      { value: "urgent", label: "Urgent" },
+                    ]}
                     value={formData.priority}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 font-nunito bg-white ${
-                      fieldErrors.priority ? 'border-errorColor' : 'border-lightGray'
-                    }`}
-                  >
-                    <option value="" disabled>
-                      Select priority
-                    </option>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
+                    onChange={(value) => {
+                      setFormData(prev => ({ ...prev, priority: value }));
+                      if (fieldErrors.priority) {
+                        setFieldErrors(prev => ({ ...prev, priority: "" }));
+                      }
+                    }}
+                    placeholder="Select priority"
+                    error={!!fieldErrors.priority}
+                  />
                   {fieldErrors.priority && (
                     <p className="mt-1 text-sm text-errorColor">{fieldErrors.priority}</p>
                   )}
@@ -477,36 +479,40 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
               <label className="block text-xs font-semibold text-secondary mb-1">
                 Status
               </label>
-              <select
+              <CustomDropdown
+                options={[
+                  { value: "", label: "All Status" },
+                  { value: "open", label: "Open" },
+                  { value: "in_progress", label: "In Progress" },
+                  { value: "waiting_customer", label: "Waiting Customer" },
+                  { value: "resolved", label: "Resolved" },
+                  { value: "closed", label: "Closed" },
+                  { value: "cancelled", label: "Cancelled" },
+                ]}
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-lightGray rounded-[8px] focus:outline-none focus:ring-0 font-nunito bg-white"
-              >
-                <option value="">All Status</option>
-                <option value="open">Open</option>
-                <option value="in_progress">In Progress</option>
-                <option value="waiting_customer">Waiting Customer</option>
-                <option value="resolved">Resolved</option>
-                <option value="closed">Closed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
+                onChange={(value) => setStatusFilter(value)}
+                placeholder="All Status"
+                className="h-[40px]"
+              />
             </div>
             
             <div>
               <label className="block text-xs font-semibold text-secondary mb-1">
                 Priority
               </label>
-              <select
+              <CustomDropdown
+                options={[
+                  { value: "", label: "All Priority" },
+                  { value: "low", label: "Low" },
+                  { value: "medium", label: "Medium" },
+                  { value: "high", label: "High" },
+                  { value: "urgent", label: "Urgent" },
+                ]}
                 value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-lightGray rounded-[8px] focus:outline-none focus:ring-0 font-nunito bg-white"
-              >
-                <option value="">All Priority</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
+                onChange={(value) => setPriorityFilter(value)}
+                placeholder="All Priority"
+                className="h-[40px]"
+              />
             </div>
             
             <div>

@@ -55,7 +55,7 @@ function CustomDropdown({
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`w-full px-4 py-1.5 h-[52px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 flex gap-1 items-center justify-between ${
+        className={`w-full px-4 py-1.5 h-[38px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 flex gap-1 items-center justify-between ${
           disabled ? "bg-gray-100 cursor-not-allowed opacity-60" : "bg-white"
         } ${
           error ? "border-red-500" : value ? "border-lightGray" : "border-lightGray"

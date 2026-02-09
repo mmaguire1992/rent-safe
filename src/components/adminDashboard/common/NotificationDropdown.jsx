@@ -150,7 +150,7 @@ function NotificationDropdown({ isOpen, onClose, onUnreadCountChange, viewAllPat
           <h3 className="font-bold text-secondary text-lg font-nunito">
             Notifications
           </h3>
-          <button
+          {/* <button
             onClick={() => {
               onClose();
               navigate(viewAllPath);
@@ -158,7 +158,7 @@ function NotificationDropdown({ isOpen, onClose, onUnreadCountChange, viewAllPat
             className="text-sm text-primary hover:text-primary/80 font-semibold"
           >
             View all
-          </button>
+          </button> */}
         </div>
         <div className="flex items-center gap-3">
           {unreadCount > 0 && (

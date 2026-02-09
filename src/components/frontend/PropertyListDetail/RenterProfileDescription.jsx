@@ -184,9 +184,10 @@ function RenterProfileDescription({
 
   return (
     <>
+    <div className="bg-white rounded-[20px] border border-lightGray p-4 sm:p-6">
       {/* Renter Profile Description Section */}
       {hasDescription && (
-        <div className="bg-white rounded-[20px] border border-lightGray p-4 sm:p-6">
+        <div className="">
           <h2 className="text-lg sm:text-xl font-bold font-nunito text-secondary mb-2">
             Renter Profile Description
           </h2>
@@ -206,8 +207,8 @@ function RenterProfileDescription({
 
       {/* Preferred Renter Type Section */}
       {hasPreferredType && (
-        <div className="bg-white rounded-[20px] border border-lightGray p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-bold font-nunito text-secondary mb-4">
+        <div className="my-8">
+          <h2 className="text-lg sm:text-xl font-bold font-nunito text-secondary mb-2">
             Preferred Renter Type
           </h2>
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
@@ -232,7 +233,7 @@ function RenterProfileDescription({
 
       {/* Additional Requirements Section */}
       {hasRequirements && (
-        <div className="bg-white rounded-[20px] border border-lightGray p-4 sm:p-6">
+        <div className="">
           <h2 className="text-lg sm:text-xl font-bold font-nunito text-secondary mb-4">
             Additional Requirements
           </h2>
@@ -241,6 +242,7 @@ function RenterProfileDescription({
           </p>
         </div>
       )}
+      </div>
     </>
   );
 }
