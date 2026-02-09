@@ -52,6 +52,7 @@ function EmploymentDetailsSection({
             value={formData.startDate}
             onChange={(value) => handleDateChange("startDate", value)}
             placeholder="DD/MM/YYYY"
+            error={errors.startDate}
           />
         </div>
 

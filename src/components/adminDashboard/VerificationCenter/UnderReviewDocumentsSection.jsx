@@ -21,18 +21,23 @@ const formatFileSize = (size) => {
   return `${formattedSize} ${sizes[i]}`;
 };
 
+
 function UnderReviewDocumentsSection({ documents, onDelete, onDownload }) {
   if (!documents || documents.length === 0) return null;
-
+const sortedDocuments = [...documents].sort((a, b) => {
+  const timeA = new Date(a.uploadedDate || a.createdAt || a.metaData?.uploadedAt || 0).getTime();
+  const timeB = new Date(b.uploadedDate || b.createdAt || b.metaData?.uploadedAt || 0).getTime();
+  return timeB - timeA; // newest first
+});
   return (
     <div className="bg-white rounded-[14px] border border-lightGray md:p-6 p-3">
       <h2 className="text-xl font-bold font-nunito text-secondary mb-4">
         Under Review Documents
       </h2>
       <div className="space-y-3">
-        {documents.map((doc, index) => (
+        {sortedDocuments.map((doc, index) => (
           <div
-            key={index}
+            key={doc.id || index}
             className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:p-4 p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[10px] overflow-hidden"
           >
             <div className="flex items-center md:gap-4 gap-2 sm:gap-3 flex-1 min-w-0">

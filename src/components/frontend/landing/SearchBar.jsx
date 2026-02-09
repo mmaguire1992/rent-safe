@@ -58,15 +58,6 @@ function SearchBar() {
     performSearch(searchQuery, propertyType);
   };
 
-  // Auto-navigate after debounce when user stops typing
-  // This provides better UX - user can type and it will search automatically after 500ms
-  useEffect(() => {
-    if (debouncedSearchQuery.trim()) {
-      performSearch(debouncedSearchQuery, propertyType);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, propertyType]);
-
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       handleSearch();

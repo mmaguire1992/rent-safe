@@ -49,6 +49,7 @@ function IdentityInformationSection({
             placeholder="DD/MM/YYYY"
             // Allow selecting up to today (no future dates). Age 18+ is validated separately.
             maxDate={new Date().toISOString().split('T')[0]}
+            error={errors.dateOfBirth}
           />
           {errors.dateOfBirth && (
             <p className="mt-1 text-sm text-errorColor">{errors.dateOfBirth}</p>

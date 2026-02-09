@@ -1,3 +1,7 @@
+'use client'
+
+import { useNavigate } from '@/lib/react-router-compat';
+import { useAuth } from '@/context/AuthContext';
 import Badge from "./Badge";
 import Button from "./Button";
 import ShielIcon from "@/svg/websiteSvg/shielIcon";
@@ -9,6 +13,8 @@ import StarIcon from "@/svg/websiteSvg/starIcon";
 
 
 function OwnersAgentsSection() {
+  const navigate = useNavigate();
+  const { isAuthenticated, loading } = useAuth();
   const plans = [
     {
       id: 1,
@@ -88,15 +94,18 @@ function OwnersAgentsSection() {
               eiusmod tempor incididunt ut labore et dolore magna aliqua.
             </p>
 
-            {/* CTA Button */}
-            <div className="pt-2">
-              <Button
-                variant="primary"
-                className="bg-primary-gradient hover:opacity-90 text-white px-4 py-2 sm:h-[38px] flex items-center justify-center text-base sm:text-lg"
-              >
-                List Your Property
-              </Button>
-            </div>
+            {/* CTA Button - Only visible if user is logged in */}
+            {!loading && isAuthenticated && (
+              <div className="pt-2">
+                <Button
+                  variant="primary"
+                  className="bg-primary-gradient hover:opacity-90 text-white px-4 py-2 sm:h-[38px] flex items-center justify-center text-base sm:text-lg"
+                  onClick={() => navigate('/dashboard/properties/add')}
+                >
+                  List Your Property
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Right Section - Service Plans Grid */}

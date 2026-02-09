@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { FiChevronLeft, FiChevronRight, FiCalendar } from "react-icons/fi";
 import GrayCalendarIcon from "@/svg/grayCalendarIcon";
 
-function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, maxDate }) {
+function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, maxDate, error }) {
   const [isOpen, setIsOpen] = useState(false);
   // Initialize currentDate with selected date if available, otherwise use today
   const [currentDate, setCurrentDate] = useState(() => {
@@ -16,7 +16,6 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, 
   });
   const [viewMode, setViewMode] = useState('month'); // 'month' or 'year'
   const calendarRef = useRef(null);
-  const error = [];
 
   // Parse value to Date object
   const selectedDate = value ? new Date(value) : null;
@@ -302,7 +301,7 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, 
           placeholder={placeholder}
           onClick={() => setIsOpen(!isOpen)}
           className={`w-full px-4 py-3 pr-12 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 cursor-pointer ${
-            error ? "border-red-500" : "border-lightGray"
+            error ? "border-errorColor" : "border-lightGray"
           }`}
         />
         <button

@@ -17,6 +17,7 @@ function UploadVerificationDocuments({
   const [selectedDocumentType, setSelectedDocumentType] = useState(preSelectedDocumentType || "");
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [errors, setErrors] = useState({});
+  const [isAnyFileUploading, setIsAnyFileUploading] = useState(false);
 
   // Update selected document type when preSelectedDocumentType changes (reupload mode)
   useEffect(() => {
@@ -78,13 +79,25 @@ function UploadVerificationDocuments({
     }
   };
 
+  // const handleFilesChange = (files) => {
+  //   setUploadedFiles(files);
+  //   // Clear error when user uploads files
+  //   if (errors.files) {
+  //     setErrors(prev => ({ ...prev, files: '' }));
+  //   }
+  // };
+
   const handleFilesChange = (files) => {
-    setUploadedFiles(files);
-    // Clear error when user uploads files
-    if (errors.files) {
-      setErrors(prev => ({ ...prev, files: '' }));
-    }
-  };
+  setUploadedFiles(files);
+  
+  // Check if any file is still uploading
+  const anyUploading = files.some(f => f.uploading === true);
+  setIsAnyFileUploading(anyUploading);
+  
+  if (errors.files) {
+    setErrors(prev => ({ ...prev, files: '' }));
+  }
+};
 
   return (
     <div className="bg-white rounded-[14px] border border-lightGray md:p-4 p-3">
@@ -131,13 +144,29 @@ function UploadVerificationDocuments({
         </div>
 
         <div className="flex justify-end">
-          <button
+          {/* <button
             type="submit"
             disabled={loading}
             className="px-6 py-2 bg-blueGradient text-white rounded-[10px] hover:bg-opacity-90 transition-colors font-bold font-nunito shadow-[0px_2px_10px_0px_#00000033] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Uploading...' : 'Submit for Review'}
-          </button>
+          </button> */}
+
+          <button
+  type="submit"
+  disabled={loading || isAnyFileUploading}
+  className={`px-6 py-2 rounded-[10px] font-bold font-nunito shadow-[0px_2px_10px_0px_#00000033] transition-colors ${
+    loading || isAnyFileUploading
+      ? 'bg-gray-400 text-gray-700 cursor-not-allowed opacity-60'
+      : 'bg-blueGradient text-white hover:bg-opacity-90'
+  }`}
+>
+  {loading 
+    ? 'Uploading to server...' 
+    : isAnyFileUploading 
+      ? 'Uploading...' 
+      : 'Submit for Review'}
+</button>
         </div>
       </form>
     </div>

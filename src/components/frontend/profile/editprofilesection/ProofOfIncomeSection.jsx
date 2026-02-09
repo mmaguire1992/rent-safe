@@ -46,6 +46,7 @@ function ProofOfIncomeSection({
             value={formData.incomeDate}
             onChange={(value) => handleDateChange("incomeDate", value)}
             placeholder="DD/MM/YYYY"
+            error={errors.incomeDate}
           />
           {errors.incomeDate && (
             <p className="mt-1 text-sm text-errorColor">{errors.incomeDate}</p>

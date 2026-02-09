@@ -54,26 +54,18 @@ function ChangePasswordSection() {
     const nextFormData = { ...formData, [name]: value };
     setFormData(nextFormData);
 
-    // Clear error when user starts typing
+    // Clear error when user starts typing (only if field was previously validated on submit)
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-
-    // Validate on change (but don't show error until blur or submit)
-    if (touched[name]) {
-      validateField(name, value, nextFormData);
-    }
-
-    // Cross-field validation: when newPassword changes, re-validate confirmPassword too
-    if (name === "newPassword" && touched.confirmPassword) {
-      validateField("confirmPassword", nextFormData.confirmPassword, nextFormData);
-    }
   };
 
-  const handleBlur = (e) => {
-    const { name, value } = e.target;
-    setTouched((prev) => ({ ...prev, [name]: true }));
-    validateField(name, value);
+
+  const handleInvalid = (e) => {
+    // Prevent browser's default validation tooltip completely
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
   };
 
   const validateField = (name, value, data = formData) => {
@@ -134,6 +126,12 @@ function ChangePasswordSection() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    // Prevent browser validation completely
+    if (e.target && typeof e.target.checkValidity === 'function') {
+      e.target.setAttribute('novalidate', '');
+    }
 
     // Mark all fields as touched to show validation messages
     setTouched({
@@ -179,14 +177,8 @@ function ChangePasswordSection() {
     const hasErrors = Object.values(newErrors).some(error => error !== "");
 
     if (hasErrors) {
-      // Show toast for first error found
-      if (newErrors.oldPassword) {
-        toast.error(newErrors.oldPassword);
-      } else if (newErrors.newPassword) {
-        toast.error(newErrors.newPassword);
-      } else if (newErrors.confirmPassword) {
-        toast.error(newErrors.confirmPassword);
-      }
+      // Don't show toast - errors are already displayed below each field
+      // Just return without submitting
       return;
     }
 
@@ -274,7 +266,20 @@ function ChangePasswordSection() {
         title="Change Password"
       />
 
-      <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+      <form 
+        onSubmit={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleSubmit(e);
+        }}
+        noValidate 
+        onInvalid={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }}
+        className="space-y-4 mt-6"
+      >
         <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
           {/* Old Password */}
           <div>
@@ -287,13 +292,12 @@ function ChangePasswordSection() {
                 name="oldPassword"
                 value={formData.oldPassword}
                 onChange={handleInputChange}
-                onBlur={handleBlur}
+                onInvalid={handleInvalid}
                 className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${touched.oldPassword && errors.oldPassword
                     ? "border-errorColor"
                     : "border-lightGray"
                   }`}
                 placeholder="Enter your old password"
-                required
                 disabled={loading}
               />
               <button
@@ -322,13 +326,12 @@ function ChangePasswordSection() {
                 name="newPassword"
                 value={formData.newPassword}
                 onChange={handleInputChange}
-                onBlur={handleBlur}
+                onInvalid={handleInvalid}
                 className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${touched.newPassword && errors.newPassword
                     ? "border-errorColor"
                     : "border-lightGray"
                   }`}
                 placeholder="Enter your new password"
-                required
                 disabled={loading}
               />
               <button
@@ -357,13 +360,12 @@ function ChangePasswordSection() {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleInputChange}
-              onBlur={handleBlur}
+              onInvalid={handleInvalid}
               className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${touched.confirmPassword && errors.confirmPassword
                   ? "border-errorColor"
                   : "border-lightGray"
                 }`}
               placeholder="Enter your Confirm password"
-              required
               disabled={loading}
             />
             <button
@@ -383,7 +385,12 @@ function ChangePasswordSection() {
         {/* Save Button */}
         <div className="flex justify-end pt-4">
           <button
-            type="submit"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSubmit(e);
+            }}
             disabled={loading}
             className="px-8 py-3 w-full sm:w-auto bg-blueGradient text-white rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors shadow-[0px_2px_10px_0px_#00000033] disabled:opacity-50 disabled:cursor-not-allowed"
           >
