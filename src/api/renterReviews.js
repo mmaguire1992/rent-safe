@@ -8,6 +8,7 @@ import { renterReviews } from './routes';
 /**
  * Create a new renter review/feedback
  * @param {Object} reviewData - Review data
+ * @param {string} reviewData.propertyName - Property name
  * @param {string} reviewData.feedback - Feedback text
  * @param {string} reviewData.fromDate - From date (YYYY-MM-DD format)
  * @param {string} reviewData.toDate - To date (YYYY-MM-DD format)
@@ -15,18 +16,19 @@ import { renterReviews } from './routes';
  */
 export async function createRenterReview(reviewData) {
   try {
-    const { feedback, fromDate, toDate } = reviewData;
+    const { propertyName, feedback, fromDate, toDate } = reviewData;
 
-    if (!feedback || !fromDate || !toDate) {
-      throw new Error('Feedback, fromDate, and toDate are required');
+    if (!propertyName || !feedback || !fromDate || !toDate) {
+      throw new Error('Property name, feedback, fromDate, and toDate are required');
     }
 
-    console.log('Submitting renter review:', { feedback, fromDate, toDate });
+    console.log('Submitting renter review:', { propertyName, feedback, fromDate, toDate });
 
     const responseData = await usePostApi(
       renterReviews.create,
       true, // Requires authentication
       {
+        propertyName: propertyName.trim(),
         feedback: feedback.trim(),
         fromDate,
         toDate,

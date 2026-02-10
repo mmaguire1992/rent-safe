@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 
 function FeedbackSection() {
   const { user } = useAuth();
+  const [propertyName, setPropertyName] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [feedback, setFeedback] = useState("");
@@ -34,7 +35,7 @@ function FeedbackSection() {
   useEffect(() => {
     const fetchFeedback = async () => {
       if (!user?.id) return;
-      
+
       try {
         setLoadingFeedback(true);
         const result = await getAllRenterReviews({ userId: user.id, limit: 100 });
@@ -54,9 +55,12 @@ function FeedbackSection() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     e.stopPropagation(); // Prevent event from bubbling to parent form
-    
+
     // Validation
     const newErrors = {};
+    if (!propertyName.trim()) {
+      newErrors.propertyName = "Property name is required";
+    }
     if (!fromDate) {
       newErrors.fromDate = "From date is required";
     }
@@ -86,19 +90,21 @@ function FeedbackSection() {
 
     try {
       const result = await createRenterReview({
+        propertyName,
         feedback,
         fromDate,
         toDate,
       });
-      
+
       console.log("Feedback submitted successfully:", result);
       toast.success("Feedback submitted successfully");
       // Reset form
+      setPropertyName("");
       setFromDate("");
       setToDate("");
       setFeedback("");
       setShowAddForm(false);
-      
+
       // Refresh feedback list
       if (user?.id) {
         try {
@@ -114,21 +120,31 @@ function FeedbackSection() {
       console.error("Error submitting feedback:", error);
       // Extract error message from API response (axios error structure)
       let errorMessage = "Failed to submit feedback";
-      
+
       if (error?.response?.data) {
         // Axios error response
-        errorMessage = error.response.data.message || 
-                      error.response.data.error || 
-                      error.response.data.error?.message ||
-                      errorMessage;
+        errorMessage = error.response.data.message ||
+          error.response.data.error ||
+          error.response.data.error?.message ||
+          errorMessage;
       } else if (error?.message) {
         // Standard error
         errorMessage = error.message;
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handlePropertyNameChange = (e) => {
+    const value = e.target.value;
+    // Prevent leading spaces
+    const processedValue = value.replace(/^\s+/, '');
+    setPropertyName(processedValue);
+    if (errors.propertyName && processedValue.trim()) {
+      setErrors({ ...errors, propertyName: "" });
     }
   };
 
@@ -139,6 +155,13 @@ function FeedbackSection() {
     setFeedback(processedValue);
     if (errors.feedback && processedValue.trim()) {
       setErrors({ ...errors, feedback: "" });
+    }
+  };
+
+  const handlePropertyNameKeyDown = (e) => {
+    // Prevent space at the beginning
+    if (e.key === ' ' && (!propertyName || propertyName.length === 0 || e.target.selectionStart === 0)) {
+      e.preventDefault();
     }
   };
 
@@ -169,7 +192,7 @@ function FeedbackSection() {
           <FiMessageSquare className="text-[#6B4EFF] text-xl" />
         </div>
         <h2 className="text-xl font-bold font-nunito text-secondary mb-0">
-          Feedback {existingFeedback.length > 0 && `(${existingFeedback.length})`}
+          Rental  History {existingFeedback.length > 0 && `(${existingFeedback.length})`}
         </h2>
       </div>
 
@@ -180,66 +203,55 @@ function FeedbackSection() {
           <span className="ml-3 text-darkGray text-sm">Loading feedback...</span>
         </div>
       ) : existingFeedback.length > 0 ? (
-        <div className="space-y-6 mb-6">
+        <div className="space-y-4 mb-6">
           {existingFeedback.map((review, index) => {
-            // Convert dates to YYYY-MM-DD format for CustomCalendar
-            const fromDateValue = review.fromDate 
-              ? new Date(review.fromDate).toISOString().split('T')[0] 
-              : '';
-            const toDateValue = review.toDate 
-              ? new Date(review.toDate).toISOString().split('T')[0] 
-              : '';
+            const fromDate = review.fromDate ? new Date(review.fromDate).toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric'
+            }) : 'N/A';
+            const toDate = review.toDate ? new Date(review.toDate).toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric'
+            }) : 'N/A';
+            const createdAt = review.createdAt ? new Date(review.createdAt).toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric'
+            }) : '';
 
             return (
-              <div key={review._id || review.id || index}>
-                {index > 0 && <div className="border-t border-lightGray my-6"></div>}
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* From Date */}
-                    <div>
-                      <label className="block text-sm font-semibold text-secondary mb-2">
-                        From Date <span className="text-red-500">*</span>
-                      </label>
-                      <CustomCalendar
-                        value={fromDateValue}
-                        onChange={() => {}} // Read-only
-                        placeholder="Select from date"
-                        maxDate={maxDate}
-                        disabled={true}
-                      />
+              <div
+                key={review._id || review.id || index}
+                className="border border-lightGray rounded-xl p-4 bg-gray-50"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    {review.propertyName && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-base font-semibold text-secondary">
+                          {review.propertyName}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-semibold text-secondary">
+                        Period: {fromDate} - {toDate}
+                      </span>
                     </div>
-
-                    {/* To Date */}
-                    <div>
-                      <label className="block text-sm font-semibold text-secondary mb-2">
-                        To Date <span className="text-red-500">*</span>
-                      </label>
-                      <CustomCalendar
-                        value={toDateValue}
-                        onChange={() => {}} // Read-only
-                        placeholder="Select to date"
-                        minDate={fromDateValue}
-                        maxDate={maxDate}
-                        disabled={true}
-                      />
-                    </div>
+                    {createdAt && (
+                      <p className="text-xs text-darkGray">
+                        Submitted on {createdAt}
+                      </p>
+                    )}
                   </div>
+                </div>
 
-                  {/* Feedback Textbox */}
-                  <div>
-                    <label className="block text-sm font-semibold text-secondary mb-2">
-                      Feedback <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      value={review.feedback || ''}
-                      onChange={() => {}} // Read-only
-                      rows={6}
-                      placeholder="Enter your feedback..."
-                      className="w-full px-4 py-3 border border-lightGray rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] resize-none bg-gray-50"
-                      disabled={true}
-                      readOnly
-                    />
-                  </div>
+                <div className="bg-white border border-lightGray rounded-lg p-3">
+                  <p className="text-sm text-secondary leading-relaxed whitespace-pre-wrap">
+                    "{review.feedback}"
+                  </p>
                 </div>
               </div>
             );
@@ -261,77 +273,96 @@ function FeedbackSection() {
       {/* Add Feedback Form */}
       {showAddForm && (
         <div className="space-y-6 border-t border-lightGray pt-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* From Date */}
+          {/* Property Name */}
           <div>
             <label className="block text-sm font-semibold text-secondary mb-2">
-              From Date <span className="text-red-500">*</span>
+              Property Name <span className="text-red-500">*</span>
             </label>
-            <CustomCalendar
-              value={fromDate}
-              onChange={(date) => {
-                setFromDate(date);
-                // Clear toDate if it's before the new fromDate
-                if (toDate && date && toDate < date) {
-                  setToDate("");
-                }
-                if (errors.fromDate) {
-                  setErrors({ ...errors, fromDate: "" });
-                }
-              }}
-              placeholder="Select from date"
-              maxDate={maxDate}
-              error={errors.fromDate}
+            <input
+              type="text"
+              value={propertyName}
+              onChange={handlePropertyNameChange}
+              onKeyDown={handlePropertyNameKeyDown}
+              placeholder="Enter property name..."
+              className={`w-full px-4 py-3 border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] ${errors.propertyName ? "border-errorColor" : "border-lightGray"
+                }`}
+              disabled={submitting}
             />
-            {errors.fromDate && (
-              <p className="text-xs text-red-500 mt-1">{errors.fromDate}</p>
+            {errors.propertyName && (
+              <p className="text-xs text-red-500 mt-1">{errors.propertyName}</p>
             )}
           </div>
 
-          {/* To Date */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* From Date */}
+            <div>
+              <label className="block text-sm font-semibold text-secondary mb-2">
+                From Date <span className="text-red-500">*</span>
+              </label>
+              <CustomCalendar
+                value={fromDate}
+                onChange={(date) => {
+                  setFromDate(date);
+                  // Clear toDate if it's before the new fromDate
+                  if (toDate && date && toDate < date) {
+                    setToDate("");
+                  }
+                  if (errors.fromDate) {
+                    setErrors({ ...errors, fromDate: "" });
+                  }
+                }}
+                placeholder="Select from date"
+                maxDate={maxDate}
+                error={errors.fromDate}
+              />
+              {errors.fromDate && (
+                <p className="text-xs text-red-500 mt-1">{errors.fromDate}</p>
+              )}
+            </div>
+
+            {/* To Date */}
+            <div>
+              <label className="block text-sm font-semibold text-secondary mb-2">
+                To Date <span className="text-red-500">*</span>
+              </label>
+              <CustomCalendar
+                value={toDate}
+                onChange={(date) => {
+                  setToDate(date);
+                  if (errors.toDate) {
+                    setErrors({ ...errors, toDate: "" });
+                  }
+                }}
+                placeholder="Select to date"
+                minDate={fromDate ? (fromDate < maxDate ? fromDate : undefined) : undefined}
+                maxDate={maxDate}
+                error={errors.toDate}
+              />
+              {errors.toDate && (
+                <p className="text-xs text-red-500 mt-1">{errors.toDate}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Feedback Textbox */}
           <div>
             <label className="block text-sm font-semibold text-secondary mb-2">
-              To Date <span className="text-red-500">*</span>
+              Feedback <span className="text-red-500">*</span>
             </label>
-            <CustomCalendar
-              value={toDate}
-              onChange={(date) => {
-                setToDate(date);
-                if (errors.toDate) {
-                  setErrors({ ...errors, toDate: "" });
-                }
-              }}
-              placeholder="Select to date"
-              minDate={fromDate ? (fromDate < maxDate ? fromDate : undefined) : undefined}
-              maxDate={maxDate}
-              error={errors.toDate}
+            <textarea
+              value={feedback}
+              onChange={handleFeedbackChange}
+              onKeyDown={handleKeyDown}
+              rows={6}
+              placeholder="Enter your feedback..."
+              className={`w-full px-4 py-3 border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] resize-none ${errors.feedback ? "border-errorColor" : "border-lightGray"
+                }`}
+              disabled={submitting}
             />
-            {errors.toDate && (
-              <p className="text-xs text-red-500 mt-1">{errors.toDate}</p>
+            {errors.feedback && (
+              <p className="text-xs text-red-500 mt-1">{errors.feedback}</p>
             )}
           </div>
-        </div>
-
-        {/* Feedback Textbox */}
-        <div>
-          <label className="block text-sm font-semibold text-secondary mb-2">
-            Feedback <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            value={feedback}
-            onChange={handleFeedbackChange}
-            onKeyDown={handleKeyDown}
-            rows={6}
-            placeholder="Enter your feedback..."
-            className={`w-full px-4 py-3 border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] resize-none ${
-              errors.feedback ? "border-errorColor" : "border-lightGray"
-            }`}
-            disabled={submitting}
-          />
-          {errors.feedback && (
-            <p className="text-xs text-red-500 mt-1">{errors.feedback}</p>
-          )}
-        </div>
 
           {/* Submit Button */}
           <div className="flex justify-end gap-3">
@@ -339,6 +370,7 @@ function FeedbackSection() {
               type="button"
               onClick={() => {
                 setShowAddForm(false);
+                setPropertyName("");
                 setFromDate("");
                 setToDate("");
                 setFeedback("");

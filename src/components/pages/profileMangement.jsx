@@ -218,7 +218,7 @@ function ProfileManagementPage() {
                     </svg>
                   </div>
                   <h2 className="text-xl font-bold font-nunito text-secondary mb-0">
-                    Feedback ({feedbackData.reviews.length})
+                    Rental History ({feedbackData.reviews.length})
                   </h2>
                 </div>
 
@@ -247,6 +247,13 @@ function ProfileManagementPage() {
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
+                            {review.propertyName && (
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-base font-semibold text-secondary">
+                                  {review.propertyName}
+                                </span>
+                              </div>
+                            )}
                             <div className="flex items-center gap-2 mb-2">
                               <span className="text-sm font-semibold text-secondary">
                                 Period: {fromDate} - {toDate}
@@ -324,20 +331,20 @@ function ProfileManagementPage() {
             {getDescription()}
           </p>
           <div className="md:hidden mb-6">
-                <CustomDropdown
-                  options={tabOptions}
-                  value={activeTab}
-                  onChange={(value) => {
-                    setActiveTab(value);
-                    setSearchParams({ tab: value });
-                  }}
-                  placeholder="Select a tab"
-                />
-              </div>
+            <CustomDropdown
+              options={tabOptions}
+              value={activeTab}
+              onChange={(value) => {
+                setActiveTab(value);
+                setSearchParams({ tab: value });
+              }}
+              placeholder="Select a tab"
+            />
+          </div>
           <div className="bg-white rounded-[20px] p-4 sm:p-6 lg:p-8 border border-lightGray">
             <div className="bg-white rounded-[20px] p-4 sm:p-6 lg:p-8 border border-lightGray">
               {/* Mobile: Dropdown for tabs */}
-             
+
 
               {/* Desktop: Tab buttons */}
               <div className="hidden md:flex gap-2 mb-6 border-b border-lightGray">
@@ -349,8 +356,8 @@ function ProfileManagementPage() {
                       setSearchParams({ tab: tab.id });
                     }}
                     className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab.id
-                        ? "text-[#4A2FCC] border-b-2 border-[#4A2FCC]"
-                        : "text-darkGray hover:text-secondary"
+                      ? "text-[#4A2FCC] border-b-2 border-[#4A2FCC]"
+                      : "text-darkGray hover:text-secondary"
                       }`}
                   >
                     {tab.label}
