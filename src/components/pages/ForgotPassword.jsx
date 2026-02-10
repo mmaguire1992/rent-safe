@@ -10,13 +10,14 @@ import { forgotPassword, verifyPasswordResetOTP } from "@/api/auth";
 function ForgotPassword() {
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // Get email and error from location state if coming back from CreatePassword
   const { email: stateEmail, error: stateError } = location.state || {};
-  
+
   const [email, setEmail] = useState(stateEmail || "");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState(stateError || "");
+  const [validationError, setValidationError] = useState(""); // Separate state for validation errors (for field highlighting)
   const [showOtp, setShowOtp] = useState(!!stateEmail); // Show OTP form if we have email from state (coming back from CreatePassword)
   const [timer, setTimer] = useState(30); // 30 seconds timer
   const [canResend, setCanResend] = useState(!!stateError); // Enable resend if coming back with error (OTP invalid/expired)
@@ -46,8 +47,28 @@ function ForgotPassword() {
   }, [timer, showOtp]);
 
   const handleEmailChange = (e) => {
-    setEmail(e.target.value);
+    let value = e.target.value;
+    
+    // Prevent leading spaces - remove all leading spaces immediately
+    value = value.replace(/^\s+/, '');
+    
+    setEmail(value);
     setError("");
+    setValidationError(""); // Clear validation error when user types
+  };
+
+  const handleEmailKeyDown = (e) => {
+    // Prevent space from being entered if field is empty or cursor is at the start
+    if (e.key === ' ' || e.key === 'Spacebar') {
+      const input = e.target;
+      const cursorPosition = input.selectionStart;
+      
+      // If cursor is at the start (position 0) or field is empty, prevent space
+      if (cursorPosition === 0 || email.length === 0) {
+        e.preventDefault();
+        return false;
+      }
+    }
   };
 
   const handleOtpChange = (index, value) => {
@@ -77,14 +98,14 @@ function ForgotPassword() {
     const pastedData = e.clipboardData.getData("text").slice(0, 6);
     const newOtp = [...otp];
     let filledCount = 0;
-    
+
     pastedData.split("").forEach((char, index) => {
       if (index < 6 && /^\d$/.test(char)) {
         newOtp[index] = char;
         filledCount++;
       }
     });
-    
+
     setOtp(newOtp);
     setError("");
 
@@ -97,6 +118,7 @@ function ForgotPassword() {
     e.preventDefault();
 
     if (!email.trim()) {
+      setValidationError("This field is required.");
       setError("This field is required.");
       return;
     }
@@ -104,12 +126,14 @@ function ForgotPassword() {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError("Please enter a valid email address.");
+      setValidationError("Invalid email format. Please enter a valid email address.");
+      setError("Invalid email format. Please enter a valid email address.");
       return;
     }
 
     setLoading(true);
     setError("");
+    setValidationError(""); // Clear validation error before API call
 
     try {
       await forgotPassword(email);
@@ -123,9 +147,34 @@ function ForgotPassword() {
       }, 100);
     } catch (error) {
       console.error('Forgot password error:', error);
-      const errorMessage = error.message || 'Failed to send OTP. Please try again.';
-      setError(errorMessage);
-      toast.error(errorMessage);
+      
+      // Check if it's a validation error from API (structured error response)
+      // Note: fetch API stores response data in error.data, not error.response.data
+      const responseData = error.data || error.response?.data;
+      const validationErrors = responseData?.errors;
+      
+      if (validationErrors && Array.isArray(validationErrors) && validationErrors.length > 0) {
+        // Find email field error
+        const emailError = validationErrors.find(err => err.field === 'email');
+        if (emailError && emailError.message) {
+          // Show API error message only in toast, NOT below field
+          const errorMessage = emailError.message;
+          setError(errorMessage);
+          toast.error(errorMessage);
+        } else {
+          // Use first error message if no email-specific error found
+          const firstError = validationErrors[0];
+          const errorMessage = firstError?.message || 'Validation failed. Please check your input.';
+          setError(errorMessage);
+          toast.error(errorMessage);
+        }
+      } else {
+        // Generic API error (network, server error, etc.)
+        const errorMessage = error.message || responseData?.error || responseData?.message || 'Failed to send OTP. Please try again.';
+        setError(errorMessage);
+        // Don't set validationError for API errors - this prevents field highlighting
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -153,20 +202,20 @@ function ForgotPassword() {
     try {
       // Verify OTP with backend before navigating
       await verifyPasswordResetOTP(email, otpString);
-      
+
       // Store email and OTP in sessionStorage as backup (in case state is lost)
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('resetPasswordEmail', email);
         sessionStorage.setItem('resetPasswordOtp', otpString);
       }
-      
+
       // OTP verified successfully - navigate to create password page
-      navigate("/create-password", { 
-        state: { 
-          email, 
+      navigate("/create-password", {
+        state: {
+          email,
           otp: otpString,
-          fromForgotPassword: true 
-        } 
+          fromForgotPassword: true
+        }
       });
     } catch (error) {
       console.error('OTP verification error:', error);
@@ -190,7 +239,7 @@ function ForgotPassword() {
     try {
       await forgotPassword(email);
       toast.success("OTP has been resent to your email");
-      
+
       // Reset timer and OTP fields
       setTimer(30);
       setCanResend(false);
@@ -245,20 +294,17 @@ function ForgotPassword() {
                   name="email"
                   value={email}
                   onChange={handleEmailChange}
+                  onKeyDown={handleEmailKeyDown}
                   placeholder="Enter your registered email address"
-                  // className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0  ${
-                  //   error ? "border-errorColor" : "border-lightGray"
-                  // }`}
                   title=""
-                  className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
-                    error ? "border-errorColor" : "border-lightGray"
-                  }`}
+                  className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${validationError ? "border-errorColor" : "border-lightGray"
+                    }`}
                 />
-                {error && (
-    <p className="text-errorColor text-sm mt-1.5">
-      {error}
-    </p>
-  )}
+                {validationError && (
+                  <p className="text-errorColor text-sm mt-1.5">
+                    {validationError}
+                  </p>
+                )}
               </div>
 
               {/* Continue Button */}
@@ -300,16 +346,15 @@ function ForgotPassword() {
                       onKeyDown={(e) => handleKeyDown(index, e)}
                       onPaste={handlePaste}
                       placeholder="-"
-                      className={`w-[50px] sm:w-[62px] h-[48px] sm:h-[52px] text-center text-lg sm:text-xl font-semibold border rounded-lg focus:outline-none focus:ring-2 placeholder:text-gray-400 ${
-                        error
+                      className={`w-[50px] sm:w-[62px] h-[48px] sm:h-[52px] text-center text-lg sm:text-xl font-semibold border rounded-lg focus:outline-none focus:ring-2 placeholder:text-gray-400 ${error
                           ? "border-errorColor"
                           : "border-lightGray focus:ring-primary"
-                      }`}
+                        }`}
                     />
                   ))}
                 </div>
               </div>
-              
+
               {/* Verify Button */}
               <button
                 type="submit"

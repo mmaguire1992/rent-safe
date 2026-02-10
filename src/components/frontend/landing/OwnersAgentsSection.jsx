@@ -96,15 +96,15 @@ function OwnersAgentsSection() {
 
             {/* CTA Button - Only visible if user is logged in */}
             {!loading && isAuthenticated && (
-              <div className="pt-2">
-                <Button
-                  variant="primary"
-                  className="bg-primary-gradient hover:opacity-90 text-white px-4 py-2 sm:h-[38px] flex items-center justify-center text-base sm:text-lg"
+            <div className="pt-2">
+              <Button
+                variant="primary"
+                className="bg-primary-gradient hover:opacity-90 text-white px-4 py-2 sm:h-[38px] flex items-center justify-center text-base sm:text-lg"
                   onClick={() => navigate('/dashboard/properties/add')}
-                >
-                  List Your Property
-                </Button>
-              </div>
+              >
+                List Your Property
+              </Button>
+            </div>
             )}
           </div>
 

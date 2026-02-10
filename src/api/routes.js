@@ -102,3 +102,10 @@ export const rentalHistory = {
   getById: (id) => `/rental-history/${id}`,
   findRenter: '/rental-history/find-renter',
 };
+
+// Renter Review Routes
+export const renterReviews = {
+  create: '/renter-reviews',
+  getAll: '/renter-reviews',
+  getById: (id) => `/renter-reviews/${id}`,
+};

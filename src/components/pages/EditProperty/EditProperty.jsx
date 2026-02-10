@@ -502,7 +502,7 @@ function EditProperty() {
   const validateStep3 = () => {
     const errors = {};
     if (!formData.monthlyRent || parseFloat(formData.monthlyRent) <= 0) {
-      errors.monthlyRent = "Monthly Rent is required and must be greater than 0";
+      errors.monthlyRent = "Please provide a valid monthly rent amount greater than 0"
     }
     if (!formData.availableFrom?.trim()) errors.availableFrom = "Available From date is required";
     if (!formData.furnishedStatus?.trim()) errors.furnishedStatus = "Furnished Status is required";

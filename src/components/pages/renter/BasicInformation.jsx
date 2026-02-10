@@ -84,11 +84,26 @@ function RenterBasicInformation() {
   }));
 
   // Clear error when user starts typing
+  // For fullName field: only clear error if user types a non-space character
+  // For other fields: clear error on any input
   if (errors[name]) {
-    setErrors((prev) => ({
-      ...prev,
-      [name]: "",
-    }));
+    if (name === 'fullName') {
+      // Only clear error if the value contains at least one non-space character
+      const hasNonSpaceChar = processedValue.trim().length > 0;
+      if (hasNonSpaceChar) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: "",
+        }));
+      }
+      // If only spaces, keep the error (don't clear it)
+    } else {
+      // For other fields, clear error on any input
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
   }
 };
 

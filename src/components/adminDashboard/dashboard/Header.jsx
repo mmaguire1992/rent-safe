@@ -141,6 +141,11 @@ function Header({ onMenuClick }) {
     const handleProfileImageUpdate = async () => {
       try {
         const userData = await getCurrentUser();
+        // Keep freshest user info for verification badge
+        if (userData) {
+          setFreshUser(userData);
+          if (updateUser) updateUser(userData);
+        }
         if (userData?.userInfo?.profileImage) {
           // Add cache-busting parameter to force image refresh
           const imageUrl = userData.userInfo.profileImage + (userData.userInfo.profileImage.includes('?') ? '&' : '?') + '_t=' + Date.now();

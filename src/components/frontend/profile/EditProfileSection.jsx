@@ -13,6 +13,7 @@ import EmploymentDetailsSection from "./editprofilesection/EmploymentDetailsSect
 import ProofOfIncomeSection from "./editprofilesection/ProofOfIncomeSection";
 import DocumentsSection from "./editprofilesection/DocumentsSection";
 import ReferencesSection from "./editprofilesection/ReferencesSection";
+import FeedbackSection from "./FeedbackSection";
 import GuarantorInformationSection from "./editprofilesection/GuarantorInformationSection";
 
 function EditProfileSection() {
@@ -206,7 +207,7 @@ function EditProfileSection() {
   const referenceTypeOptions = [
     { value: "professional", label: "Professional" },
     { value: "personal", label: "Personal" },
-    { value: "landlord", label: "Landlord" },
+    // { value: "landlord", label: "Landlord" },
   ];
 
   const [formData, setFormData] = useState({
@@ -301,8 +302,16 @@ function EditProfileSection() {
     const phoneFields = ['phoneNumber', 'identityPhone', 'guarantorPhone'];
     // Postcode fields - UK postcodes can contain letters and numbers
     const postcodeFields = ['postcode', 'currentPostcode'];
+    // Date fields - should not have leading spaces
+    const dateFields = ['dateOfBirth', 'startDate', 'incomeDate', 'documentExpire'];
     
     let processedValue = value;
+    
+    // Prevent leading spaces for all text fields (except numeric fields which are handled separately)
+    // Note: numeric fields and date fields don't need leading space removal as they have their own validation
+    if (!numericFields.includes(name) && !dateFields.includes(name)) {
+      processedValue = processedValue.replace(/^\s+/, '');
+    }
     
     if (numericFields.includes(name)) {
       // Check if original value contains non-numeric characters
@@ -516,8 +525,38 @@ function EditProfileSection() {
 
   const handleReferenceChange = (index, field, value) => {
     const newReferences = [...references];
-    newReferences[index][field] = value;
+    // Prevent leading spaces for reference fields
+    let processedValue = value;
+    if (typeof value === 'string') {
+      processedValue = processedValue.replace(/^\s+/, '');
+    }
+    newReferences[index][field] = processedValue;
     setReferences(newReferences);
+  };
+
+  const handleKeyDown = (e) => {
+    // Prevent space from being entered if field is empty or cursor is at the start
+    if (e.key === ' ' || e.key === 'Spacebar') {
+      const input = e.target;
+      const cursorPosition = input.selectionStart;
+      const fieldValue = input.value || '';
+      const fieldName = input.name || '';
+      
+      // Skip for numeric fields, date fields, and phone fields (they have their own validation)
+      const numericFields = ['creditScore', 'annualSalary', 'grossMonthly', 'netMonthly', 'monthlyIncome'];
+      const dateFields = ['dateOfBirth', 'startDate', 'incomeDate', 'documentExpire'];
+      const phoneFields = ['phoneNumber', 'identityPhone', 'guarantorPhone'];
+      
+      if (numericFields.includes(fieldName) || dateFields.includes(fieldName) || phoneFields.includes(fieldName)) {
+        return; // Allow space handling for these fields through their own logic
+      }
+      
+      // If cursor is at the start (position 0) or field is empty, prevent space
+      if (cursorPosition === 0 || fieldValue.length === 0) {
+        e.preventDefault();
+        return false;
+      }
+    }
   };
 
   const addReference = () => {
@@ -1053,6 +1092,7 @@ function EditProfileSection() {
       <IdentityInformationSection
         formData={formData}
         handleChange={handleChange}
+        handleKeyDown={handleKeyDown}
         handleDateChange={handleDateChange}
         existingDocuments={identityDocuments}
         onDocumentsUpdated={reloadDocuments}
@@ -1066,6 +1106,7 @@ function EditProfileSection() {
       <CurrentAddressSection 
         formData={formData} 
         handleChange={handleChange}
+        handleKeyDown={handleKeyDown}
         existingDocuments={proofOfAddressDocuments}
         onDocumentsUpdated={reloadUserDataAndDocuments}
         deferDbSave
@@ -1078,6 +1119,7 @@ function EditProfileSection() {
       <EmploymentDetailsSection
         formData={formData}
         handleChange={handleChange}
+        handleKeyDown={handleKeyDown}
         handleDateChange={handleDateChange}
         handleDropdownChange={handleDropdownChange}
         employmentTypeOptions={employmentTypeOptions}
@@ -1121,9 +1163,12 @@ function EditProfileSection() {
         referenceTypeOptions={referenceTypeOptions}
       />
 
+      <FeedbackSection />
+
       <GuarantorInformationSection
         formData={formData}
         handleChange={handleChange}
+        handleKeyDown={handleKeyDown}
         existingDocuments={otherDocuments}
         onDocumentsUpdated={reloadUserDataAndDocuments}
         deferDbSave

@@ -11,6 +11,7 @@ import { toast } from "react-toastify";
 function BasicInformationSection({
   formData,
   handleChange,
+  handleKeyDown,
   handleImageUpload,
   onRemoveProfilePicture,
   errors = {},
@@ -124,6 +125,7 @@ function BasicInformationSection({
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
+                onKeyDown={handleKeyDown}
                 placeholder="Type your description"
                 rows={3}
                 className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
@@ -200,6 +202,7 @@ function BasicInformationSection({
                   name="address"
                   value={formData.address}
                   onChange={handleChange}
+                  onKeyDown={handleKeyDown}
                   placeholder="Enter your address"
                   className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
                 />
@@ -214,6 +217,7 @@ function BasicInformationSection({
                   name="city"
                   value={formData.city}
                   onChange={handleChange}
+                  onKeyDown={handleKeyDown}
                   placeholder="Enter your city"
                   className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
                 />
@@ -228,6 +232,7 @@ function BasicInformationSection({
                   name="country"
                   value={formData.country}
                   onChange={handleChange}
+                  onKeyDown={handleKeyDown}
                   placeholder="Enter your country"
                   className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
                 />
@@ -263,6 +268,7 @@ function BasicInformationSection({
                   name="designation"
                   value={formData.designation}
                   onChange={handleChange}
+                  onKeyDown={handleKeyDown}
                   placeholder="Enter your designation"
                   className="w-full px-4 py-3 border border-lightGray rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary"
                 />

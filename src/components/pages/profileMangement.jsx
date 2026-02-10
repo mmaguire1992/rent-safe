@@ -4,6 +4,14 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams } from '@/lib/react-router-compat';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from "react-toastify";
+import { getCurrentUser } from "@/api/users";
+import { getMyDocuments } from "@/api/verification";
+import { getAllRenterReviews } from "@/api/renterReviews";
+import ProfileHeader from "@/components/adminDashboard/TenantProfile/ProfileHeader";
+import CreditCheck from "@/components/adminDashboard/TenantProfile/CreditCheck";
+import IdentityInfo from "@/components/adminDashboard/TenantProfile/IdentityInfo";
+import CurrentAddress from "@/components/adminDashboard/TenantProfile/CurrentAddress";
+import EmploymentDetails from "@/components/adminDashboard/TenantProfile/EmploymentDetails";
 import Header from "@/components/frontend/common/header";
 import ProfileTabs from "@/components/frontend/profile/ProfileTabs";
 import EditProfileSection from "@/components/frontend/profile/EditProfileSection";
@@ -17,6 +25,7 @@ import CustomDropdown from "@/components/adminDashboard/common/CustomDropdown";
 
 // Owner tabs
 const OWNER_TABS = [
+  { id: "view", label: "View Profile" },
   { id: "edit", label: "Edit Profile" },
   { id: "password", label: "Change Password" },
   { id: "verification", label: "Verification" },
@@ -26,6 +35,7 @@ const OWNER_TABS = [
 
 // Renter tabs (more comprehensive)
 const RENTER_TABS = [
+  { id: "view", label: "View Profile" },
   { id: "edit", label: "Edit Profile" },
   { id: "password", label: "Change Password" },
   { id: "verification", label: "Verification" },
@@ -34,9 +44,9 @@ const RENTER_TABS = [
 ];
 
 function ProfileManagementPage() {
-  const { userType } = useAuth();
+  const { userType, user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState("edit");
+  const [activeTab, setActiveTab] = useState("view");
 
   // Get tabs based on user type
   const TABS = userType === 'owner' ? OWNER_TABS : RENTER_TABS;
@@ -65,7 +75,206 @@ function ProfileManagementPage() {
     }
   }, [searchParams, setSearchParams]);
 
+  const [profileData, setProfileData] = useState(null);
+  const [documentsData, setDocumentsData] = useState(null);
+  const [feedbackData, setFeedbackData] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  // Fetch profile data and documents for view tab
+  useEffect(() => {
+    if (activeTab === "view") {
+      const fetchProfileData = async () => {
+        try {
+          setLoadingProfile(true);
+          const userId = user?.id;
+          const [userData, docsData, feedback] = await Promise.all([
+            getCurrentUser(),
+            getMyDocuments().catch(() => null), // Don't fail if documents API fails
+            userId ? getAllRenterReviews({ userId, limit: 100 }).catch(() => null) : Promise.resolve(null) // Fetch feedback for current user
+          ]);
+          setProfileData(userData);
+          setDocumentsData(docsData);
+          setFeedbackData(feedback);
+        } catch (error) {
+          console.error('Error fetching profile data:', error);
+          toast.error('Failed to load profile data');
+        } finally {
+          setLoadingProfile(false);
+        }
+      };
+      fetchProfileData();
+    }
+  }, [activeTab, user?.id]);
+
   const renderContent = () => {
+    if (activeTab === "view") {
+      if (loadingProfile) {
+        return (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6B4EFF]"></div>
+            <span className="ml-3 text-darkGray">Loading profile...</span>
+          </div>
+        );
+      }
+
+      const userInfo = profileData?.userInfo || {};
+      const name = userInfo.name || {};
+      const address = userInfo.address || {};
+      const employment = userInfo.employment || {};
+      const proofOfIncome = userInfo.proofOfIncome || {};
+      const fullName = `${profileData?.firstName || ""} ${profileData?.lastName || ""}`.trim() || profileData?.email || 'User';
+      const profileImage = userInfo.profileImage || null;
+
+      // Helper function to extract documents by type
+      const getDocumentsByType = (docType) => {
+        if (!documentsData?.documents || !Array.isArray(documentsData.documents)) return [];
+        const docGroup = documentsData.documents.find((group) => group.docType === docType);
+        return docGroup && docGroup.docs ? docGroup.docs : [];
+      };
+
+      // Extract credit score documents
+      const creditScoreDocs = getDocumentsByType('credit_score');
+      const legacyCreditDoc = userInfo.creditScoreDocument;
+      const creditScoreDocument = creditScoreDocs.length > 0 ? creditScoreDocs[0].url : legacyCreditDoc;
+
+      // Transform data to match TenantProfile component expectations
+      const tenantData = {
+        id: profileData?.id || profileData?.userId,
+        userId: profileData?.id || profileData?.userId,
+        name: fullName,
+        profileImage: profileImage,
+        description: userInfo.bio || '',
+        designation: employment.jobTitle || '',
+        location: `${address.city || ''}${address.city && address.country ? ', ' : ''}${address.country || ''}`.trim() || '',
+        monthlyIncome: employment.monthlyIncome ? `£${employment.monthlyIncome}` : '',
+        verified: userInfo.verificationStatus === 'verified' || profileData?.isEmailVerified || false,
+        creditScore: userInfo.creditScore || 0,
+        creditMax: 850,
+        creditScoreDocument: creditScoreDocument,
+      };
+
+      const identityData = {
+        fullName: `${name.first || ""} ${name.last || ""}`.trim() || fullName,
+        phone: profileData?.phone || '',
+        email: profileData?.email || '',
+      };
+
+      const currentAddressData = {
+        address: address.street || '',
+        city: address.city || '',
+        country: address.country || '',
+        postcode: address.postcode || '',
+        livingPeriod: address.livingPeriod || '',
+      };
+
+      const employmentData = {
+        jobTitle: employment.jobTitle || '',
+        company: employment.company || '',
+        startDate: employment.startDate ? new Date(employment.startDate).toLocaleDateString() : '',
+        employmentType: employment.employmentType || '',
+        annualSalary: employment.annualSalary ? `£${employment.annualSalary}` : '',
+        workLocation: employment.workLocation || '',
+      };
+
+      const proofOfIncomeData = {
+        type: proofOfIncome.type || '',
+        date: proofOfIncome.date ? new Date(proofOfIncome.date).toLocaleDateString() : '',
+        grossMonthly: proofOfIncome.grossMonthly ? `£${proofOfIncome.grossMonthly}` : '',
+        netMonthly: proofOfIncome.netMonthly ? `£${proofOfIncome.netMonthly}` : '',
+      };
+
+      return (
+        <div className="space-y-6">
+          {/* Profile Header */}
+          <ProfileHeader
+            tenantData={tenantData}
+            onSendOffer={null}
+            onChat={null}
+          />
+
+          {/* Profile Details Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            <CreditCheck tenantData={tenantData} showDocument={true} />
+            <IdentityInfo identity={identityData} />
+            <CurrentAddress address={currentAddressData} />
+          </div>
+
+          {/* Employment Details */}
+          <div className="block">
+            <EmploymentDetails
+              employment={employmentData}
+              proofOfIncome={proofOfIncomeData}
+            />
+          </div>
+
+          {/* Feedback Section */}
+          {feedbackData && feedbackData.reviews && feedbackData.reviews.length > 0 && (
+            <div className="block">
+              <div className="bg-white rounded-lg border border-lightGray p-6">
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="bg-[#E8E2FF] rounded-[10px] p-2 flex-shrink-0">
+                    <svg className="w-6 h-6 text-[#6B4EFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-bold font-nunito text-secondary mb-0">
+                    Feedback ({feedbackData.reviews.length})
+                  </h2>
+                </div>
+
+                <div className="space-y-4">
+                  {feedbackData.reviews.map((review, index) => {
+                    const fromDate = review.fromDate ? new Date(review.fromDate).toLocaleDateString('en-GB', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric'
+                    }) : 'N/A';
+                    const toDate = review.toDate ? new Date(review.toDate).toLocaleDateString('en-GB', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric'
+                    }) : 'N/A';
+                    const createdAt = review.createdAt ? new Date(review.createdAt).toLocaleDateString('en-GB', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric'
+                    }) : '';
+
+                    return (
+                      <div
+                        key={review._id || review.id || index}
+                        className="border border-lightGray rounded-xl p-4 bg-gray-50"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-sm font-semibold text-secondary">
+                                Period: {fromDate} - {toDate}
+                              </span>
+                            </div>
+                            {createdAt && (
+                              <p className="text-xs text-darkGray">
+                                Submitted on {createdAt}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="bg-white border border-lightGray rounded-lg p-3">
+                          <p className="text-sm text-secondary leading-relaxed whitespace-pre-wrap">
+                            "{review.feedback}"
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
     if (activeTab === "edit") return <EditProfileSection />;
     if (activeTab === "password") return <ChangePasswordSection />;
     if (activeTab === "verification") return <VerificationSection />;
@@ -81,7 +290,7 @@ function ProfileManagementPage() {
 
   const getSelectedTabLabel = () => {
     const selectedTab = TABS.find((tab) => tab.id === activeTab);
-    return selectedTab ? selectedTab.label : "Edit Profile";
+    return selectedTab ? selectedTab.label : "View Profile";
   };
 
   // Dynamic title and description based on user type

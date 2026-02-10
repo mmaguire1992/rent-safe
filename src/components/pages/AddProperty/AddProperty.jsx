@@ -467,7 +467,7 @@ function AddProperty() {
   const validateStep3 = () => {
     const errors = {};
     if (!formData.monthlyRent || formData.monthlyRent === "" || parseFloat(formData.monthlyRent) <= 0) {
-      errors.monthlyRent = "Monthly Rent is required";
+      errors.monthlyRent = "Monthly rent cannot be empty";
     }
     if (!formData.availableFrom || !formData.availableFrom.trim()) {
       errors.availableFrom = "Available From date is required";
