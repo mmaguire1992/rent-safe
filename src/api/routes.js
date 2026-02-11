@@ -108,4 +108,6 @@ export const renterReviews = {
   create: '/renter-reviews',
   getAll: '/renter-reviews',
   getById: (id) => `/renter-reviews/${id}`,
+  update: (id) => `/renter-reviews/${id}`,
+  delete: (id) => `/renter-reviews/${id}`,
 };
