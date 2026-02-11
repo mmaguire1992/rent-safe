@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import CustomCalendar from "@/components/adminDashboard/common/CustomCalendar";
-import { FiMessageSquare } from "react-icons/fi";
+import { FiMessageSquare, FiEdit, FiTrash2 } from "react-icons/fi";
 import { toast } from "react-toastify";
-import { createRenterReview, getAllRenterReviews } from "@/api/renterReviews";
+import { createRenterReview, getAllRenterReviews, updateRenterReview, deleteRenterReview } from "@/api/renterReviews";
 import { useAuth } from "@/context/AuthContext";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 function FeedbackSection() {
   const { user } = useAuth();
@@ -18,6 +19,14 @@ function FeedbackSection() {
   const [existingFeedback, setExistingFeedback] = useState([]);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState({ 
+    isOpen: false, 
+    reviewId: null, 
+    reviewName: null,
+    reviewDates: null 
+  });
+  const [deleting, setDeleting] = useState(false);
 
   // Calculate yesterday's date in YYYY-MM-DD format for maxDate
   const getYesterdayDate = () => {
@@ -89,21 +98,38 @@ function FeedbackSection() {
     setSubmitting(true);
 
     try {
-      const result = await createRenterReview({
-        propertyName,
-        feedback,
-        fromDate,
-        toDate,
-      });
+      let result;
+      if (editingId) {
+        // Update existing review
+        result = await updateRenterReview(editingId, {
+          propertyName,
+          feedback,
+          fromDate,
+          toDate,
+        });
+        // Use backend message
+        toast.success(result?.message || "Feedback updated successfully");
+      } else {
+        // Create new review
+        result = await createRenterReview({
+          propertyName,
+          feedback,
+          fromDate,
+          toDate,
+        });
+        // Use backend message
+        toast.success(result?.message || "Feedback submitted successfully");
+      }
 
-      console.log("Feedback submitted successfully:", result);
-      toast.success("Feedback submitted successfully");
+      console.log("Feedback saved successfully:", result);
+      
       // Reset form
       setPropertyName("");
       setFromDate("");
       setToDate("");
       setFeedback("");
       setShowAddForm(false);
+      setEditingId(null);
 
       // Refresh feedback list
       if (user?.id) {
@@ -117,9 +143,9 @@ function FeedbackSection() {
         }
       }
     } catch (error) {
-      console.error("Error submitting feedback:", error);
+      console.error("Error saving feedback:", error);
       // Extract error message from API response (axios error structure)
-      let errorMessage = "Failed to submit feedback";
+      let errorMessage = editingId ? "Failed to update feedback" : "Failed to submit feedback";
 
       if (error?.response?.data) {
         // Axios error response
@@ -136,6 +162,118 @@ function FeedbackSection() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEdit = (review) => {
+    // Format dates to YYYY-MM-DD for the calendar component
+    const formatDateForInput = (dateString) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    setPropertyName(review.propertyName || '');
+    setFromDate(formatDateForInput(review.fromDate));
+    setToDate(formatDateForInput(review.toDate));
+    setFeedback(review.feedback || '');
+    setEditingId(review._id || review.id);
+    setShowAddForm(true);
+    setErrors({});
+    
+    // Scroll to form
+    setTimeout(() => {
+      const formElement = document.querySelector('.feedback-form-section');
+      if (formElement) {
+        formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
+
+  const handleCancel = () => {
+    setShowAddForm(false);
+    setEditingId(null);
+    setPropertyName("");
+    setFromDate("");
+    setToDate("");
+    setFeedback("");
+    setErrors({});
+  };
+
+  const handleDeleteClick = (review) => {
+    // Format dates for display
+    const formatDateForDisplay = (dateString) => {
+      if (!dateString) return 'N/A';
+      try {
+        return new Date(dateString).toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        });
+      } catch {
+        return 'N/A';
+      }
+    };
+
+    const fromDate = formatDateForDisplay(review.fromDate);
+    const toDate = formatDateForDisplay(review.toDate);
+    const dateRange = `${fromDate} - ${toDate}`;
+
+    setDeleteConfirmModal({
+      isOpen: true,
+      reviewId: review._id || review.id,
+      reviewName: review.propertyName || 'this rental history entry',
+      reviewDates: dateRange,
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmModal.reviewId) return;
+
+    setDeleting(true);
+    try {
+      const result = await deleteRenterReview(deleteConfirmModal.reviewId);
+      // Use backend message
+      toast.success(result?.message || "Rental history entry deleted successfully");
+      
+      // Close modal
+      setDeleteConfirmModal({ isOpen: false, reviewId: null, reviewName: null, reviewDates: null });
+      
+      // Refresh feedback list
+      if (user?.id) {
+        try {
+          const result = await getAllRenterReviews({ userId: user.id, limit: 100 });
+          if (result && result.reviews) {
+            setExistingFeedback(result.reviews);
+          }
+        } catch (error) {
+          console.error('Error refreshing feedback:', error);
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting feedback:", error);
+      // Extract error message from API response
+      let errorMessage = "Failed to delete rental history entry";
+
+      if (error?.response?.data) {
+        errorMessage = error.response.data.message ||
+          error.response.data.error ||
+          error.response.data.error?.message ||
+          errorMessage;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmModal({ isOpen: false, reviewId: null, reviewName: null, reviewDates: null });
   };
 
   const handlePropertyNameChange = (e) => {
@@ -246,6 +384,24 @@ function FeedbackSection() {
                       </p>
                     )}
                   </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(review)}
+                      className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-200 transition-colors text-[#6B4EFF]"
+                      title="Edit feedback"
+                    >
+                      <FiEdit className="text-lg" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteClick(review)}
+                      className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-50 transition-colors text-red-500"
+                      title="Delete feedback"
+                    >
+                      <FiTrash2 className="text-lg" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="bg-white border border-lightGray rounded-lg p-3">
@@ -270,9 +426,9 @@ function FeedbackSection() {
         </button>
       )}
 
-      {/* Add Feedback Form */}
+      {/* Add/Edit Feedback Form */}
       {showAddForm && (
-        <div className="space-y-6 border-t border-lightGray pt-6">
+        <div className="space-y-6 border-t border-lightGray pt-6 feedback-form-section">
           {/* Property Name */}
           <div>
             <label className="block text-sm font-semibold text-secondary mb-2">
@@ -368,14 +524,7 @@ function FeedbackSection() {
           <div className="flex justify-end gap-3">
             <button
               type="button"
-              onClick={() => {
-                setShowAddForm(false);
-                setPropertyName("");
-                setFromDate("");
-                setToDate("");
-                setFeedback("");
-                setErrors({});
-              }}
+              onClick={handleCancel}
               disabled={submitting}
               className="px-6 py-3 border border-lightGray text-secondary rounded-lg font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -387,11 +536,44 @@ function FeedbackSection() {
               disabled={submitting}
               className="px-6 py-3 bg-blueGradient text-white rounded-lg font-semibold hover:bg-opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? "Submitting..." : "Submit Feedback"}
+              {submitting 
+                ? (editingId ? "Updating..." : "Submitting...") 
+                : (editingId ? "Update Feedback" : "Submit Feedback")}
             </button>
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmModal.isOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Rental History Entry"
+        message={
+          <div className="space-y-3">
+            <p className="text-gray-700 text-base">
+              You are about to permanently delete this rental history entry. This action cannot be undone.
+            </p>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <p className="font-semibold text-gray-900 text-base mb-2">
+                {deleteConfirmModal.reviewName}
+              </p>
+              {deleteConfirmModal.reviewDates && (
+                <p className="text-gray-600 text-sm">
+                  Rental Period: <span className="font-medium">{deleteConfirmModal.reviewDates}</span>
+                </p>
+              )}
+            </div>
+            <p className="text-red-600 font-semibold text-sm flex items-center gap-1">
+              <span>All data associated with this entry will be permanently removed from your profile.</span>
+            </p>
+          </div>
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        isProcessing={deleting}
+      />
     </div>
   );
 }

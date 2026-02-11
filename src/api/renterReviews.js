@@ -2,7 +2,7 @@
  * Renter Reviews API Functions
  * API calls for renter reviews/feedback
  */
-import { usePostApi, useGetApi } from './apiClient';
+import { usePostApi, useGetApi, usePutApi, useDeleteApi } from './apiClient';
 import { renterReviews } from './routes';
 
 /**
@@ -38,12 +38,21 @@ export async function createRenterReview(reviewData) {
     console.log('Renter review API response:', responseData);
 
     if (responseData && responseData.success) {
-      return responseData.data || responseData;
+      // Return full response including message
+      return {
+        data: responseData.data || responseData,
+        message: responseData.message,
+        ...responseData
+      };
     }
 
     // If response doesn't have success flag but has data, return it
     if (responseData && responseData.data) {
-      return responseData.data;
+      return {
+        data: responseData.data,
+        message: responseData.message,
+        ...responseData
+      };
     }
 
     throw new Error(responseData?.message || 'Failed to create renter review');
@@ -113,6 +122,125 @@ export async function getRenterReviewById(reviewId) {
     throw new Error(responseData?.message || 'Failed to get renter review');
   } catch (error) {
     console.error('Error in getRenterReviewById:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update a renter review/feedback
+ * @param {string} reviewId - Review ID
+ * @param {Object} reviewData - Updated review data
+ * @param {string} reviewData.propertyName - Property name
+ * @param {string} reviewData.feedback - Feedback text
+ * @param {string} reviewData.fromDate - From date (YYYY-MM-DD format)
+ * @param {string} reviewData.toDate - To date (YYYY-MM-DD format)
+ * @returns {Promise<Object>} Updated review
+ */
+export async function updateRenterReview(reviewId, reviewData) {
+  try {
+    if (!reviewId) {
+      throw new Error('Review ID is required');
+    }
+
+    const { propertyName, feedback, fromDate, toDate } = reviewData;
+
+    if (!propertyName || !feedback || !fromDate || !toDate) {
+      throw new Error('Property name, feedback, fromDate, and toDate are required');
+    }
+
+    console.log('Updating renter review:', { reviewId, propertyName, feedback, fromDate, toDate });
+
+    const responseData = await usePutApi(
+      renterReviews.update(reviewId),
+      true, // Requires authentication
+      {
+        propertyName: propertyName.trim(),
+        feedback: feedback.trim(),
+        fromDate,
+        toDate,
+      }
+    );
+
+    console.log('Renter review update API response:', responseData);
+
+    if (responseData && responseData.success) {
+      // Return full response including message
+      return {
+        data: responseData.data || responseData,
+        message: responseData.message,
+        ...responseData
+      };
+    }
+
+    // If response doesn't have success flag but has data, return it
+    if (responseData && responseData.data) {
+      return {
+        data: responseData.data,
+        message: responseData.message,
+        ...responseData
+      };
+    }
+
+    throw new Error(responseData?.message || 'Failed to update renter review');
+  } catch (error) {
+    console.error('Error in updateRenterReview:', error);
+    // Re-throw with better error structure
+    if (error?.response?.data) {
+      const apiError = new Error(error.response.data.message || error.response.data.error || 'Failed to update renter review');
+      apiError.response = error.response;
+      throw apiError;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Delete a renter review/feedback
+ * @param {string} reviewId - Review ID
+ * @returns {Promise<Object>} Deletion confirmation
+ */
+export async function deleteRenterReview(reviewId) {
+  try {
+    if (!reviewId) {
+      throw new Error('Review ID is required');
+    }
+
+    console.log('Deleting renter review:', { reviewId });
+
+    const responseData = await useDeleteApi(
+      renterReviews.delete(reviewId),
+      true // Requires authentication
+    );
+
+    console.log('Renter review delete API response:', responseData);
+
+    if (responseData && responseData.success) {
+      // Return full response including message
+      return {
+        data: responseData.data || responseData,
+        message: responseData.message,
+        ...responseData
+      };
+    }
+
+    // If response doesn't have success flag but has data, return it
+    if (responseData && responseData.data) {
+      return {
+        data: responseData.data,
+        message: responseData.message,
+        ...responseData
+      };
+    }
+
+    throw new Error(responseData?.message || 'Failed to delete renter review');
+  } catch (error) {
+    console.error('Error in deleteRenterReview:', error);
+    // Re-throw with better error structure
+    if (error?.response?.data) {
+      const apiError = new Error(error.response.data.message || error.response.data.error || 'Failed to delete renter review');
+      apiError.response = error.response;
+      throw apiError;
+    }
     throw error;
   }
 }
