@@ -94,6 +94,11 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
         finalValue = "0";
       }
       
+      // Clear error when user starts typing
+      if (errors && errors[fieldName] && setErrors) {
+        setErrors({ ...errors, [fieldName]: "" });
+      }
+      
       // Don't set errors here - validation happens only when Next button is clicked
       // Just clean the value and update formData
       // Also store original input in a hidden field for validation
@@ -105,6 +110,12 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
       });
       return;
     }
+    
+    // Clear error when user starts typing
+    if (errors && errors[fieldName] && setErrors) {
+      setErrors({ ...errors, [fieldName]: "" });
+    }
+    
     setFormData({ ...formData, [fieldName]: value });
   };
 

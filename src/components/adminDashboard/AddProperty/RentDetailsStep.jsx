@@ -33,7 +33,7 @@ function RentDetailsStep({
     switch (fieldName) {
       case "monthlyRent":
         if (!value || value === "" || parseFloat(value) <= 0) {
-          error = "Monthly Rent is required";
+          error = "Monthly rent cannot be empty";
         }
         break;
       case "availableFrom":
@@ -135,6 +135,10 @@ function RentDetailsStep({
               onChange={(value) => {
                 handleChange("availableFrom", value);
                 setTouched({ ...touched, availableFrom: true });
+                // Clear error when user selects a date
+                if (errors && errors.availableFrom && setErrors) {
+                  setErrors({ ...errors, availableFrom: "" });
+                }
               }}
               minDate={minDate}
               placeholder="dd/mm/yyyy"

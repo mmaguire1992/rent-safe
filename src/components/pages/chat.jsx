@@ -68,7 +68,7 @@ function ChatMessage() {
         .catch(() => {});
     }
   }, [authUser]);
-
+        
   // Fetch chatrooms immediately (most critical data)
   useEffect(() => {
     const fetchChatrooms = async () => {

@@ -1,9 +1,26 @@
+'use client'
+
+import { useNavigate } from '@/lib/react-router-compat';
+import { useAuth } from '@/context/AuthContext';
 import Badge from "./Badge";
 import Button from "./Button";
 import StarIcon from "@/svg/websiteSvg/starIcon";
 
 
 function ProfileSection() {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+
+  const handleButtonClick = () => {
+    if (isAuthenticated) {
+      // Navigate to profile page
+      navigate('/profile');
+    } else {
+      // Navigate to signup page
+      navigate('/signup');
+    }
+  };
+
   return (
     <section className="w-full pt-10 md:pt-14 lg:pt-16">
       <div className="bg-blueGradient">
@@ -14,7 +31,10 @@ function ProfileSection() {
                 <StarIcon /> JOINED 10,000+ VERIFIED USERS
               </span>
               <h2 className="text-xl md:text-2xl lg:text-4xl font-bold text-white text-text-light leading-tight">
-                Create a profile to showcase to potential agents
+                {isAuthenticated 
+                  ? "View your profile and showcase to potential agents"
+                  : "Create a profile to showcase to potential agents"
+                }
               </h2>
 
               <p className="text-base md:text-lg !text-white max-w-2xl font-nunito">
@@ -23,8 +43,11 @@ function ProfileSection() {
               </p>
 
               <div className="!mt-4">
-                <button className="px-6 py-3 w-full md:w-auto rounded-lg font-bold font-nunito transition-all duration-200 bg-white  text-[#4A2FCC] ">
-                  Explore Services 
+                <button 
+                  onClick={handleButtonClick}
+                  className="px-6 py-3 w-full md:w-auto rounded-lg font-bold font-nunito transition-all duration-200 bg-white text-[#4A2FCC] hover:bg-opacity-90"
+                >
+                  {isAuthenticated ? "View Profile" : "Create Your Profile"}
                 </button>
               </div>
             </div>

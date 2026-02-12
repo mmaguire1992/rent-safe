@@ -6,6 +6,7 @@ import BlueCardIcon from "../../../../svg/blueCardIcon";
 function IdentityInformationSection({
   formData,
   handleChange,
+  handleKeyDown,
   handleDateChange,
   existingDocuments = [],
   onDocumentsUpdated,
@@ -29,6 +30,7 @@ function IdentityInformationSection({
             name="identityFullName"
             value={formData.identityFullName}
             onChange={handleChange}
+            onKeyDown={handleKeyDown}
             placeholder="Enter your full name"
             className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
               errors.identityFullName ? 'border-errorColor' : 'border-lightGray'

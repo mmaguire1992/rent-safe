@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { FiChevronLeft, FiChevronRight, FiCalendar } from "react-icons/fi";
 import GrayCalendarIcon from "@/svg/grayCalendarIcon";
 
-function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, maxDate, error }) {
+function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, maxDate, error, disabled = false }) {
   const [isOpen, setIsOpen] = useState(false);
   // Initialize currentDate with selected date if available, otherwise use today
   const [currentDate, setCurrentDate] = useState(() => {
@@ -299,15 +299,21 @@ function CustomCalendar({ value, onChange, placeholder = "dd/mm/yyyy", minDate, 
           readOnly
           value={formatDateForDisplay(value)}
           placeholder={placeholder}
-          onClick={() => setIsOpen(!isOpen)}
-          className={`w-full px-4 py-3 pr-12 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 cursor-pointer ${
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          disabled={disabled}
+          className={`w-full px-4 py-3 pr-12 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
+            disabled ? "cursor-not-allowed bg-gray-50 opacity-60" : "cursor-pointer"
+          } ${
             error ? "border-errorColor" : "border-lightGray"
           }`}
         />
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-darkGray hover:text-[#6B4EFF] transition-colors cursor-pointer z-10"
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          disabled={disabled}
+          className={`absolute right-4 top-1/2 transform -translate-y-1/2 text-darkGray transition-colors z-10 ${
+            disabled ? "cursor-not-allowed opacity-60" : "hover:text-[#6B4EFF] cursor-pointer"
+          }`}
         >
           <GrayCalendarIcon />
         </button>

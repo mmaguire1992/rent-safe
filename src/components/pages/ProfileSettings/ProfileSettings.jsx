@@ -29,7 +29,7 @@ import { logout } from "@/redux/slices/authSlice";
 function ProfileSettings() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { updateUser } = useAuth();
+  const { updateUser, user } = useAuth();
   const { userInfo, loading, updating, uploading, changingPassword, error } = useSelector((state) => state.user);
   const [activeTab, setActiveTab] = useState("edit");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -156,7 +156,22 @@ function ProfileSettings() {
       if (data.profileImage && data.profileImage instanceof File) {
         await dispatch(uploadUserProfilePicture(data.profileImage)).unwrap();
         // Refresh user info after picture upload to get updated profile
-        await dispatch(fetchUserInfo());
+        const refreshedUserInfo = await dispatch(fetchUserInfo()).unwrap();
+        
+        // Dispatch event to notify Header component about profile image update
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('profileImageUpdated'));
+        }
+        
+        // Update AuthContext with new profile image if available
+        if (refreshedUserInfo?.userInfo?.profileImage && updateUser) {
+          updateUser({ 
+            userInfo: { 
+              ...user?.userInfo, 
+              profileImage: refreshedUserInfo.userInfo.profileImage 
+            } 
+          });
+        }
       }
 
       // Update profile (no phone change or phone already verified)
@@ -164,10 +179,24 @@ function ProfileSettings() {
       
       // The updateUserInfo already returns the complete updated profile from backend
       // But we'll refresh to ensure we have the latest data including any server-side changes
-      await dispatch(fetchUserInfo());
+      const refreshedUserInfo = await dispatch(fetchUserInfo()).unwrap();
 
-      // Keep AuthContext/localStorage userData in sync so header name updates immediately
-      updateUser({ firstName, lastName });
+      // Keep AuthContext/localStorage userData in sync so header name and image updates immediately
+      if (updateUser) {
+        updateUser({ 
+          firstName, 
+          lastName,
+          userInfo: {
+            ...user?.userInfo,
+            profileImage: refreshedUserInfo?.userInfo?.profileImage || user?.userInfo?.profileImage
+          }
+        });
+      }
+      
+      // Dispatch event to notify Header component about profile image update
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('profileImageUpdated'));
+      }
       
       // Show success message
       toast.success('Profile updated successfully!');
@@ -240,7 +269,22 @@ function ProfileSettings() {
         }
         
         // Always refresh user info after phone verification to get complete updated profile
-        await dispatch(fetchUserInfo());
+        const refreshedUserInfo = await dispatch(fetchUserInfo()).unwrap();
+        
+        // Dispatch event to notify Header component about profile image update (if image was updated)
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('profileImageUpdated'));
+        }
+        
+        // Update AuthContext with new profile image if available
+        if (refreshedUserInfo?.userInfo?.profileImage && updateUser) {
+          updateUser({ 
+            userInfo: { 
+              ...user?.userInfo, 
+              profileImage: refreshedUserInfo.userInfo.profileImage 
+            } 
+          });
+        }
         
         // Show success message
         toast.success('Phone number verified and profile updated successfully!');

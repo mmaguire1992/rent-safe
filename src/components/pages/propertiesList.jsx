@@ -413,19 +413,19 @@ function PropertiesList() {
       setDebouncedSearchQuery('');
     } else {
       // Debounce for non-empty search queries (when user is typing)
-      searchTimeoutRef.current = setTimeout(() => {
-        // Set the source right before updating debouncedSearchQuery
-        debouncedSearchSourceRef.current = sourceForThisUpdate;
-        setIsDebouncedSearchFromUser(sourceForThisUpdate === 'user');
-        if (sourceForThisUpdate === 'user') {
-          isUserInitiatedSearchRef.current = true;
-        }
-        // Only reset to page 1 if search actually changed and it was user-initiated
-        const searchChanged = searchQuery !== debouncedSearchQuery;
-        if (searchChanged && sourceForThisUpdate === 'user') {
-          setPagination(prev => ({ ...prev, page: 1 }));
-        }
-        setDebouncedSearchQuery(searchQuery);
+    searchTimeoutRef.current = setTimeout(() => {
+      // Set the source right before updating debouncedSearchQuery
+      debouncedSearchSourceRef.current = sourceForThisUpdate;
+      setIsDebouncedSearchFromUser(sourceForThisUpdate === 'user');
+      if (sourceForThisUpdate === 'user') {
+        isUserInitiatedSearchRef.current = true;
+      }
+      // Only reset to page 1 if search actually changed and it was user-initiated
+      const searchChanged = searchQuery !== debouncedSearchQuery;
+      if (searchChanged && sourceForThisUpdate === 'user') {
+        setPagination(prev => ({ ...prev, page: 1 }));
+      }
+      setDebouncedSearchQuery(searchQuery);
       }, 500); // 500ms debounce delay for typing
     }
 

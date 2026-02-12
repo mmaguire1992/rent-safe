@@ -116,26 +116,32 @@ function ProfileHeader({ tenantData, onSendOffer, onChat }) {
             </div>
           </div>
         </div>
-        <div className="flex md:flex-col flex-row gap-4">
-          <button
-            onClick={() => {
-              if (onChat) {
-                onChat();
-              } else {
-                navigate("/dashboard/messages");
-              }
-            }}
-            className="bg-blueGradient text-white px-6 py-2 rounded-[10px] text-base font-nunito font-bold hover:bg-opacity-90 transition-colors shadow-[0px_2px_4px_0px_#FFFFFF33_inset]"
-          >
-            Chat
-          </button>
-          {/* <button
-            onClick={onSendOffer}
-            className="bg-transparent border border-[#4A2FCC] text-[#4A2FCC] px-6 py-2 rounded-[10px] text-base font-nunito font-bold hover:bg-opacity-90 transition-colors"
-          >
-            Send Offer
-          </button> */}
-        </div>
+        {(onChat !== null || onSendOffer) && (
+          <div className="flex md:flex-col flex-row gap-4">
+            {onChat !== null && (
+              <button
+                onClick={() => {
+                  if (onChat) {
+                    onChat();
+                  } else {
+                    navigate("/dashboard/messages");
+                  }
+                }}
+                className="bg-blueGradient text-white px-6 py-2 rounded-[10px] text-base font-nunito font-bold hover:bg-opacity-90 transition-colors shadow-[0px_2px_4px_0px_#FFFFFF33_inset]"
+              >
+                Chat
+              </button>
+            )}
+            {onSendOffer && (
+              <button
+                onClick={onSendOffer}
+                className="bg-transparent border border-[#4A2FCC] text-[#4A2FCC] px-6 py-2 rounded-[10px] text-base font-nunito font-bold hover:bg-opacity-90 transition-colors"
+              >
+                Send Offer
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
