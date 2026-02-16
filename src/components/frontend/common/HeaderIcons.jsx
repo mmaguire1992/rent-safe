@@ -24,7 +24,7 @@ function HeaderIcons({
   const notificationRef = useRef(null);
   
   // Determine fill state based on current route
-  const isHouseFilled = location.pathname === "/properties";
+  const isHouseFilled = location.pathname === "/" || location.pathname === "/landing";
   const isChatFilled = location.pathname === "/chat";
   
   // Determine notifications view all path based on user type

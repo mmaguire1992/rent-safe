@@ -1,6 +1,8 @@
 import './globals.css'
 import 'react-toastify/dist/ReactToastify.css'
 import AuthProviderWrapper from '@/components/providers/AuthProviderWrapper'
+import WishlistProviderWrapper from '@/components/providers/WishlistProviderWrapper'
+import PaymentStatusProviderWrapper from '@/components/providers/PaymentStatusProviderWrapper'
 import ReduxProvider from '@/components/providers/ReduxProvider'
 import { ToastContainer } from 'react-toastify'
 
@@ -18,19 +20,23 @@ export default function RootLayout({ children }) {
       <body suppressHydrationWarning>
         <ReduxProvider>
         <AuthProviderWrapper>
-          {children}
-          <ToastContainer
-            position="top-right"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="light"
-          />
+          <WishlistProviderWrapper>
+            <PaymentStatusProviderWrapper>
+              {children}
+              <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+              />
+            </PaymentStatusProviderWrapper>
+          </WishlistProviderWrapper>
         </AuthProviderWrapper>
         </ReduxProvider>
       </body>

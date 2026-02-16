@@ -1,18 +1,19 @@
 'use client'
 
 import React, { useState, useEffect } from "react";
-import { useSearchParams } from '@/lib/react-router-compat';
+import { useSearchParams, useNavigate } from '@/lib/react-router-compat';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from "react-toastify";
 import { getCurrentUser } from "@/api/users";
 import { getMyDocuments } from "@/api/verification";
 import { getAllRenterReviews } from "@/api/renterReviews";
-import ProfileHeader from "@/components/adminDashboard/TenantProfile/ProfileHeader";
+import { useWishlist } from "@/context/WishlistContext";
+// import ProfileHeader from "@/components/adminDashboard/TenantProfile/ProfileHeader";
 import CreditCheck from "@/components/adminDashboard/TenantProfile/CreditCheck";
 import IdentityInfo from "@/components/adminDashboard/TenantProfile/IdentityInfo";
 import CurrentAddress from "@/components/adminDashboard/TenantProfile/CurrentAddress";
 import EmploymentDetails from "@/components/adminDashboard/TenantProfile/EmploymentDetails";
-import Header from "@/components/frontend/common/header";
+import PropertiesHeader from "@/components/frontend/common/PropertiesHeader";
 import ProfileTabs from "@/components/frontend/profile/ProfileTabs";
 import EditProfileSection from "@/components/frontend/profile/EditProfileSection";
 import ChangePasswordSection from "@/components/frontend/profile/ChangePasswordSection";
@@ -45,6 +46,8 @@ const RENTER_TABS = [
 
 function ProfileManagementPage() {
   const { userType, user } = useAuth();
+  const navigate = useNavigate();
+  const { favoriteCount } = useWishlist();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("view");
 
@@ -186,11 +189,11 @@ function ProfileManagementPage() {
       return (
         <div className="space-y-6">
           {/* Profile Header */}
-          <ProfileHeader
+          {/* <ProfileHeader
             tenantData={tenantData}
             onSendOffer={null}
             onChat={null}
-          />
+          /> */}
 
           {/* Profile Details Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -321,7 +324,11 @@ function ProfileManagementPage() {
 
   return (
     <div className="min-h-screen bg-bg-primary">
-      <Header />
+      <PropertiesHeader
+        favoriteCount={favoriteCount}
+        onHeartClick={() => navigate('/properties?saved=true')}
+        isSavedView={false}
+      />
       <main className="container mx-auto py-4 sm:py-6 lg:py-10 px-4 sm:px-6 lg:px-8">
         <div className="block">
           <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-secondary mb-1 sm:mb-2">

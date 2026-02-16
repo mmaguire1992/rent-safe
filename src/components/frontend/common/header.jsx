@@ -299,7 +299,7 @@ const Navbar = () => {
               </button>
 
               {/* Desktop Logo - Only show on desktop for profile pages */}
-              <div className="hidden lg:flex items-center gap-2">
+              {/* <div className="hidden lg:flex items-center gap-2"> */}
                 <Link to="/">
                   <img
                     src="/images/website/mainLogo.png"
@@ -307,7 +307,7 @@ const Navbar = () => {
                     className="h-auto w-[180px] object-contain cursor-pointer"
                   />
                 </Link>
-              </div>
+              {/* </div> */}
 
               {/* Right side - Notification & Profile (mobile only) */}
               <div className="lg:hidden flex items-center gap-3">

@@ -36,42 +36,53 @@ function SummaryCards({ summaryCards }) {
     let dynamicValue = null;
     let dynamicChange = null;
 
-    if (!loading && stats) {
-      switch (index) {
-        case 0: // Total Active Properties
+    switch (index) {
+      case 0: // Total Active Properties
+        if (!loading && stats) {
           dynamicValue = stats.totalActiveProperties?.toString() || '0';
           dynamicChange = stats.activePropertiesChange !== undefined 
             ? (stats.activePropertiesChange >= 0 ? '+' : '') + stats.activePropertiesChange 
             : null;
-          break;
-        case 1: // Total Rented Properties
+        }
+        break;
+      case 1: // Total Rented Properties
+        if (!loading && stats) {
           dynamicValue = stats.totalRentedProperties?.toString() || '0';
           dynamicChange = stats.rentedPropertiesChange !== undefined 
             ? (stats.rentedPropertiesChange >= 0 ? '+' : '') + stats.rentedPropertiesChange 
             : null;
-          break;
-        case 2: // Monthly Leads
+        }
+        break;
+      case 2: // Monthly Leads
+        if (!loading && stats) {
           dynamicValue = stats.monthlyLeads?.toString() || '0';
           dynamicChange = stats.monthlyLeadsChange !== undefined 
             ? (stats.monthlyLeadsChange >= 0 ? '+' : '') + stats.monthlyLeadsChange 
             : null;
-          break;
-        case 3: // Remaining Listing Count - keep static as requested
+        }
+        break;
+      case 3: // Remaining Listing Count - fetch from stats
+        if (!loading && stats) {
+          const remaining = stats.remainingListingCount ?? 0;
+          const total = stats.totalListingLimit ?? 0;
+          // Show remaining/total format directly from DB
+          dynamicValue = remaining.toString();
+          dynamicChange = total > 0 ? `${remaining}/${total}` : '0/0';
+        }
+        break;
+      default:
+        if (!loading && stats) {
           dynamicValue = card.value;
           dynamicChange = card.change;
-          break;
-        default:
-          dynamicValue = card.value;
-          dynamicChange = card.change;
-          break;
-      }
+        }
+        break;
     }
 
     return {
       ...card,
-      value: dynamicValue,
-      change: dynamicChange,
-      isLoading: loading && index !== 3, // Don't show loader for Remaining Listing Count
+      value: dynamicValue !== null ? dynamicValue : card.value,
+      change: dynamicChange !== null ? dynamicChange : card.change,
+      isLoading: loading,
     };
   });
 
@@ -124,7 +135,7 @@ function SummaryCards({ summaryCards }) {
                           {card.change.split("/")[0]}
                         </span>
                         <span className="text-midGray text-sm md:text-base font-normal font-nunito">
-                          /{card.change.split("/")[1]} Used
+                          /{card.change.split("/")[1]}
                         </span>
                       </>
                     ) : card.change ? (

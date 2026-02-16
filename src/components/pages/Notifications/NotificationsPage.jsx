@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from '@/lib/react-router-compat';
+import { useAuth } from '@/context/AuthContext';
+import { useWishlist } from '@/context/WishlistContext';
 import DashboardLayout from '@/components/adminDashboard/dashboard/DashboardLayout';
-import Navbar from '@/components/frontend/common/header';
+import PropertiesHeader from '@/components/frontend/common/PropertiesHeader';
 import Footer from '@/components/frontend/common/footer';
 import { getNotifications, markNotificationAsRead } from '@/api/notifications';
 import { FiCheck, FiFilter, FiSearch, FiCheckCircle, FiChevronLeft } from 'react-icons/fi';
@@ -66,6 +68,7 @@ const getNotificationIcon = (type) => {
 
 function NotificationsPage({ layout = 'dashboard' }) {
   const navigate = useNavigate();
+  const { favoriteCount } = useWishlist();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -387,7 +390,11 @@ function NotificationsPage({ layout = 'dashboard' }) {
   if (layout === 'public') {
     return (
       <>
-        <Navbar />
+        <PropertiesHeader
+          favoriteCount={favoriteCount}
+          onHeartClick={() => navigate('/properties?saved=true')}
+          isSavedView={false}
+        />
         <main className="min-h-[60vh] px-4 sm:px-6 lg:px-8 py-6">
           {content}
         </main>

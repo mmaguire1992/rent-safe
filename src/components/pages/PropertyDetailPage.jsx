@@ -16,8 +16,10 @@ import ContactOwnerModal from "@/components/frontend/PropertyListDetail/ContactO
 import { getPropertyById } from "@/api/properties";
 import { getCurrentUser } from "@/api/users";
 import { createOrGetChatroom } from "@/api/chat";
-import { addToWishlist, removeFromWishlist, checkWishlist, getWishlistPropertyIds } from "@/api/wishlists";
+import { addToWishlist, removeFromWishlist, checkWishlist } from "@/api/wishlists";
 import { useAuth } from "@/context/AuthContext";
+import { useWishlist } from "@/context/WishlistContext";
+import { usePaymentStatus } from "@/context/PaymentStatusContext";
 import { getUserVerificationPayment } from "@/api/subscriptions";
 import { isAuthenticated } from "@/utils/auth";
 import { MdArrowBackIosNew } from "react-icons/md";
@@ -28,20 +30,17 @@ function PropertyDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { favoritedIds, updateWishlist, refreshWishlist, wishlistLoaded } = useWishlist();
+  const { remainingContacts, hasPaidVerification, updateRemainingContacts, refreshPaymentStatus, loading: paymentStatusLoading } = usePaymentStatus();
   const userId = user?._id || user?.id;
   const [isFavorited, setIsFavorited] = useState(false);
-  const [favoritedIds, setFavoritedIds] = useState(new Set());
-  const [wishlistLoaded, setWishlistLoaded] = useState(false);
   const [isWishlistSyncing, setIsWishlistSyncing] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [remainingContacts, setRemainingContacts] = useState(null);
-  const [loadingUserData, setLoadingUserData] = useState(true);
+  // Payment status loading is managed by PaymentStatusContext
   const [isContacting, setIsContacting] = useState(false);
-  const [hasPaidVerification, setHasPaidVerification] = useState(false);
-  const [freshUserData, setFreshUserData] = useState(null);
 
   // Wishlist concurrency control (fix rapid-click race conditions)
   const mountedRef = useRef(true);
@@ -91,56 +90,8 @@ function PropertyDetailPage() {
     fetchProperty();
   }, [id]);
 
-  // Fetch current user's remaining contacts and payment status
-  useEffect(() => {
-    const fetchUserContacts = async () => {
-      // Only fetch if user is authenticated (has token)
-      if (!isAuthenticated()) {
-        setLoadingUserData(false);
-        return;
-      }
-
-      try {
-        setLoadingUserData(true);
-        const userData = await getCurrentUser();
-        setFreshUserData(userData); // Store fresh user data for verification check
-        if (userData && userData.remainingContacts !== undefined) {
-          setRemainingContacts(userData.remainingContacts);
-        }
-        
-        // Check if user has paid verification fee (for renters)
-        if (user?.userType === 'renter') {
-          try {
-            const payment = await getUserVerificationPayment();
-            if (payment && payment.status === 'succeeded') {
-              setHasPaidVerification(true);
-            } else {
-              // Fallback: Check userInfo.verificationStatus
-              const isVerified = userData.userInfo?.verificationStatus === 'verified';
-              setHasPaidVerification(isVerified);
-            }
-          } catch (error) {
-            // If 404, user hasn't paid - check verification status
-            if (error.response?.status === 404) {
-              const isVerified = userData.userInfo?.verificationStatus === 'verified';
-              setHasPaidVerification(isVerified);
-            } else {
-              console.error('Error checking verification payment:', error);
-              setHasPaidVerification(false);
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching user contacts:', err);
-        // Don't show error to user, just use default
-        setRemainingContacts(5);
-      } finally {
-        setLoadingUserData(false);
-      }
-    };
-
-    fetchUserContacts();
-  }, [user?.userType]);
+  // Payment status and remaining contacts are now managed by PaymentStatusContext
+  // No need to fetch them here anymore
   // Handle contact owner click
   const handleContactOwner = async () => {
     // Check if user is authenticated first - prevent API call if not logged in
@@ -167,34 +118,27 @@ function PropertyDetailPage() {
 
     try {
       setIsContacting(true);
-      
+
       // Get property ID from property object or URL params
       const propertyId = property?._id || property?.id || id;
-      
+
       // Create or get chatroom with owner and propertyId
       const chatroom = await createOrGetChatroom(ownerId, propertyId);
-      
+
       if (chatroom && (chatroom._id || chatroom.id)) {
         // Ensure chatroomId is a string
         const chatroomId = String(chatroom._id || chatroom.id || '');
-        
+
         if (!chatroomId || chatroomId === 'undefined' || chatroomId === 'null' || chatroomId === '[object Object]') {
           toast.error('Invalid chatroom ID. Please try again.');
           return;
         }
-        
-        // Refresh user data to get updated remaining contacts
+
+        // Refresh payment status to get updated remaining contacts
         if (isAuthenticated()) {
-        try {
-          const userData = await getCurrentUser();
-          if (userData && userData.remainingContacts !== undefined) {
-            setRemainingContacts(userData.remainingContacts);
-          }
-        } catch (err) {
-          console.error('Error refreshing user contacts:', err);
-          }
+          refreshPaymentStatus();
         }
-        
+
         // Redirect to chat page with chatroom ID
         navigate(`/chat?chatroomId=${chatroomId}`);
         toast.success('Chat initiated successfully!');
@@ -205,14 +149,14 @@ function PropertyDetailPage() {
       console.error('Error contacting owner:', err);
       const errorMessage = err.response?.data?.message || err.message || 'Failed to contact owner';
       const statusCode = err.response?.status;
-      
+
       // If unauthorized or not authenticated, redirect to login
       if (statusCode === 401 || statusCode === 403 || errorMessage.toLowerCase().includes('unauthorized') || errorMessage.toLowerCase().includes('not authenticated')) {
         toast.info('Please login to contact the owner');
         navigate('/login');
         return;
       }
-      
+
       // If limit reached, show modal
       if (errorMessage.includes('limit') || errorMessage.includes('Contact limit')) {
         setIsContactModalOpen(true);
@@ -224,37 +168,7 @@ function PropertyDetailPage() {
     }
   };
 
-  // Load wishlist on mount + when user logs in/out
-  useEffect(() => {
-    const loadWishlist = async () => {
-      setWishlistLoaded(false);
-
-      if (!isAuthenticated()) {
-        // Logged out: clear local wishlist state
-        setFavoritedIds(new Set());
-        setIsFavorited(false);
-        isFavoritedRef.current = false;
-        setWishlistLoaded(true);
-        return;
-      }
-
-      try {
-        const propertyIds = await getWishlistPropertyIds();
-        const normalized = Array.isArray(propertyIds)
-          ? propertyIds.map((pid) => normalizeId(pid)).filter(Boolean)
-          : [];
-        setFavoritedIds(new Set(normalized));
-      } catch (error) {
-        console.error('Error loading wishlist:', error);
-      } finally {
-        setWishlistLoaded(true);
-      }
-    };
-
-    loadWishlist();
-  }, [userId]);
-
-  // Keep `isFavorited` in sync with `favoritedIds` (single source of truth)
+  // Keep `isFavorited` in sync with `favoritedIds` from context (single source of truth)
   useEffect(() => {
     const propertyId = normalizeId(property?._id || property?.id || id);
     if (!propertyId) return;
@@ -263,18 +177,14 @@ function PropertyDetailPage() {
     isFavoritedRef.current = next;
   }, [property?._id, property?.id, id, favoritedIds]);
 
-  // Calculate favorite count
+  // Calculate favorite count from context
   const favoriteCount = favoritedIds.size;
 
   const applyOptimisticWishlist = (propertyId, desired) => {
     isFavoritedRef.current = desired;
     setIsFavorited(desired);
-    setFavoritedIds((prev) => {
-      const newSet = new Set(prev);
-      if (desired) newSet.add(propertyId);
-      else newSet.delete(propertyId);
-      return newSet;
-    });
+    // Update context wishlist
+    updateWishlist(propertyId, desired);
   };
 
   const isIdempotentWishlistError = (err, desired) => {
@@ -331,6 +241,8 @@ function PropertyDetailPage() {
             if (mountedRef.current) {
               applyOptimisticWishlist(queuedFor, !!serverIsInWishlist);
             }
+            // Refresh wishlist from server to ensure consistency
+            refreshWishlist();
           } catch (_) {
             // ignore resync errors
           }
@@ -491,7 +403,7 @@ function PropertyDetailPage() {
     const price = apiProperty.rent ? `${currencySymbol}${apiProperty.rent.toLocaleString()}` : 'N/A';
 
     // Format property type
-    const type = apiProperty.propertyType 
+    const type = apiProperty.propertyType
       ? apiProperty.propertyType.charAt(0).toUpperCase() + apiProperty.propertyType.slice(1)
       : 'N/A';
 
@@ -575,17 +487,17 @@ function PropertyDetailPage() {
           </div>
           <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
             {isAuthenticated() && (
-            <button
-              onClick={toggleFavorite}
-              aria-busy={isWishlistSyncing}
-              title={wishlistLoaded ? (isWishlistSyncing ? 'Updating...' : 'Save') : 'Loading...'}
-              className="flex items-center gap-2 text-[#2B2F38] text-sm sm:text-base font-normal font-nunito transition-colors"
-            >
-              <HeartIcon isFilled={isFavorited} />
-              <span className="hidden sm:inline">Save</span>
-            </button>
+              <button
+                onClick={toggleFavorite}
+                aria-busy={isWishlistSyncing}
+                title={wishlistLoaded ? (isWishlistSyncing ? 'Updating...' : 'Save') : 'Loading...'}
+                className="flex items-center gap-2 text-[#2B2F38] text-sm sm:text-base font-normal font-nunito transition-colors"
+              >
+                <HeartIcon isFilled={isFavorited} />
+                <span className="hidden sm:inline">Save</span>
+              </button>
             )}
-            <button 
+            <button
               onClick={handleShare}
               className="flex items-center gap-2 text-[#2B2F38] text-sm sm:text-base font-normal font-nunito transition-colors hover:text-[#6B4EFF]"
             >
@@ -604,13 +516,13 @@ function PropertyDetailPage() {
               property={transformedProperty}
             />
             {/* Owner Profile */}
-            <OwnerProfile 
+            <OwnerProfile
               onContactClick={handleContactOwner}
               owner={property.owner}
               ownerName={property.owner ? `${property.owner.firstName || ''} ${property.owner.lastName || ''}`.trim() : undefined}
               propertiesCount={property.owner?.propertiesCount}
-              remainingContacts={hasPaidVerification || loading ? null : remainingContacts}
-              loadingUserData={loadingUserData}
+              remainingContacts={hasPaidVerification || paymentStatusLoading ? null : remainingContacts}
+              loadingUserData={paymentStatusLoading}
               isContacting={isContacting}
             />
 
@@ -626,8 +538,8 @@ function PropertyDetailPage() {
               utilities: property.utilitiesIncluded ? Object.keys(property.utilitiesIncluded).filter(key => property.utilitiesIncluded[key]) : [],
             }} />
 
-            <LocationSection 
-              address={property.address} 
+            <LocationSection
+              address={property.address}
               coordinates={property.address?.coordinates?.coordinates || property.address?.coordinates}
             />
 

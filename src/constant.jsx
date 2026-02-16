@@ -110,7 +110,7 @@ export const summaryCards = [
     icon: RemainingListingCountIcon,
     title: "Remaining Listing Count",
     value: "18",
-    change: "7/25",
+    change: "7/257",
     trend: null,
     color: "bg-[#FFDDEE]",
     iconColor: "text-orange-600",

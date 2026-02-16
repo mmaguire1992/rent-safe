@@ -7,16 +7,20 @@ import HeaderIcons from "./HeaderIcons";
 import ProfileMenu from "./ProfileMenu";
 import MobileSidebar from "./MobileSidebar";
 import { useAuth } from "@/context/AuthContext";
-import { usePaymentStatus } from "@/hooks/usePaymentStatus";
+import { useWishlist } from "@/context/WishlistContext";
+import { usePaymentStatus } from "@/context/PaymentStatusContext";
 import { getCurrentUser } from "@/api/users";
 
 
 function PropertiesHeader({
-  favoriteCount = 0,
+  favoriteCount: propFavoriteCount,
   onHeartClick,
   isSavedView = false,
   onHomeClick,
 }) {
+  const { favoriteCount: contextFavoriteCount } = useWishlist();
+  // Use context favoriteCount if available, otherwise fall back to prop
+  const favoriteCount = contextFavoriteCount ?? propFavoriteCount ?? 0;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   const { isAuthenticated, userType, user } = useAuth();
@@ -111,7 +115,7 @@ function PropertiesHeader({
             />
             {/* Desktop Logo */}
             <img
-              src="/images/website/logo.svg"
+              src="/images/website/mainLogo.png"
               alt="Rent Safe logo"
               className="hidden lg:block h-6 sm:h-8 w-auto object-contain"
             />
