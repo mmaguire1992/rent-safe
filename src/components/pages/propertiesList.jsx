@@ -930,6 +930,7 @@ function PropertiesList() {
               }));
               setPagination(prev => ({ ...prev, page: 1 }));
             }}
+            hideTypeDropdown={showSavedOnly} // Hide dropdown on mobile when showing saved properties
           />
 
           {/* Mobile Filter Button */}

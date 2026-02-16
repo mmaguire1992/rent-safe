@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from "react";
+import { useSelector, useDispatch } from 'react-redux';
 import { Link, useLocation, useNavigate } from '@/lib/react-router-compat';
 import { HiBars3 } from "react-icons/hi2";
 import { IoClose } from "react-icons/io5";
@@ -14,10 +15,7 @@ import RedCrossIcon from "@/svg/redCrossIcon";
 import ProfileMenu from "./ProfileMenu";
 import MobileSidebar from "./MobileSidebar";
 import { useAuth } from "@/context/AuthContext";
-import { getCurrentUser } from "@/api/users";
-import { usePaymentStatus } from "@/hooks/usePaymentStatus";
-import { getChatrooms } from "@/api/chat";
-import { getWishlistPropertyIds } from "@/api/wishlists";
+import { fetchHeaderData, refreshProfileImage, updateFavoriteCount, resetIfUserChanged } from "@/redux/slices/headerSlice";
 import { getNotifications } from "@/api/notifications";
 import NotificationDropdown from "@/components/adminDashboard/common/NotificationDropdown";
 import BellIcon from "@/svg/bellIcon";
@@ -26,6 +24,7 @@ import { isUserVerified, getVerificationMessage } from '@/utils/verificationUtil
 import { isAuthenticated as checkAuth } from "@/utils/auth";
 
 const Navbar = () => {
+  const dispatch = useDispatch();
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("");
   const [renterMenuOpen, setRenterMenuOpen] = useState(false);
@@ -33,21 +32,30 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, userName, userType, user, logout } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [profileImage, setProfileImage] = useState(null);
-  const [favoriteCount, setFavoriteCount] = useState(0);
   const [freshUserData, setFreshUserData] = useState(null);
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const notificationRef = useRef(null);
   
-  // Use shared payment status hook
-  const { 
-    hasPaidVerification, 
-    loading: paymentCheckLoading, 
-    remainingContacts, 
-    contactLimit 
-  } = usePaymentStatus();
+  // Get header data from Redux (persisted)
+  const headerData = useSelector((state) => state.header);
+  const {
+    profileImage,
+    favoriteCount,
+    hasPaidVerification,
+    remainingContacts,
+    contactLimit,
+    loading: headerLoading,
+    userId: headerUserId,
+    lastFetched,
+  } = headerData;
+  
+  // Only show loading if:
+  // 1. Currently fetching AND
+  // 2. No persisted data exists (first load)
+  const currentUserId = user?.id || user?._id;
+  const hasPersistedData = headerUserId === currentUserId && lastFetched;
+  const paymentCheckLoading = headerLoading && !hasPersistedData;
 
   const handleScrollToSection = (e, sectionId) => {
     e.preventDefault();
@@ -89,83 +97,64 @@ const Navbar = () => {
     setIsOpen(false);
   };
 
-  // Fetch profile image and wishlist count
-  // Payment status is now handled by usePaymentStatus hook
+  // Track initialization to prevent unnecessary fetches on route changes
+  const initializedRef = useRef(false);
+  const lastUserIdRef = useRef(null);
+
+  // Fetch header data from Redux (ONCE per user session, then use persisted data)
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!isAuthenticated) {
-        setLoading(false);
-        // Try to get profile image from context user as fallback
-        if (user?.userInfo?.profileImage) {
-          setProfileImage(user.userInfo.profileImage);
-        }
-        return;
+    const currentUserId = user?.id || user?._id;
+    
+    // Reset if user changed (login/logout)
+    if (lastUserIdRef.current && lastUserIdRef.current !== currentUserId) {
+      dispatch(resetIfUserChanged(currentUserId));
+      initializedRef.current = false;
+    }
+
+    // Skip if already initialized for this user (prevents re-fetch on route changes)
+    if (initializedRef.current && lastUserIdRef.current === currentUserId) {
+      return;
+    }
+
+    if (!isAuthenticated || !currentUserId) {
+      if (headerUserId) {
+        // User logged out, clear header data
+        dispatch(resetIfUserChanged(null));
       }
+      initializedRef.current = true;
+      lastUserIdRef.current = null;
+      return;
+    }
 
-      try {
-        const userData = await getCurrentUser();
-        if (userData) {
-          // Store fresh user data for verification check
-          setFreshUserData(userData);
-          // Set profile image from userInfo
-          if (userData.userInfo?.profileImage) {
-            setProfileImage(userData.userInfo.profileImage);
-          } else {
-            // Fallback to context user
-            if (user?.userInfo?.profileImage) {
-              setProfileImage(user.userInfo.profileImage);
-            } else {
-              setProfileImage(null);
-            }
-          }
-        } else {
-          // Fallback to context user
-          if (user?.userInfo?.profileImage) {
-            setProfileImage(user.userInfo.profileImage);
-          }
-        }
+    // Check if we have valid persisted data for this user
+    const hasValidPersistedData = 
+      headerUserId === currentUserId && 
+      lastFetched;
 
-        // Fetch wishlist count
-        if (checkAuth()) {
-          try {
-            const wishlistIds = await getWishlistPropertyIds();
-            setFavoriteCount(wishlistIds?.length || 0);
-          } catch (wishlistErr) {
-            setFavoriteCount(0);
-          }
-        }
+    // Only fetch if we don't have persisted data for this user AND not currently loading
+    // This ensures we use persisted data immediately on route changes
+    if (!hasValidPersistedData && !headerLoading) {
+      dispatch(fetchHeaderData());
+    }
 
-      } catch (err) {
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Mark as initialized for this user (prevents future fetches on route changes)
+    initializedRef.current = true;
+    lastUserIdRef.current = currentUserId;
+  }, [isAuthenticated, user?.id, user?._id, headerUserId, lastFetched, headerLoading, dispatch]);
 
-    fetchUserData();
-
-    // Listen for profile image updates
-    const handleProfileImageUpdate = async () => {
-      // Re-fetch user data to get the latest profile image
-      try {
-        const userData = await getCurrentUser();
-        if (userData?.userInfo?.profileImage) {
-          // Add cache-busting parameter to force image refresh
-          const imageUrl = userData.userInfo.profileImage + (userData.userInfo.profileImage.includes('?') ? '&' : '?') + '_t=' + Date.now();
-          setProfileImage(imageUrl);
-        } else {
-          setProfileImage(null);
-        }
-      } catch (err) {
-        console.error('Error refreshing profile image:', err);
+  // Listen for profile image updates
+  useEffect(() => {
+    const handleProfileImageUpdate = () => {
+      if (isAuthenticated) {
+        dispatch(refreshProfileImage());
       }
     };
 
     window.addEventListener('profileImageUpdated', handleProfileImageUpdate);
-
     return () => {
       window.removeEventListener('profileImageUpdated', handleProfileImageUpdate);
     };
-  }, [isAuthenticated, userType, user?.id]);
+  }, [isAuthenticated, dispatch]);
 
   // Fetch notification unread count (for the bell badge)
   useEffect(() => {
@@ -450,9 +439,9 @@ const Navbar = () => {
                         <span className="text-gray-400">Loading...</span>
                       </div>
                     </>
-                  ) : hasPaidVerification ? (
+                  ) : hasPaidVerification && !paymentCheckLoading ? (
                     <>
-                      {/* Premium User Badge */}
+                      {/* Premium User Badge - Only show when payment check is complete and payment exists */}
                       <button className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition shadow-sm">
                         Premium User
                       </button>
@@ -461,7 +450,7 @@ const Navbar = () => {
                     <>
                       {/* Free User - Show Free Contacts */}
                       <button className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium text-text-primary hover:bg-gray-200 transition">
-                        Free Contacts: {!loading && remainingContacts !== null ? (
+                        Free Contacts: {!paymentCheckLoading && remainingContacts !== null ? (
                           <span className="text-red-500">{remainingContacts}/{contactLimit}</span>
                         ) : (
                           <span className="text-gray-400">-/{contactLimit}</span>

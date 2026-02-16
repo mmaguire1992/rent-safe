@@ -20,6 +20,7 @@ export const usePaymentStatus = () => {
   // Use ref to prevent duplicate checks in the same render cycle
   const checkInProgressRef = useRef(false);
   const lastUserIdRef = useRef(null);
+  const hasCompletedCheckRef = useRef(false);
 
   useEffect(() => {
     const checkPaymentStatus = async () => {
@@ -29,19 +30,27 @@ export const usePaymentStatus = () => {
         setHasPaidVerification(false);
         setRemainingContacts(null);
         setContactLimit(5);
+        lastUserIdRef.current = null;
+        hasCompletedCheckRef.current = false;
         return;
       }
 
-      // Reset if user changed
-      if (lastUserIdRef.current !== user?.id) {
-        lastUserIdRef.current = user?.id;
-        checkInProgressRef.current = false;
-        setHasPaidVerification(false);
-        setLoading(true);
-      }
-
+      const currentUserId = user?.id || user?._id;
+      
       // Prevent duplicate checks in the same render cycle
       if (checkInProgressRef.current) {
+        return;
+      }
+
+      // Reset if user changed (new user login)
+      if (lastUserIdRef.current !== currentUserId) {
+        lastUserIdRef.current = currentUserId;
+        checkInProgressRef.current = false;
+        hasCompletedCheckRef.current = false;
+        setHasPaidVerification(false);
+        setLoading(true);
+      } else if (lastUserIdRef.current === currentUserId && hasCompletedCheckRef.current) {
+        // Same user and already completed check - skip to prevent unnecessary re-fetches
         return;
       }
 
@@ -57,36 +66,29 @@ export const usePaymentStatus = () => {
           setRemainingContacts(userData.remainingContacts ?? null);
           setContactLimit(userData.chatContactLimit ?? 5);
 
-          // Method 1: Check userInfo.verificationStatus first (fastest, no API call)
-          const isVerified = userData.userInfo?.verificationStatus === 'verified';
-          
-          if (isVerified) {
-            setHasPaidVerification(true);
-            setLoading(false);
-            checkInProgressRef.current = false;
-            return;
-          }
-
-          // Method 2: Check payment record via API (only if not verified in userInfo)
+          // Always check payment record via API to ensure accuracy
+          // Even if verificationStatus is 'verified', we need to confirm payment exists
           try {
             const payment = await getUserVerificationPayment();
+            // Only set to true if payment exists AND status is 'succeeded'
             if (payment && payment.status === 'succeeded') {
               console.log('✅ User has paid verification (payment record found) - premium user');
               setHasPaidVerification(true);
             } else {
+              // Payment is null, undefined, or status is not 'succeeded'
+              // Even if verificationStatus is 'verified', if no payment exists, user is not premium
               console.log('❌ User has not paid verification - free user');
               setHasPaidVerification(false);
             }
           } catch (error) {
-            // If 404, user hasn't paid
+            // If 404 or any other error, user hasn't paid
             if (error.response?.status === 404) {
-              console.log('ℹ️ No verification payment found - free user');
-              setHasPaidVerification(false);
+              console.log('ℹ️ No verification payment found (404) - free user');
             } else {
               console.error('Error checking verification payment:', error);
-              // On error, default to false but don't block UI
-              setHasPaidVerification(false);
             }
+            // Always default to false on error - no payment means not premium
+            setHasPaidVerification(false);
           }
         }
       } catch (error) {
@@ -97,11 +99,12 @@ export const usePaymentStatus = () => {
       } finally {
         setLoading(false);
         checkInProgressRef.current = false;
+        hasCompletedCheckRef.current = true;
       }
     };
 
     checkPaymentStatus();
-  }, [isAuthenticated, userType, user?.id]);
+  }, [isAuthenticated, userType, user?.id, user?._id]);
 
   return {
     hasPaidVerification,

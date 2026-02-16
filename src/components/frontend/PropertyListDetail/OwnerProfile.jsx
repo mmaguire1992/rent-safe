@@ -8,6 +8,7 @@ function OwnerProfile({
   remainingContacts,
   onContactClick,
   isContacting = false,
+  loadingUserData = false,
 }) {
   // Get owner name from owner object or prop
   const displayName = ownerName || 
@@ -42,7 +43,14 @@ function OwnerProfile({
           </div>
         </div>
         <div className="flex flex-col md:flex-row items-stretch md:items-center sm:justify-end gap-2 w-full lg:w-auto">
-          {remainingContacts !== null && (
+          {loadingUserData ? (
+            <div className="bg-[#FFF5CC] border border-[#FFE699] rounded-lg px-3 py-2 sm:py-2.5 mb-0 flex items-center gap-2">
+              <RemainingIcon />
+              <p className="text-xs text-[#973C00] font-normal">
+                Loading...
+              </p>
+            </div>
+          ) : remainingContacts !== null && (
             <div className="bg-[#FFF5CC] border border-[#FFE699] rounded-lg px-3 py-2 sm:py-2.5 mb-0 flex items-center gap-2">
               <RemainingIcon />
               <p className="text-xs text-[#973C00] font-normal">

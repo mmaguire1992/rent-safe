@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams, useNavigate } from '@/lib/react-router-compat';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import PropertiesHeader from "@/components/frontend/common/PropertiesHeader";
 import Footer from "@/components/frontend/common/footer";
 import HeartIcon from "@/svg/websiteSvg/heartIcon";
@@ -28,16 +28,43 @@ function PropertyDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const userId = user?._id || user?.id;
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoritedIds, setFavoritedIds] = useState(new Set());
+  const [wishlistLoaded, setWishlistLoaded] = useState(false);
+  const [isWishlistSyncing, setIsWishlistSyncing] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [remainingContacts, setRemainingContacts] = useState(null);
+  const [loadingUserData, setLoadingUserData] = useState(true);
   const [isContacting, setIsContacting] = useState(false);
   const [hasPaidVerification, setHasPaidVerification] = useState(false);
   const [freshUserData, setFreshUserData] = useState(null);
+
+  // Wishlist concurrency control (fix rapid-click race conditions)
+  const mountedRef = useRef(true);
+  const isFavoritedRef = useRef(false);
+  const wishlistMutationRef = useRef({
+    inFlight: false,
+    desired: null, // boolean | null
+    propertyId: null,
+  });
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const normalizeId = (value) => {
+    if (value === undefined || value === null) return null;
+    const str = String(value);
+    if (!str || str === 'undefined' || str === 'null' || str === '[object Object]') return null;
+    return str;
+  };
 
   // Fetch property data from API
   useEffect(() => {
@@ -69,10 +96,12 @@ function PropertyDetailPage() {
     const fetchUserContacts = async () => {
       // Only fetch if user is authenticated (has token)
       if (!isAuthenticated()) {
+        setLoadingUserData(false);
         return;
       }
 
       try {
+        setLoadingUserData(true);
         const userData = await getCurrentUser();
         setFreshUserData(userData); // Store fresh user data for verification check
         if (userData && userData.remainingContacts !== undefined) {
@@ -105,6 +134,8 @@ function PropertyDetailPage() {
         console.error('Error fetching user contacts:', err);
         // Don't show error to user, just use default
         setRemainingContacts(5);
+      } finally {
+        setLoadingUserData(false);
       }
     };
 
@@ -193,113 +224,157 @@ function PropertyDetailPage() {
     }
   };
 
-  // Load wishlist on mount
+  // Load wishlist on mount + when user logs in/out
   useEffect(() => {
     const loadWishlist = async () => {
+      setWishlistLoaded(false);
+
       if (!isAuthenticated()) {
+        // Logged out: clear local wishlist state
+        setFavoritedIds(new Set());
+        setIsFavorited(false);
+        isFavoritedRef.current = false;
+        setWishlistLoaded(true);
         return;
       }
 
       try {
         const propertyIds = await getWishlistPropertyIds();
-        setFavoritedIds(new Set(propertyIds));
+        const normalized = Array.isArray(propertyIds)
+          ? propertyIds.map((pid) => normalizeId(pid)).filter(Boolean)
+          : [];
+        setFavoritedIds(new Set(normalized));
       } catch (error) {
         console.error('Error loading wishlist:', error);
+      } finally {
+        setWishlistLoaded(true);
       }
     };
 
     loadWishlist();
-  }, []);
+  }, [userId]);
 
-  // Check if current property is favorited
+  // Keep `isFavorited` in sync with `favoritedIds` (single source of truth)
   useEffect(() => {
-    const checkFavoriteStatus = async () => {
-      const propertyId = property?._id || property?.id;
-      if (!propertyId) {
-        return;
-      }
-
-      if (isAuthenticated()) {
-        try {
-          const isInWishlist = await checkWishlist(propertyId);
-          setIsFavorited(isInWishlist);
-        } catch (error) {
-          console.error('Error checking wishlist:', error);
-          // Fallback to local state
-          setIsFavorited(favoritedIds.has(propertyId));
-        }
-      } else {
-        // For non-authenticated users, use local state
-        setIsFavorited(favoritedIds.has(propertyId));
-      }
-    };
-
-    checkFavoriteStatus();
-  }, [property?._id, property?.id, favoritedIds]);
+    const propertyId = normalizeId(property?._id || property?.id || id);
+    if (!propertyId) return;
+    const next = favoritedIds.has(propertyId);
+    setIsFavorited(next);
+    isFavoritedRef.current = next;
+  }, [property?._id, property?.id, id, favoritedIds]);
 
   // Calculate favorite count
   const favoriteCount = favoritedIds.size;
 
+  const applyOptimisticWishlist = (propertyId, desired) => {
+    isFavoritedRef.current = desired;
+    setIsFavorited(desired);
+    setFavoritedIds((prev) => {
+      const newSet = new Set(prev);
+      if (desired) newSet.add(propertyId);
+      else newSet.delete(propertyId);
+      return newSet;
+    });
+  };
+
+  const isIdempotentWishlistError = (err, desired) => {
+    const status = err?.response?.status;
+    const msg = String(err?.response?.data?.message || err?.message || '').toLowerCase();
+    if (desired) {
+      // "already in wishlist" style errors
+      return status === 409 || msg.includes('already') || msg.includes('exists') || msg.includes('duplicate');
+    }
+    // "not in wishlist / not found" style errors
+    return status === 404 || msg.includes('not found') || msg.includes('does not exist') || msg.includes('not in wishlist');
+  };
+
+  const flushWishlistMutationQueue = async (propertyId) => {
+    if (wishlistMutationRef.current.inFlight) return;
+    wishlistMutationRef.current.inFlight = true;
+    setIsWishlistSyncing(true);
+
+    let lastSuccessToast = null;
+    try {
+      // Process "latest desired" repeatedly; rapid clicks just update desired, we only execute sequentially.
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const desired = wishlistMutationRef.current.desired;
+        const queuedFor = wishlistMutationRef.current.propertyId;
+
+        // Nothing queued
+        if (desired === null || !queuedFor) break;
+
+        // Clear queue slot before executing
+        wishlistMutationRef.current.desired = null;
+        wishlistMutationRef.current.propertyId = null;
+
+        try {
+          if (desired) {
+            await addToWishlist(queuedFor);
+            lastSuccessToast = 'Property added to favorites';
+          } else {
+            await removeFromWishlist(queuedFor);
+            lastSuccessToast = 'Property removed from favorites';
+          }
+        } catch (err) {
+          if (isIdempotentWishlistError(err, desired)) {
+            lastSuccessToast = desired ? 'Property added to favorites' : 'Property removed from favorites';
+            continue;
+          }
+
+          console.error('Error toggling favorite:', err);
+          const errorMessage = err?.response?.data?.message || err?.message || 'Failed to update favorites';
+
+          // Best-effort resync for this property (avoid leaving UI in a wrong optimistic state)
+          try {
+            const serverIsInWishlist = await checkWishlist(queuedFor);
+            if (mountedRef.current) {
+              applyOptimisticWishlist(queuedFor, !!serverIsInWishlist);
+            }
+          } catch (_) {
+            // ignore resync errors
+          }
+
+          toast.error(errorMessage);
+          break;
+        }
+      }
+    } finally {
+      wishlistMutationRef.current.inFlight = false;
+      if (mountedRef.current) setIsWishlistSyncing(false);
+      if (lastSuccessToast) toast.success(lastSuccessToast);
+
+      // If a click landed right as we were finishing (after the loop decided it was empty),
+      // ensure we don't drop the final desired state.
+      const hasMoreQueued =
+        wishlistMutationRef.current.desired !== null && !!wishlistMutationRef.current.propertyId;
+      if (hasMoreQueued) {
+        flushWishlistMutationQueue(wishlistMutationRef.current.propertyId);
+      }
+    }
+  };
+
   // Toggle favorite for current property
   const toggleFavorite = async () => {
-    const propertyId = property?._id || property?.id;
+    const propertyId = normalizeId(property?._id || property?.id || id);
     if (!propertyId) {
       return;
     }
 
     if (!isAuthenticated()) {
       // If not authenticated, just update local state
-      setFavoritedIds((prev) => {
-        const newSet = new Set(prev);
-        if (newSet.has(propertyId)) {
-          newSet.delete(propertyId);
-          setIsFavorited(false);
-        } else {
-          newSet.add(propertyId);
-          setIsFavorited(true);
-        }
-        return newSet;
-      });
+      const desired = !isFavoritedRef.current;
+      applyOptimisticWishlist(propertyId, desired);
       return;
     }
 
-    // Update local state immediately for better UX
-    const wasFavorited = isFavorited;
-    setIsFavorited(!wasFavorited);
-    setFavoritedIds((prev) => {
-      const newSet = new Set(prev);
-      if (wasFavorited) {
-        newSet.delete(propertyId);
-      } else {
-        newSet.add(propertyId);
-      }
-      return newSet;
-    });
+    // Optimistic update (instant UI feedback) + queue latest desired state for network mutation
+    const desired = !isFavoritedRef.current;
+    applyOptimisticWishlist(propertyId, desired);
 
-    // Call API
-    try {
-      if (wasFavorited) {
-        await removeFromWishlist(propertyId);
-        toast.success('Property removed from favorites');
-      } else {
-        await addToWishlist(propertyId);
-        toast.success('Property added to favorites');
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      // Revert on error
-      setIsFavorited(wasFavorited);
-      setFavoritedIds((prev) => {
-        const newSet = new Set(prev);
-        if (wasFavorited) {
-          newSet.add(propertyId);
-        } else {
-          newSet.delete(propertyId);
-        }
-        return newSet;
-      });
-      toast.error(error?.response?.data?.message || 'Failed to update favorites');
-    }
+    wishlistMutationRef.current.desired = desired;
+    wishlistMutationRef.current.propertyId = propertyId;
+    flushWishlistMutationQueue(propertyId);
   };
 
   // Handle share button click - copy link to clipboard
@@ -502,6 +577,8 @@ function PropertyDetailPage() {
             {isAuthenticated() && (
             <button
               onClick={toggleFavorite}
+              aria-busy={isWishlistSyncing}
+              title={wishlistLoaded ? (isWishlistSyncing ? 'Updating...' : 'Save') : 'Loading...'}
               className="flex items-center gap-2 text-[#2B2F38] text-sm sm:text-base font-normal font-nunito transition-colors"
             >
               <HeartIcon isFilled={isFavorited} />
@@ -532,7 +609,8 @@ function PropertyDetailPage() {
               owner={property.owner}
               ownerName={property.owner ? `${property.owner.firstName || ''} ${property.owner.lastName || ''}`.trim() : undefined}
               propertiesCount={property.owner?.propertiesCount}
-              remainingContacts={hasPaidVerification ? null : remainingContacts}
+              remainingContacts={hasPaidVerification || loading ? null : remainingContacts}
+              loadingUserData={loadingUserData}
               isContacting={isContacting}
             />
 
@@ -569,9 +647,9 @@ function PropertyDetailPage() {
         isOpen={isContactModalOpen}
         onClose={() => setIsContactModalOpen(false)}
         onVerify={() => {
-          console.log("Verify clicked");
-          // Navigate to verification page or handle verification
           setIsContactModalOpen(false);
+          // Navigate to verification tab in profile page
+          navigate('/profile?tab=verification');
         }}
         onCancel={() => setIsContactModalOpen(false)}
       />

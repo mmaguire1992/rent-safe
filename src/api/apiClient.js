@@ -98,7 +98,7 @@ export const useGetApi = async (url, requireAuth = true) => {
 };
 
 // Helper function for POST requests
-export const usePostApi = async (url, requireAuth = true, data = {}) => {
+export const usePostApi = async (url, requireAuth = true, data = {}, options = {}) => {
   try {
     const config = {};
     if (requireAuth && typeof window !== 'undefined') {
@@ -110,7 +110,9 @@ export const usePostApi = async (url, requireAuth = true, data = {}) => {
     const response = await apiClient.post(url, data, config);
     return response.data;
   } catch (error) {
-    console.error(`Error in POST ${url}:`, error);
+    if (!options?.silent) {
+      console.error(`Error in POST ${url}:`, error);
+    }
     throw error;
   }
 };
@@ -134,7 +136,7 @@ export const usePutApi = async (url, requireAuth = true, data = {}) => {
 };
 
 // Helper function for DELETE requests
-export const useDeleteApi = async (url, requireAuth = true) => {
+export const useDeleteApi = async (url, requireAuth = true, options = {}) => {
   try {
     const config = {};
     if (requireAuth && typeof window !== 'undefined') {
@@ -146,7 +148,9 @@ export const useDeleteApi = async (url, requireAuth = true) => {
     const response = await apiClient.delete(url, config);
     return response.data;
   } catch (error) {
-    console.error(`Error in DELETE ${url}:`, error);
+    if (!options?.silent) {
+      console.error(`Error in DELETE ${url}:`, error);
+    }
     throw error;
   }
 };

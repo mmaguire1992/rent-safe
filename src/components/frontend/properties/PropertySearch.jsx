@@ -12,6 +12,7 @@ function PropertySearch({
   onSearch,
   selectedType,
   onTypeChange,
+  hideTypeDropdown = false, // New prop to hide dropdown (e.g., for saved properties on mobile)
 }) {
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
@@ -24,16 +25,18 @@ function PropertySearch({
       <div className="bg-white rounded-2xl shadow-lg border border-[#7356FF] p-4 sm:p-5 flex flex-col gap-3 sm:gap-4">
         {/* Mobile: Dropdown and Search in same row */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
-          {/* Property Type Dropdown - Visible on mobile */}
-          <div className="w-full sm:hidden">
-            <CustomDropdown
-              options={propertyTypeOptions}
-              value={selectedType || "apartment"}
-              onChange={onTypeChange}
-              placeholder="Select Property Type"
-              className="h-[52px]"
-            />
-          </div>
+          {/* Property Type Dropdown - Visible on mobile, hidden when hideTypeDropdown is true */}
+          {!hideTypeDropdown && (
+            <div className="w-full sm:hidden">
+              <CustomDropdown
+                options={propertyTypeOptions}
+                value={selectedType || "apartment"}
+                onChange={onTypeChange}
+                placeholder="Select Property Type"
+                className="h-[52px]"
+              />
+            </div>
+          )}
 
           {/* Search Input */}
 

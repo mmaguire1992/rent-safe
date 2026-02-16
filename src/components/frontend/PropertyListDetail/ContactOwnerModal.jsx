@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import { FiCheck } from "react-icons/fi";
 import SuccessfullyCheck from "@/svg/successfullyCheck";
@@ -5,9 +6,45 @@ import GreenCheckedIcon from "../../../svg/greenCheckedIcon";
 import GreenCheckIcon from "../../../svg/greenCheckIcon";
 import GreenRoundCheckIcon from "../../../svg/websiteSvg/greenRoundCheckIcon";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { getRenterPlan } from "@/api/subscriptions";
 
 function ContactOwnerModal({ isOpen, onClose, onVerify, onCancel }) {
   useBodyScrollLock(isOpen);
+  const [renterPlan, setRenterPlan] = useState(null);
+  const [loadingPlan, setLoadingPlan] = useState(false);
+
+  // Fetch renter plan when modal opens
+  useEffect(() => {
+    const fetchPlan = async () => {
+      if (!isOpen) return;
+      
+      try {
+        setLoadingPlan(true);
+        const plan = await getRenterPlan();
+        setRenterPlan(plan);
+      } catch (error) {
+        console.error('Error fetching renter plan:', error);
+        // Keep renterPlan as null, will show fallback
+      } finally {
+        setLoadingPlan(false);
+      }
+    };
+
+    fetchPlan();
+  }, [isOpen]);
+
+  // Format price with currency symbol
+  const formatPrice = (price) => {
+    if (!price || price === 0) return '€0.00';
+    // Default to EUR (€) - can be made dynamic if plan has currency field
+    return `€${price.toFixed(2)}`;
+  };
+
+  const displayPrice = renterPlan?.monthlyPrice 
+    ? formatPrice(renterPlan.monthlyPrice)
+    : loadingPlan 
+      ? '...' 
+      : '€6.99'; // Fallback if plan not found
 
   if (!isOpen) return null;
 
@@ -45,7 +82,7 @@ function ContactOwnerModal({ isOpen, onClose, onVerify, onCancel }) {
             </div>
             <p className="text-[#314158] font-normal font-nunito text-base">
               Next contact costs{" "}
-              <span className="text-[#4A2FCC] font-semibold">€6.99</span>.
+              <span className="text-[#4A2FCC] font-semibold">{displayPrice}</span>.
             </p>
           </div>
           <div className="flex items-start gap-2">
@@ -53,7 +90,7 @@ function ContactOwnerModal({ isOpen, onClose, onVerify, onCancel }) {
               <GreenRoundCheckIcon />
             </div>
             <p className="text-[#314158] font-normal font-nunito text-base">
-              Verify your account to contact more owners.
+            Please complete your subscription payment to continue contacting the owner.
             </p>
           </div>
           <div className="flex items-start gap-2">

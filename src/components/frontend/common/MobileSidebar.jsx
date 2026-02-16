@@ -221,7 +221,7 @@ function MobileSidebar({ isOpen, onClose }) {
                     <span>Home</span>
                   </button>
                   <button
-                    onClick={() => handleNavigation("/properties")}
+                    onClick={() => handleNavigation("/properties?saved=true")}
                     className="w-full text-left px-4 py-2 text-[#F9F9FC] font-bold font-nunito text-sm rounded-lg transition-colors flex items-center gap-3"
                   >
                     <WhitePropertiesIcon />
@@ -235,9 +235,6 @@ function MobileSidebar({ isOpen, onClose }) {
                       <WhiteMessageIcon />
                       <span>Messages</span>
                     </div>
-                    <span className="bg-white text-[#4A2FCC] text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                      3
-                    </span>
                   </button>
                 </>
               ) : (

@@ -127,9 +127,21 @@ export const getPaymentStatus = async (sessionId) => {
 export const getUserVerificationPayment = async () => {
   try {
     const response = await apiClient.get('/stripe/subscriptions/verification-payment');
+    
+    // Check if backend returned success: false (payment not found)
+    if (response.data?.success === false) {
+      return null;
+    }
+    
     // Backend returns: { success: true, message: { payment data }, data: "message string" }
     const payment = response.data?.message || response.data?.data || response.data;
-    return payment || null;
+    
+    // Only return payment if it has a valid status (not just an error message)
+    if (payment && typeof payment === 'object' && payment.status) {
+      return payment;
+    }
+    
+    return null;
   } catch (error) {
     // If 404, user hasn't paid yet - return null
     if (error.response?.status === 404) {
