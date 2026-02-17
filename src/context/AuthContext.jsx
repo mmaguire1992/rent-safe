@@ -28,6 +28,8 @@ export const AuthProvider = ({ children }) => {
       if (isAuthenticated()) {
         const userData = getUserData();
         const userToken = getToken();
+        
+        // Just set the user and token - email verification check will happen in route protection
         setUser(userData);
         setToken(userToken);
       }
@@ -35,7 +37,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     initAuth();
-  }, []);
+  }, []); // Empty dependency array - only run once on mount
 
   // Handle redirect based on user type when pathname changes
   // Protect ALL routes - user must be authenticated to access any route
@@ -87,6 +89,45 @@ export const AuthProvider = ({ children }) => {
       }
     } else {
       // User IS authenticated
+      // Check if email is verified
+      const userData = getUserData();
+      if (userData && !userData.isEmailVerified) {
+        // Email not verified - redirect to OTP verification
+        // Only redirect if NOT already on an OTP verification or success page
+        const isOTPPage = currentPath.includes('/verify-account') || 
+                         currentPath === '/otp-verification' ||
+                         currentPath.includes('/signup/') && currentPath.includes('/success');
+        
+        if (!isOTPPage) {
+          const email = userData.email;
+          const userType = userData.userType || currentUserType;
+          
+          if (email && userType) {
+            // Store email in localStorage for OTP screen
+            localStorage.setItem('signup_email', email);
+            
+            // Redirect to appropriate OTP verification route
+            if (userType === 'owner') {
+              navigate('/signup/owner/verify-account', { 
+                state: { email, userType },
+                replace: true 
+              });
+            } else if (userType === 'renter') {
+              navigate('/signup/renter/verify-account', { 
+                state: { email, userType },
+                replace: true 
+              });
+            } else {
+              navigate('/otp-verification', { 
+                state: { email, userType },
+                replace: true 
+              });
+            }
+          }
+        }
+        return;
+      }
+      
       // Don't redirect from property detail pages, properties list, support pages, or profile
       const isPropertyOrSupportRoute = currentPath.startsWith('/property/') || 
                                        currentPath.startsWith('/properties') ||
@@ -141,6 +182,36 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Invalid user data received from server');
       }
       
+      // Check if email is verified
+      if (!userData.isEmailVerified) {
+        // Email not verified - redirect to OTP verification
+        const email = userData.email;
+        const userType = userData.userType;
+        
+        // Store email in localStorage for OTP screen
+        localStorage.setItem('signup_email', email);
+        
+        // Redirect to appropriate OTP verification route
+        if (userType === 'owner') {
+          navigate('/signup/owner/verify-account', { 
+            state: { email, userType },
+            replace: true 
+          });
+        } else if (userType === 'renter') {
+          navigate('/signup/renter/verify-account', { 
+            state: { email, userType },
+            replace: true 
+          });
+        } else {
+          navigate('/otp-verification', { 
+            state: { email, userType },
+            replace: true 
+          });
+        }
+        
+        throw new Error('Email not verified. Please verify your email to continue.');
+      }
+      
       // Store in localStorage
       storeAuthData(userData, userToken);
       
@@ -154,6 +225,36 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
+      // Check if this is an email verification error with OTP sent
+      if (error.requiresVerification && error.otpSent) {
+        const email = error.email;
+        const userType = error.userType;
+        
+        // Store email in localStorage for OTP screen
+        localStorage.setItem('signup_email', email);
+        
+        // Redirect to appropriate OTP verification route
+        if (userType === 'owner') {
+          navigate('/signup/owner/verify-account', { 
+            state: { email, userType },
+            replace: true 
+          });
+        } else if (userType === 'renter') {
+          navigate('/signup/renter/verify-account', { 
+            state: { email, userType },
+            replace: true 
+          });
+        } else {
+          navigate('/otp-verification', { 
+            state: { email, userType },
+            replace: true 
+          });
+        }
+        
+        // Don't throw error - redirect is happening
+        return { success: false, requiresVerification: true };
+      }
+      
       // Log error for debugging
       console.error('Login error:', error);
       

@@ -118,8 +118,8 @@ function ForgotPassword() {
     e.preventDefault();
 
     if (!email.trim()) {
-      setValidationError("This field is required.");
-      setError("This field is required.");
+      setValidationError("Email is required");
+      setError("Email is required");
       return;
     }
 

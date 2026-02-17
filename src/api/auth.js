@@ -29,6 +29,13 @@ const handleApiResponse = async (response) => {
     const error = new Error(errorMessage);
     error.status = response.status;
     error.data = data;
+    // Preserve special error properties for email verification
+    if (data.data && data.data.requiresVerification) {
+      error.requiresVerification = true;
+      error.otpSent = data.data.otpSent;
+      error.email = data.data.email;
+      error.userType = data.data.userType;
+    }
     throw error;
   }
 
@@ -102,6 +109,11 @@ export const loginUser = async (credentials) => {
       token: data.data.token,
     };
   } catch (error) {
+    // Re-throw verification errors as-is
+    if (error.requiresVerification) {
+      throw error;
+    }
+    
     // Re-throw with better error messages
     if (error.message) {
       throw error;
@@ -252,9 +264,25 @@ export const verifyOTP = async (email, otp) => {
 
     const data = await handleApiResponse(response);
 
+    // The response structure from sendSuccess is: 
+    // { success: true, message: "...", data: { message, success, user, token } }
+    // So we need to access data.data.user and data.data.token
+    const userData = data.data?.user || null;
+    const tokenData = data.data?.token || null;
+
+    // If user/token not found in data.data, try data directly (fallback)
+    const finalUserData = userData || data.user || null;
+    const finalTokenData = tokenData || data.token || null;
+
+    if (!finalUserData || !finalTokenData) {
+      console.error('OTP verification response missing user or token:', data);
+    }
+
     return {
       success: true,
-      message: data.message || 'Email verified successfully',
+      message: data.message || data.data?.message || 'Email verified successfully',
+      user: finalUserData,
+      token: finalTokenData,
     };
   } catch (error) {
     if (error.message) {

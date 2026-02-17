@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, Link } from '@/lib/react-router-compat';
 import { toast } from 'react-toastify';
 import AuthLayout from "@/components/AuthLayout";
+import ProgressIndicator from "@/components/adminDashboard/common/ProgressIndicator";
 import { maskEmail } from "@/utils/emailUtils";
 import { verifyOTP, resendOTP } from "@/api/auth";
 import { useAuth } from "@/context/AuthContext";
@@ -19,7 +20,7 @@ function OtpVerification() {
   const inputRefs = useRef([]);
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, updateUser } = useAuth();
   
   // Get email from location state or localStorage
   const originalEmail = location.state?.email || localStorage.getItem('signup_email') || "";
@@ -113,7 +114,7 @@ const handleKeyDown = (index, e) => {
 
     try {
       // Verify OTP
-      await verifyOTP(originalEmail, otpString);
+      const result = await verifyOTP(originalEmail, otpString);
 
       toast.success("Email verified successfully!");
 
@@ -122,39 +123,75 @@ const handleKeyDown = (index, e) => {
       const signupToken = localStorage.getItem('signup_token');
       
       if (signupUserData && signupToken) {
+        // Signup flow - use stored signup data
         try {
           // Parse user data
           const userData = JSON.parse(signupUserData);
           
+          // Ensure email is verified
+          userData.isEmailVerified = true;
+          
           // Store auth data properly using the utility function
           storeAuthData(userData, signupToken);
           
-          // Update AuthContext state by triggering a page reload or using the login function
-          // Since we can't directly update AuthContext state, we'll reload the page
-          // which will cause AuthContext to read from localStorage
+          // Update AuthContext state
+          if (updateUser) {
+            updateUser(userData);
+          }
           
           // Clear signup temporary data
           localStorage.removeItem('signup_user_data');
           localStorage.removeItem('signup_token');
           localStorage.removeItem('signup_email');
 
-          // Redirect based on user type
+          // Redirect based on user type - use window.location.replace for hard redirect
           if (userType === 'owner' || userData.userType === 'owner') {
-            // Reload to ensure AuthContext picks up the new auth data
-            window.location.href = "/signup/owner/success";
+            window.location.replace("/signup/owner/success");
           } else if (userType === 'renter' || userData.userType === 'renter') {
-            window.location.href = "/signup/renter/success";
+            window.location.replace("/signup/renter/success");
           } else {
-            // Default redirect to dashboard
-            window.location.href = "/dashboard";
+            window.location.replace("/dashboard");
           }
         } catch (error) {
           console.error('Error parsing user data:', error);
           toast.error("Error completing signup. Please login.");
           navigate("/login");
         }
+      } else if (result.user && result.token) {
+        // Login flow - use returned user data and token from OTP verification
+        try {
+          // Ensure isEmailVerified is set to true
+          const userDataToStore = {
+            ...result.user,
+            isEmailVerified: true,
+          };
+          
+          // Store auth data in localStorage
+          storeAuthData(userDataToStore, result.token);
+          
+          // Update AuthContext state immediately to prevent redirect back to OTP
+          if (updateUser) {
+            updateUser(userDataToStore);
+          }
+          
+          // Clear signup email from localStorage
+          localStorage.removeItem('signup_email');
+          
+          // Determine redirect path based on user type
+          const finalUserType = userType || result.user?.userType || 'renter';
+          const redirectPath = finalUserType === 'owner' ? "/dashboard" : "/landing";
+          
+          // Use window.location.replace to prevent back navigation and ensure clean state
+          // This will cause a full page reload, but AuthContext will read the updated localStorage
+          window.location.replace(redirectPath);
+        } catch (error) {
+          console.error('Error storing auth data:', error);
+          toast.error("Error completing login. Please try logging in again.");
+          navigate("/login");
+        }
       } else {
-        // If no token, just redirect to login
+        // Fallback: redirect to login
+        console.error('OTP verification failed - no user/token returned. Result:', result);
         toast.info("Please login with your verified email.");
         navigate("/login");
       }
@@ -212,6 +249,9 @@ const handleKeyDown = (index, e) => {
             We've shared a 6-digit code to your registered {maskedEmail}.
           </p>
         </div>
+
+        {/* Progress Indicator */}
+        <ProgressIndicator currentStep={3} totalSteps={3} />
 
         {/* OTP Form */}
         <form onSubmit={handleSubmit} className="space-y-4">

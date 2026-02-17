@@ -17,13 +17,14 @@ function RenterSignupSuccess() {
       }, 1000);
       return () => clearInterval(timer);
     } else {
-      // Redirect to landing page after countdown
-      navigate("/landing");
+      // Use window.location.replace for hard redirect to prevent back navigation
+      window.location.replace("/landing");
     }
-  }, [countdown, navigate]);
+  }, [countdown]);
 
   const handleGoToLanding = () => {
-    navigate("/landing");
+    // Use window.location.replace for hard redirect
+    window.location.replace("/landing");
   };
 
   return (

@@ -208,9 +208,20 @@ function CreatePassword() {
               </button>
             </div>
             {errors.newPassword && (
-              <p className="mt-1 text-sm text-errorColor">
-                {errors.newPassword}
-              </p>
+              <div className="mt-1.5 text-sm text-errorColor">
+                {Array.isArray(errors.newPassword) ? (
+                  <p className="leading-normal">
+                    {errors.newPassword.map((error, index) => (
+                      <span key={index}>
+                        {error}
+                        {index < errors.newPassword.length - 1 && <span>, </span>}
+                      </span>
+                    ))}
+                  </p>
+                ) : (
+                  <p className="leading-normal">{errors.newPassword}</p>
+                )}
+              </div>
             )}
           </div>
 

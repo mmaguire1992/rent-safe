@@ -5,9 +5,7 @@
  */
 export const isUserVerified = (user) => {
   if (!user) return false;
-  console.log("user", user);
   const verificationStatus = user?.userInfo?.verificationStatus || 'not_started';
-  console.log("verificationStatus", verificationStatus);
   return verificationStatus === 'verified';
 };
 

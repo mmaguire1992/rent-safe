@@ -97,11 +97,17 @@ function BasicInformation() {
       newErrors.email = "Please enter a valid email address";
     }
 
-    if (!formData.password || formData.password.length < 6) {
+    // Validate password - check if empty first
+    if (!formData.password || !formData.password.trim()) {
+      newErrors.password = "Password is required";
+    } else if (formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
     }
 
-    if (formData.password !== formData.confirmPassword) {
+    // Validate confirm password - check if empty first
+    if (!formData.confirmPassword || !formData.confirmPassword.trim()) {
+      newErrors.confirmPassword = "Confirm password is required";
+    } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords must match";
     }
 

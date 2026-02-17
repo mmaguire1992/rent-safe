@@ -17,13 +17,14 @@ function OwnerSignupSuccess() {
       }, 1000);
       return () => clearInterval(timer);
     } else {
-      // Redirect to dashboard after countdown
-      navigate("/dashboard");
+      // Use window.location.replace for hard redirect to prevent back navigation
+      window.location.replace("/dashboard");
     }
-  }, [countdown, navigate]);
+  }, [countdown]);
 
   const handleGoToDashboard = () => {
-    navigate("/dashboard");
+    // Use window.location.replace for hard redirect
+    window.location.replace("/dashboard");
   };
 
   return (
