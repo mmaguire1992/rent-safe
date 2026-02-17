@@ -91,13 +91,25 @@ function PropertyFilters({ onFilterChange, initialFilters = null }) {
     updateFilter("bhk", bhk);
   };
 
+  const clearFilters = () => {
+    const defaultFilters = {
+      propertyType: "all",
+      amenities: [],
+      bhk: [],
+      priceMin: 0,
+      priceMax: 10000,
+    };
+    setFilters(defaultFilters);
+    onFilterChange(defaultFilters);
+  };
+
   return (
     <div className="bg-white rounded-[20px] py-4 border border-[#E6E8EC]">
       <div className="mb-6 px-4 sm:px-6 flex justify-between items-center gap-2">
         <h2 className="text-lg sm:text-xl font-bold text-[#2B2F38]">
           Select Filters
         </h2>
-        <button class="bg-blueGradient hover:opacity-90 text-white px-4 lg:px-8 py-2 rounded-lg font-bold font-nunito transition-all shadow-md hover:shadow-lg whitespace-nowrap text-sm sm:text-base">Apply</button>
+        <button onClick={clearFilters} class="bg-blueGradient hover:opacity-90 text-white px-4 lg:px-8 py-2 rounded-lg font-bold font-nunito transition-all shadow-md hover:shadow-lg whitespace-nowrap text-sm sm:text-base">Clear</button>
       </div>
 
       <div className="space-y-6">

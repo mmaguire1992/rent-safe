@@ -17,6 +17,7 @@ import MobileSidebar from "./MobileSidebar";
 import { useAuth } from "@/context/AuthContext";
 import { fetchHeaderData, refreshProfileImage, updateFavoriteCount, resetIfUserChanged } from "@/redux/slices/headerSlice";
 import { getNotifications } from "@/api/notifications";
+import { getCurrentUser } from "@/api/users";
 import NotificationDropdown from "@/components/adminDashboard/common/NotificationDropdown";
 import BellIcon from "@/svg/bellIcon";
 import { toast } from "react-toastify";
@@ -31,7 +32,7 @@ const Navbar = () => {
   const renterMenuRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, userName, userType, user, logout } = useAuth();
+  const { isAuthenticated, userName, userType, user, logout  } = useAuth();
   const [freshUserData, setFreshUserData] = useState(null);
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -100,6 +101,7 @@ const Navbar = () => {
   // Track initialization to prevent unnecessary fetches on route changes
   const initializedRef = useRef(false);
   const lastUserIdRef = useRef(null);
+  const userDataFetchedRef = useRef(false);
 
   // Fetch header data from Redux (ONCE per user session, then use persisted data)
   useEffect(() => {
@@ -155,6 +157,42 @@ const Navbar = () => {
       window.removeEventListener('profileImageUpdated', handleProfileImageUpdate);
     };
   }, [isAuthenticated, dispatch]);
+
+  // Fetch fresh user data for verification status (only once per user session)
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setFreshUserData(null);
+      userDataFetchedRef.current = false;
+      return;
+    }
+
+    const currentUserId = user?.id || user?._id;
+    
+    // Reset if user changed
+    if (lastUserIdRef.current !== currentUserId) {
+      userDataFetchedRef.current = false;
+      setFreshUserData(null);
+    }
+
+    // Only fetch once per user session
+    if (!userDataFetchedRef.current && currentUserId) {
+      userDataFetchedRef.current = true;
+      
+      const fetchUserData = async () => {
+        try {
+          const userData = await getCurrentUser();
+          if (userData) {
+            setFreshUserData(userData);
+          }
+        } catch (err) {
+          // Silently fail, will use context user as fallback
+          console.error('Error fetching user data for verification:', err);
+        }
+      };
+
+      fetchUserData();
+    }
+  }, [isAuthenticated, user?.id]); // Fetch when user changes
 
   // Fetch notification unread count (for the bell badge)
   useEffect(() => {

@@ -89,6 +89,14 @@ function BasicInformationSection({
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
+                    // Validate max size (5MB)
+                    const MAX_PROFILE_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+                    if (file.size > MAX_PROFILE_IMAGE_SIZE_BYTES) {
+                      toast.error("Image size must be 5MB or less");
+                      e.target.value = ""; // Clear the input
+                      return;
+                    }
+
                     // Validate that the file is an image
                     const validImageTypes = ['image/heic', 'image/webp', 'image/png', 'image/jpeg', 'image/jpg'];
                     const fileType = file.type.toLowerCase();
@@ -110,7 +118,7 @@ function BasicInformationSection({
                 }}
               />
               <p className="text-xs font-normal font-nunito text-center md:text-left text-[#BCBCBC] mt-2">
-                HEIC, WEBP, PNG, or JPG. Recommended: 512x512 pixels minimum.
+                HEIC, WEBP, PNG, or JPG. Max 5MB. Recommended: 512x512 pixels minimum.
               </p>
             </div>
           </div>

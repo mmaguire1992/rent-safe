@@ -15,7 +15,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/a
  */
 const handleApiResponse = async (response) => {
   let data;
-  
+
   try {
     data = await response.json();
   } catch (parseError) {
@@ -89,9 +89,8 @@ export const loginUser = async (credentials) => {
     if (!data.data || !data.data.user || !data.data.token) {
       throw new Error('Invalid response structure from server');
     }
-
     // Return normalized user data
-      return {
+    return {
       user: {
         id: data.data.user.id,
         firstName: data.data.user.firstName,
@@ -100,19 +99,19 @@ export const loginUser = async (credentials) => {
         userType: data.data.user.userType,
         isEmailVerified: data.data.user.isEmailVerified,
       },
-        token: data.data.token,
-      };
+      token: data.data.token,
+    };
   } catch (error) {
     // Re-throw with better error messages
     if (error.message) {
-    throw error;
+      throw error;
     }
-    
+
     // Handle network errors
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Network error. Please check your connection and try again.');
     }
-    
+
     // Generic error fallback
     console.error('Login API error:', error);
     throw new Error(error.message || 'Login failed. Please try again.');
@@ -139,7 +138,7 @@ export const signupUser = async (userData) => {
   if (!userData || !userData.email || !userData.password || !userData.userType) {
     throw new Error('Email, password, and user type are required');
   }
-  
+
   // At least one name field must be provided
   if (!userData.firstName && !userData.lastName) {
     throw new Error('Name is required');
@@ -153,12 +152,12 @@ export const signupUser = async (userData) => {
       password: userData.password,
       userType: userData.userType,
     };
-    
+
     // Only add lastName if it's provided (not null/undefined/empty)
     if (userData.lastName && userData.lastName.trim()) {
       requestBody.lastName = userData.lastName.trim();
     }
-    
+
     // Add optional fields only if they exist and have values
     if (userData.phone) requestBody.phone = userData.phone;
     if (userData.address) requestBody.address = userData.address;
@@ -175,7 +174,7 @@ export const signupUser = async (userData) => {
     if (userData.companyName && userData.companyName.trim()) {
       requestBody.companyName = userData.companyName.trim();
     }
-    
+
     const response = await fetch(`${API_BASE_URL}/auth/signup`, {
       method: 'POST',
       headers: {
@@ -211,11 +210,11 @@ export const signupUser = async (userData) => {
       validationError.data = error.data;
       throw validationError;
     }
-    
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Network error. Please check your connection and try again.');
     }
-    
+
     console.error('Signup API error:', error);
     throw error;
   }
@@ -261,11 +260,11 @@ export const verifyOTP = async (email, otp) => {
     if (error.message) {
       throw error;
     }
-    
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Network error. Please check your connection and try again.');
     }
-    
+
     console.error('Verify OTP API error:', error);
     throw new Error(error.message || 'OTP verification failed. Please try again.');
   }
@@ -305,11 +304,11 @@ export const resendOTP = async (email) => {
     if (error.message) {
       throw error;
     }
-    
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Network error. Please check your connection and try again.');
     }
-    
+
     console.error('Resend OTP API error:', error);
     throw new Error(error.message || 'Failed to resend OTP. Please try again.');
   }
@@ -355,11 +354,11 @@ export const forgotPassword = async (email) => {
     if (error.message) {
       throw error;
     }
-    
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Network error. Please check your connection and try again.');
     }
-    
+
     console.error('Forgot password API error:', error);
     throw new Error(error.message || 'Failed to send password reset OTP. Please try again.');
   }
@@ -415,11 +414,11 @@ export const verifyPasswordResetOTP = async (email, otp) => {
     if (error.message) {
       throw error;
     }
-    
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Network error. Please check your connection and try again.');
     }
-    
+
     console.error('Verify password reset OTP API error:', error);
     throw new Error(error.message || 'Failed to verify OTP. Please try again.');
   }
@@ -457,11 +456,11 @@ export const resetPassword = async (email, otp, password) => {
     if (error.message) {
       throw error;
     }
-    
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Network error. Please check your connection and try again.');
     }
-    
+
     console.error('Reset password API error:', error);
     throw new Error(error.message || 'Failed to reset password. Please try again.');
   }

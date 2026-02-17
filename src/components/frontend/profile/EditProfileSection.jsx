@@ -28,7 +28,49 @@ function EditProfileSection() {
   const [creditScoreDocuments, setCreditScoreDocuments] = useState([]);
   const [pendingDocumentsByKey, setPendingDocumentsByKey] = useState({});
   const [pendingResetToken, setPendingResetToken] = useState(0);
-  const REQUIRED_ERROR = 'This field is mandatory';
+  
+  // Field name mapping for user-friendly validation messages
+  const fieldLabels = {
+    creditScore: 'Credit score',
+    identityFullName: 'Full name',
+    dateOfBirth: 'Date of birth',
+    nationalInsurance: 'National insurance',
+    identityPhone: 'Phone number',
+    currentAddress: 'Address',
+    currentCity: 'City',
+    currentCountry: 'Country',
+    currentPostcode: 'Postcode',
+    residencyLength: 'Residency length',
+    incomeType: 'Income type',
+    incomeDate: 'Income date',
+    grossMonthly: 'Gross monthly',
+    netMonthly: 'Net monthly',
+    documentType: 'Document type',
+    documentNumber: 'Document number',
+    documentExpire: 'Document expiry date',
+    guarantorName: 'Guarantor name',
+    guarantorRelationship: 'Guarantor relationship',
+    guarantorOccupation: 'Guarantor occupation',
+    guarantorAnnualIncome: 'Guarantor annual income',
+    guarantorEmail: 'Guarantor email',
+    guarantorPhone: 'Guarantor phone',
+    guarantorAddress: 'Guarantor address',
+    guarantorCity: 'Guarantor city',
+    guarantorCountry: 'Guarantor country',
+    guarantorPostcode: 'Guarantor postcode',
+  };
+  
+  // Helper function to get field-specific required error message
+  const getRequiredErrorMessage = (fieldName) => {
+    const fieldLabel = fieldLabels[fieldName] || fieldName;
+    return `${fieldLabel} is required`;
+  };
+  
+  // Helper function to check if an error is a required field error for a specific field
+  const isRequiredError = (fieldName, errorMessage) => {
+    const expectedMessage = getRequiredErrorMessage(fieldName);
+    return errorMessage === expectedMessage;
+  };
 
   const handlePendingDocumentsChange = (key, docs) => {
     if (!key) return;
@@ -380,7 +422,7 @@ function EditProfileSection() {
     if (String(processedValue || '').trim()) {
       setErrors((prev) => {
         const next = { ...(prev || {}) };
-        if (next[name] === REQUIRED_ERROR) delete next[name];
+        if (isRequiredError(name, next[name])) delete next[name];
         return next;
       });
     }
@@ -506,7 +548,7 @@ function EditProfileSection() {
     if (String(value || '').trim()) {
       setErrors((prev) => {
         const next = { ...(prev || {}) };
-        if (next[name] === REQUIRED_ERROR) delete next[name];
+        if (isRequiredError(name, next[name])) delete next[name];
         return next;
       });
     }
@@ -517,7 +559,7 @@ function EditProfileSection() {
     if (String(value || '').trim()) {
       setErrors((prev) => {
         const next = { ...(prev || {}) };
-        if (next[name] === REQUIRED_ERROR) delete next[name];
+        if (isRequiredError(name, next[name])) delete next[name];
         return next;
       });
     }
@@ -535,6 +577,12 @@ function EditProfileSection() {
   };
 
   const handleKeyDown = (e) => {
+    // Prevent Enter key from submitting the form when pressed in input fields
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      return false;
+    }
+    
     // Prevent space from being entered if field is empty or cursor is at the start
     if (e.key === ' ' || e.key === 'Spacebar') {
       const input = e.target;
@@ -854,7 +902,9 @@ function EditProfileSection() {
       };
 
       const requireField = (fieldName) => {
-        if (isBlank(formData[fieldName])) nextErrors[fieldName] = REQUIRED_ERROR;
+        if (isBlank(formData[fieldName])) {
+          nextErrors[fieldName] = getRequiredErrorMessage(fieldName);
+        }
       };
 
       // Credit score doc -> credit score required
@@ -910,10 +960,9 @@ function EditProfileSection() {
 
       if (Object.keys(nextErrors).length > 0) {
         setErrors((prev) => ({ ...(prev || {}), ...nextErrors }));
-        toast.error('Please fill the required fields');
         return;
       } else {
-        // Clear any previous REQUIRED_ERROR entries for the fields we validate here
+        // Clear any previous required error entries for the fields we validate here
         const validatedFields = [
           'creditScore',
           'identityFullName',
@@ -946,7 +995,7 @@ function EditProfileSection() {
         setErrors((prev) => {
           const next = { ...(prev || {}) };
           validatedFields.forEach((f) => {
-            if (next[f] === REQUIRED_ERROR) delete next[f];
+            if (isRequiredError(f, next[f])) delete next[f];
           });
           return next;
         });
@@ -1068,8 +1117,17 @@ function EditProfileSection() {
     );
   }
 
+  const handleFormKeyDown = (e) => {
+    // Prevent Enter key from submitting the form when pressed anywhere in the form
+    // (except in textareas where Enter should work normally)
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.type !== 'submit') {
+      e.preventDefault();
+      return false;
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown} className="space-y-6" noValidate>
       <BasicInformationSection
         formData={formData}
         handleChange={handleChange}

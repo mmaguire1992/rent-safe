@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { toast } from "react-toastify";
 import UploadIcon from "@/svg/uploadIcon";
 import DeleteIcon from "@/svg/deleteIcon";
 import PdfIcon from "@/svg/pdfIcon";
-import CloseIcon from "@/svg/closeIcon";
 
 function FileUpload({
   label,
@@ -128,55 +127,9 @@ function FileUpload({
     }
 
     if (validFiles.length > 0 && onFilesChange) {
-      // Add files with uploading state
-      // IMPORTANT: Don't spread the File object as it loses the File prototype
-      // Instead, add properties directly to the File object (Files are mutable for property addition)
-      const filesWithUploadState = validFiles.map((file) => {
-        // Add properties directly to the File instance
-        // This preserves the File prototype so instanceof File still works
-        if (file instanceof File) {
-          file.uploading = true;
-          file.progress = 0;
-        }
-        return file;
-      });
-      onFilesChange(allowMultiple ? [...uploadedFiles, ...filesWithUploadState] : filesWithUploadState);
+      onFilesChange(allowMultiple ? [...uploadedFiles, ...validFiles] : validFiles);
     }
   };
-
-  // Simulate upload progress
-  useEffect(() => {
-    const uploadingFiles = uploadedFiles.filter((file) => file.uploading);
-
-    if (uploadingFiles.length === 0) return;
-
-    const interval = setInterval(() => {
-      let didUpdate = false;
-
-      const updatedFiles = uploadedFiles.map((file) => {
-        if (file.uploading && file.progress < 100) {
-          const prevProgress = file.progress || 0;
-          const prevUploading = !!file.uploading;
-          const newProgress = Math.min(prevProgress + 10, 100);
-
-          // Update properties directly on the File instance to preserve File prototype
-          file.progress = newProgress;
-          file.uploading = newProgress < 100;
-
-          if (newProgress !== prevProgress || file.uploading !== prevUploading) {
-            didUpdate = true;
-          }
-        }
-        return file;
-      });
-
-      if (didUpdate && onFilesChange) {
-        onFilesChange(updatedFiles);
-      }
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, [uploadedFiles, onFilesChange]);
 
   const handleRemove = (index) => {
     const newFiles = uploadedFiles.filter((_, i) => i !== index);
@@ -187,14 +140,6 @@ function FileUpload({
     }
   };
 
-  const handleCancel = (index) => {
-    const newFiles = uploadedFiles.filter((_, i) => i !== index);
-    onFilesChange(newFiles);
-    // Reset file input to allow selecting the same file again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
 
   const formatFileSize = (bytes) => {
     if (bytes < 1024) return bytes + " B";
@@ -289,34 +234,17 @@ function FileUpload({
                       <p className="text-xs sm:text-sm font-medium text-darkGray truncate">
                         {file.name}
                       </p>
-                      {file.uploading ? (
-                        <>
-                          <p className="text-xs text-[#9FA3AA] font-medium">
-                            {formatFileSize((file.progress / 100) * file.size)}{" "}
-                            of {formatFileSize(file.size)}
-                          </p>
-                          <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
-                            <div
-                              className="bg-[#6B4EFF] h-1.5 rounded-full transition-all"
-                              style={{ width: `${file.progress || 0}%` }}
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <p className="text-xs text-[#9FA3AA] font-medium">
-                          {formatFileSize(file.size)}
-                        </p>
-                      )}
+                      <p className="text-xs text-[#9FA3AA] font-medium">
+                        {formatFileSize(file.size)}
+                      </p>
                     </div>
                   </div>
                   <button
                     type="button"
-                    onClick={() =>
-                      file.uploading ? handleCancel(index) : handleRemove(index)
-                    }
+                    onClick={() => handleRemove(index)}
                     className="p-1 flex-shrink-0"
                   >
-                    {file.uploading ? <CloseIcon /> : <DeleteIcon />}
+                    <DeleteIcon />
                   </button>
                 </div>
               ))}

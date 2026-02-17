@@ -11,6 +11,10 @@ import { useWishlist } from "@/context/WishlistContext";
 import { usePaymentStatus } from "@/context/PaymentStatusContext";
 import { getCurrentUser } from "@/api/users";
 
+// Module-level cache to persist profile image across component remounts
+let cachedProfileImage = null;
+let profileImageFetched = false;
+let cachedUserId = null;
 
 function PropertiesHeader({
   favoriteCount: propFavoriteCount,
@@ -22,8 +26,19 @@ function PropertiesHeader({
   // Use context favoriteCount if available, otherwise fall back to prop
   const favoriteCount = contextFavoriteCount ?? propFavoriteCount ?? 0;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState(null);
   const { isAuthenticated, userType, user } = useAuth();
+  
+  // Initialize from cache or user context (persists across remounts)
+  const [profileImage, setProfileImage] = useState(() => {
+    // Check if user changed (new login)
+    if (user?.id !== cachedUserId) {
+      cachedProfileImage = null;
+      profileImageFetched = false;
+      cachedUserId = user?.id || null;
+    }
+    // Priority: cached > user context > null
+    return cachedProfileImage || user?.userInfo?.profileImage || null;
+  });
   
   // Use shared payment status hook
   const { 
@@ -35,46 +50,53 @@ function PropertiesHeader({
   
   const loading = paymentCheckLoading;
   
-  // Fetch profile image
+  // Initialize profile image from user context first, then fetch if needed (only once per user)
   useEffect(() => {
-    const fetchProfileImage = async () => {
-      if (!isAuthenticated) {
-        // Try to get profile image from context user as fallback
-        if (user?.userInfo?.profileImage) {
-          setProfileImage(user.userInfo.profileImage);
-        }
-        return;
-      }
+    if (!isAuthenticated) {
+      setProfileImage(null);
+      cachedProfileImage = null;
+      profileImageFetched = false;
+      cachedUserId = null;
+      return;
+    }
 
-      try {
-        const userData = await getCurrentUser();
-        if (userData) {
-          // Set profile image from userInfo
-          if (userData.userInfo?.profileImage) {
-            setProfileImage(userData.userInfo.profileImage);
+    // Reset cache if user changed
+    if (user?.id !== cachedUserId) {
+      cachedProfileImage = null;
+      profileImageFetched = false;
+      cachedUserId = user?.id || null;
+    }
+
+    // Use profile image from context if available (immediate render, update cache)
+    if (user?.userInfo?.profileImage) {
+      const contextImage = user.userInfo.profileImage;
+      setProfileImage(contextImage);
+      cachedProfileImage = contextImage; // Update cache
+    }
+
+    // Only fetch once per user session if we don't have it from context or cache
+    if (!profileImageFetched && !user?.userInfo?.profileImage && !cachedProfileImage) {
+      profileImageFetched = true;
+      
+      // Fetch profile image in background (non-blocking)
+      const fetchProfileImage = async () => {
+        try {
+          const userData = await getCurrentUser();
+          if (userData?.userInfo?.profileImage) {
+            const fetchedImage = userData.userInfo.profileImage;
+            setProfileImage(fetchedImage);
+            cachedProfileImage = fetchedImage; // Update cache
           } else {
-            // Fallback to context user
-            if (user?.userInfo?.profileImage) {
-              setProfileImage(user.userInfo.profileImage);
-            } else {
-              setProfileImage(null);
-            }
+            setProfileImage(null);
+            cachedProfileImage = null;
           }
-        } else {
-          // Fallback to context user
-          if (user?.userInfo?.profileImage) {
-            setProfileImage(user.userInfo.profileImage);
-          }
+        } catch (err) {
+          console.error('Error fetching profile image:', err);
         }
-      } catch (err) {
-        // On error, try context user
-        if (user?.userInfo?.profileImage) {
-          setProfileImage(user.userInfo.profileImage);
-        }
-      }
-    };
-
-    fetchProfileImage();
+      };
+      
+      fetchProfileImage();
+    }
 
     // Listen for profile image updates
     const handleProfileImageUpdate = async () => {
@@ -84,14 +106,13 @@ function PropertiesHeader({
           // Add cache-busting parameter to force image refresh
           const imageUrl = userData.userInfo.profileImage + (userData.userInfo.profileImage.includes('?') ? '&' : '?') + '_t=' + Date.now();
           setProfileImage(imageUrl);
+          cachedProfileImage = imageUrl; // Update cache
         } else {
           setProfileImage(null);
+          cachedProfileImage = null;
         }
       } catch (err) {
-        // On error, try context user
-        if (user?.userInfo?.profileImage) {
-          setProfileImage(user.userInfo.profileImage);
-        }
+        console.error('Error refreshing profile image:', err);
       }
     };
 
@@ -100,7 +121,7 @@ function PropertiesHeader({
     return () => {
       window.removeEventListener('profileImageUpdated', handleProfileImageUpdate);
     };
-  }, [isAuthenticated, user?.id, user?.userInfo?.profileImage]);
+  }, [isAuthenticated, user?.id]); // Depend on user ID to reset cache on user change
 
   return (
     <>

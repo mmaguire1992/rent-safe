@@ -111,9 +111,41 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
   };
 
   const handleFilesChange = (files) => {
-    setUploadedFiles(files);
+    // Validate file types and sizes - only images allowed
+    const allowedImageMimes = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']);
+    const maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
+    
     if (files && files.length > 0) {
+      // Check file count
+      if (files.length > 3) {
+        setFieldErrors((prev) => ({ ...prev, files: "Maximum 3 files allowed" }));
+        return;
+      }
+      
+      // Validate each file
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Check file size
+        if (file.size > maxFileSize) {
+          setFieldErrors((prev) => ({ ...prev, files: `${file.name} exceeds 10MB limit. Please select a smaller file.` }));
+          return;
+        }
+        
+        // Check file type - only images allowed
+        const isValidType = allowedImageMimes.has(file.type.toLowerCase());
+        
+        if (!isValidType) {
+          setFieldErrors((prev) => ({ ...prev, files: "Invalid file type. Only image/jpeg, image/jpg, image/png, image/gif, image/webp are allowed." }));
+          return;
+        }
+      }
+      
+      // All validations passed
+      setUploadedFiles(files);
       setFieldErrors((prev) => ({ ...prev, files: "" }));
+    } else {
+      setUploadedFiles([]);
     }
   };
 
@@ -127,15 +159,38 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
     if (countNonSpaceChars(formData.notes) > 200) nextErrors.notes = "Notes cannot exceed 200 characters";
     if (!formData.priority) nextErrors.priority = "Priority is required";
     // Required documents (matches UI asterisk)
-    if (!uploadedFiles || uploadedFiles.length === 0) nextErrors.files = "Please upload at least one document";
+    if (!uploadedFiles || uploadedFiles.length === 0) {
+      nextErrors.files = "Please upload at least one document";
+    }
 
-    // Backend accepts only images for support ticket media
-    const allowedImageMimes = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']);
-    const hasInvalidType =
-      uploadedFiles &&
-      uploadedFiles.some((f) => f && f.type && !allowedImageMimes.has(String(f.type).toLowerCase()));
-    if (hasInvalidType) {
-      nextErrors.files = "Invalid file type. Only JPG, PNG, GIF, WEBP images are allowed.";
+    // Validate file types and sizes - only images allowed
+    if (uploadedFiles && uploadedFiles.length > 0) {
+      const allowedImageMimes = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']);
+      const maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
+      
+      // Check file count
+      if (uploadedFiles.length > 3) {
+        nextErrors.files = "Maximum 3 files allowed";
+      }
+      
+      // Validate each file
+      for (let i = 0; i < uploadedFiles.length; i++) {
+        const file = uploadedFiles[i];
+        
+        // Check file size
+        if (file.size > maxFileSize) {
+          nextErrors.files = `${file.name} exceeds 10MB limit. Please select a smaller file.`;
+          break;
+        }
+        
+        // Check file type - only images allowed
+        const isValidType = allowedImageMimes.has(file.type.toLowerCase());
+        
+        if (!isValidType) {
+          nextErrors.files = "Invalid file type. Only image/jpeg, image/jpg, image/png, image/gif, image/webp are allowed.";
+          break;
+        }
+      }
     }
 
     const hasErrors = Object.values(nextErrors).some(Boolean);
@@ -171,7 +226,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
             uploadError.response?.data?.error ||
             uploadError.response?.data?.message ||
             uploadError.message ||
-            'Failed to upload attachments. Please try again with image files.';
+            'Failed to upload attachments. Please try again with image files (JPG, PNG, GIF, WEBP).';
           toast.error(msg);
 
           // Refresh list so user can see the created ticket
@@ -410,9 +465,11 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                 <h2 className="text-base font-semibold font-nunito text-secondary mb-1">
                   Upload Documents<span className="text-errorColor">*</span>
                 </h2>
+                <p className="text-sm text-gray-500 mb-2">
+                  Images only (JPG, PNG, GIF, WEBP). Max 3 files, 10MB each.
+                </p>
                 <FileUpload
                   label=""
-                  // Backend only accepts images for support ticket media
                   acceptedTypes=".jpg,.jpeg,.png,.gif,.webp"
                   maxFiles={3}
                   onFilesChange={handleFilesChange}
@@ -515,28 +572,29 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
               />
             </div>
             
-            <div>
-              <label className="block text-xs font-semibold text-secondary mb-1 mt-2">
-                Created Date
-              </label>
-              <div className="relative">
-                <input
-                  type="date"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  className="w-full px-3 py-2 pr-8 text-sm border border-lightGray rounded-[8px] focus:outline-none focus:ring-0 font-nunito text-secondary"
-                />
-                {dateFilter && (
-                  <button
-                    onClick={() => setDateFilter("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                    title="Clear date filter"
-                  >
-                    <FiX className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            </div>
+             <div>
+               <label className="block text-xs font-semibold text-secondary mb-1 mt-2">
+                 Created Date
+               </label>
+               <div className="relative">
+                 <input
+                   type="date"
+                   value={dateFilter}
+                   onChange={(e) => setDateFilter(e.target.value)}
+                   max={new Date().toISOString().split('T')[0]}
+                   className="w-full px-3 py-2 pr-8 text-sm border border-lightGray rounded-[8px] focus:outline-none focus:ring-0 font-nunito text-secondary"
+                 />
+                 {dateFilter && (
+                   <button
+                     onClick={() => setDateFilter("")}
+                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                     title="Clear date filter"
+                   >
+                     <FiX className="h-4 w-4" />
+                   </button>
+                 )}
+               </div>
+             </div>
           </div>
           
           {(searchQuery || statusFilter || priorityFilter || dateFilter) && (
