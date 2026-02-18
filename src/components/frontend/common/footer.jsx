@@ -98,7 +98,7 @@ const Footer = () => {
       {/* Divider + copyright */}
       <div className="border-t border-[#5A5E67] py-4 text-center text-sm">
         <span className="font-nunito text-sm font-normal text-[#E6E8EC]">
-          All rights are reserved. | Copyrights 2024
+          All rights are reserved. | Copyrights 2026
         </span>
       </div>
     </footer>

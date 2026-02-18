@@ -146,7 +146,7 @@ function NewestListing() {
     const price = property.rent ? `${currencySymbol}${property.rent.toLocaleString()}` : 'N/A';
 
     // Format property type
-    const type = property.propertyType 
+    const type = property.propertyType
       ? property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)
       : 'N/A';
 
@@ -166,7 +166,11 @@ function NewestListing() {
   return (
     <section
       id="newest-listing"
-      className="w-full py-10 md:py-14 lg:py-16 bg-bg-primary scroll-mt-[88px]"
+      className="w-full py-10 md:py-14 lg:py-16 scroll-mt-[88px]"
+      style={{
+        background:
+          "linear-gradient(135deg, rgba(249, 249, 252, 0.99) 0%, rgba(255, 255, 255, 0.9) 57.87%, rgba(232, 226, 255, 0.3) 100%)",
+      }}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -174,7 +178,7 @@ function NewestListing() {
           <div className="flex justify-center mb-4">
             <span className="border-[#6B4EFF33] border bg-badgeGradient rounded-2xl px-4 py-2 text-sm text-[#4A2FCC] font-semibold uppercase inline-flex items-center gap-2">
               <BlueTrustedIcon />
-             VERIFIED LISTING
+              VERIFIED LISTING
             </span>
           </div>
 
@@ -190,7 +194,7 @@ function NewestListing() {
 
         {/* Property Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-10 md:mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10 md:mb-12">
             {[...Array(6)].map((_, index) => (
               <div
                 key={index}
@@ -214,10 +218,10 @@ function NewestListing() {
             </button>
           </div>
         ) : transformedProperties.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-10 md:mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10 md:mb-12">
             {transformedProperties.map((property) => (
-              <PropertyCard 
-                key={property.id} 
+              <PropertyCard
+                key={property.id}
                 property={property}
                 isFavorited={favoritedIds.has(property.id)}
                 onToggleFavorite={() => toggleFavorite(property.id)}
@@ -232,8 +236,8 @@ function NewestListing() {
 
         {/* Browse Listings Button */}
         <div className="flex justify-center w-full md:w-auto">
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={() => navigate('/properties')}
           >
             Browse listing

@@ -14,29 +14,29 @@ const editableStatusOptions = [
 // Format status for display
 const formatStatus = (status) => {
   if (!status) return 'Draft';
-  
+
   const statusMap = {
     'draft': 'Draft',
-    'pending_approval': 'Pending Approval',
+    'pending_approval': 'Pending',
     'active': 'Active',
     'inactive': 'Inactive',
     'rented': 'Rent Out',
     'suspended': 'Suspended'
   };
-  
+
   return statusMap[status.toLowerCase()] || status;
 };
 
 // Get status badge color
 const getStatusBadgeColor = (status) => {
   const statusLower = status?.toLowerCase() || '';
-  
+
   if (statusLower === 'active') {
     return 'bg-[#DFFFE6] text-[#00893A]';
   } else if (statusLower === 'rented') {
     return 'bg-[#FFF5CC] text-[#D19600]';
   } else if (statusLower === 'pending_approval') {
-    return 'bg-gray-100 text-blue-600'; // Light gray background with blue text for pending approval
+    return 'bg-[#FFF5CC] text-[#D19600]'; // Light gray background with blue text for pending approval
   } else if (statusLower === 'draft') {
     return 'bg-[#E8E2FF] text-[#6B4EFF]'; // Purple color for draft
   } else if (statusLower === 'suspended') {
@@ -56,7 +56,7 @@ function PropertyStatusCard({ propertyData, onStatusChange, onApprove, onReject,
   const isAdmin = userRole === 'admin';
   const isPendingApproval = currentStatus === 'pending_approval';
   const canApproveReject = isAdmin && isPendingApproval;
-  
+
   // Get available options based on current status
   const getAvailableOptions = () => {
     if (currentStatus === 'active') {
@@ -91,7 +91,7 @@ function PropertyStatusCard({ propertyData, onStatusChange, onApprove, onReject,
       setIsDropdownOpen(false);
       return;
     }
-    
+
     setIsDropdownOpen(false);
     if (onStatusChange) {
       onStatusChange(value);
@@ -100,13 +100,13 @@ function PropertyStatusCard({ propertyData, onStatusChange, onApprove, onReject,
 
   const availableOptions = getAvailableOptions();
   const displayLabel = formatStatus(currentStatus);
-  console.log("ptoperty data ::",propertyData);
-  
+  console.log("ptoperty data ::", propertyData);
+
 
   return (
     <div className="bg-white rounded-[20px] border border-lightGray md:p-6 p-4">
       <h2 className="md:text-xl text-base font-bold font-nunito text-secondary mb-4">
-        Listing Status 
+        Listing Status
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
         <div className="flex items-center gap-4 justify-between relative">
@@ -194,9 +194,9 @@ function PropertyStatusCard({ propertyData, onStatusChange, onApprove, onReject,
           </div>
 
           <div className="flex items-center gap-2">
-           <p className="text-base font-bold text-secondary">
-           {propertyData.views || 0}   
-           </p>
+            <p className="text-base font-bold text-secondary">
+              {propertyData.views || 0}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-4 justify-between mt-5">

@@ -47,36 +47,36 @@ function ActiveProperties() {
 
     try {
       isProcessingRef.current = true;
-      
+
       // Check verification and subscription status
       const status = await checkStatus();
-      
+
       // Check if subscription limit has expired (has subscription but remainingProperties === 0)
       // Use subscription data from checkStatus to avoid duplicate API call
       let hasSubscriptionLimitExpired = false;
       if (status.hasSubscription && !status.needsSubscription && status.subscription) {
         const subscription = status.subscription;
         const isActiveStatus = subscription?.status === 'active' || subscription?.status === 'activate';
-        if (subscription && isActiveStatus && 
-            subscription.remainingProperties !== undefined && 
-            subscription.remainingProperties === 0) {
+        if (subscription && isActiveStatus &&
+          subscription.remainingProperties !== undefined &&
+          subscription.remainingProperties === 0) {
           hasSubscriptionLimitExpired = true;
         }
       }
-      
+
       // Set modal state based on what's needed
       setNeedsVerification(status.needsVerification);
       // If subscription limit expired, also set needsSubscription to true to show modal
       setNeedsSubscription(status.needsSubscription || hasSubscriptionLimitExpired);
       // Pass subscription data to modal to avoid duplicate API call
       setSubscriptionData(status.subscription || null);
-      
+
       // If user needs verification, subscription, or limit expired, show modal
       if (status.needsVerification || status.needsSubscription || hasSubscriptionLimitExpired) {
         setShowModal(true);
         return;
       }
-      
+
       // If everything is okay (verified + has active subscription with remaining properties), proceed
       navigate("/dashboard/properties/add");
     } catch (error) {
@@ -89,7 +89,7 @@ function ActiveProperties() {
       isProcessingRef.current = false;
     }
   };
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [sortBy, setSortBy] = useState(null); // 'title', 'location', 'type', 'rent', 'leads', 'views', 'status'
@@ -105,13 +105,13 @@ function ActiveProperties() {
       page: currentPage,
       limit: itemsPerPage,
     };
-    
+
     // Add sortBy and sortOrder if sorting is applied
     if (sortBy) {
       params.sortBy = sortBy;
       params.sortOrder = sortOrder;
     }
-    
+
     dispatch(fetchMyActiveProperties(params));
   }, [dispatch, currentPage, itemsPerPage, sortBy, sortOrder]);
 
@@ -131,7 +131,7 @@ function ActiveProperties() {
   // Transform properties (sorting is done on backend)
   const transformedProperties = useMemo(() => {
     if (!allProperties || allProperties.length === 0) return [];
-    
+
     return allProperties.map((property) => {
       // Extract image URL from primaryImageId or images array
       let imageUrl = null;
@@ -151,7 +151,7 @@ function ActiveProperties() {
       if (!imageUrl && property.image) {
         imageUrl = property.image;
       }
-      
+
       // Build location string from address
       const locationParts = [];
       if (property.address) {
@@ -159,29 +159,29 @@ function ActiveProperties() {
         if (property.address.county) locationParts.push(property.address.county);
         if (property.address.postcode) locationParts.push(property.address.postcode);
       }
-      const location = locationParts.length > 0 
-        ? locationParts.join(", ") 
+      const location = locationParts.length > 0
+        ? locationParts.join(", ")
         : property.location || "N/A";
-      
+
       // Format rent with currency
       const currency = property.currency || "GBP";
       const rentSymbol = currency === "GBP" ? "£" : currency === "EUR" ? "€" : currency === "USD" ? "$" : "";
-      const rent = property.rent 
+      const rent = property.rent
         ? `${rentSymbol}${property.rent.toLocaleString()}`
         : "N/A";
-      
+
       // Format status (capitalize first letter)
-      const status = property.status 
+      const status = property.status
         ? property.status.charAt(0).toUpperCase() + property.status.slice(1).replace(/_/g, " ")
         : "Active";
-      
+
       return {
         id: property._id || property.id,
         image: imageUrl,
         title: property.title || "Untitled Property",
         propertyId: property._id || property.id,
         location: location,
-        type: property.propertyType 
+        type: property.propertyType
           ? property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)
           : "N/A",
         rent: rent,
@@ -261,7 +261,7 @@ function ActiveProperties() {
 
     // Prepare CSV headers
     const headers = ['Property', 'Location', 'Type', 'Rent', 'Leads', 'Views', 'Status', 'Property ID'];
-    
+
     // Prepare CSV rows
     const rows = transformedProperties.map(property => [
       property.title || '',
@@ -300,7 +300,7 @@ function ActiveProperties() {
         </h2>
         <div className="flex items-center gap-2 md:gap-3 flex-wrap">
           <div className="relative" ref={sortDropdownRef}>
-            <button 
+            <button
               onClick={() => setShowSortDropdown(!showSortDropdown)}
               className="flex items-center gap-1.5 sm:gap-2 h-[36px] sm:h-[38px] border border-lightGray rounded-[10px] px-3 sm:px-4 md:px-6 py-1.5 md:py-2 hover:bg-gray-50 transition-colors"
             >
@@ -315,11 +315,9 @@ function ActiveProperties() {
                   <button
                     key={option.value}
                     onClick={() => handleSort(option.value)}
-                    className={`w-full flex items-center justify-between px-4 py-2 text-left hover:bg-gray-50 transition-colors ${
-                      sortBy === option.value ? 'bg-blue-50' : ''
-                    } ${option.value === sortOptions[0].value ? 'first:rounded-t-lg' : ''} ${
-                      option.value === sortOptions[sortOptions.length - 1].value ? 'last:rounded-b-lg' : ''
-                    }`}
+                    className={`w-full flex items-center justify-between px-4 py-2 text-left hover:bg-gray-50 transition-colors ${sortBy === option.value ? 'bg-blue-50' : ''
+                      } ${option.value === sortOptions[0].value ? 'first:rounded-t-lg' : ''} ${option.value === sortOptions[sortOptions.length - 1].value ? 'last:rounded-b-lg' : ''
+                      }`}
                   >
                     <span className="text-sm text-secondary font-medium font-nunito">
                       {option.label}
@@ -343,7 +341,7 @@ function ActiveProperties() {
               <GoPlus className="text-lg sm:text-xl md:text-2xl" />
             </span>
           </button>
-          <button 
+          <button
             onClick={handleExportCSV}
             className="bg-white border border-[#4A2FCC] h-[36px] sm:h-[38px] text-[#4A2FCC] px-3 sm:px-4 md:px-6 py-1.5 md:py-2 rounded-[10px] font-bold font-nunito hover:bg-opacity-90 transition-colors flex items-center gap-2 md:gap-3 text-xs sm:text-sm md:text-base"
           >
@@ -368,127 +366,232 @@ function ActiveProperties() {
 
       {/* Desktop Table */}
       {!error && (
-      <div className="hidden md:block border border-lightGray rounded-[20px] overflow-x-auto overflow-y-visible">
-        <div className="min-w-[1200px]">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-lightGray">
-                <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
-                  Property
-                </th>
-                <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
-                  Location
-                </th>
-                <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
-                  Type
-                </th>
-                <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
-                  Rent
-                </th>
-                <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
-                  Leads
-                </th>
-                <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
-                  Status
-                </th>
-                <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
-                  Views
-                </th>
-                <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan="8" className="py-12 text-center">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#6B4EFF] border-t-transparent"></div>
-                      <p className="mt-4 text-darkGray text-sm sm:text-base">Loading active properties...</p>
-                    </div>
-                  </td>
+        <div className="hidden md:block border border-lightGray rounded-[20px] overflow-x-auto overflow-y-visible">
+          <div className="min-w-[1200px]">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-lightGray">
+                  <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
+                    Property
+                  </th>
+                  <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
+                    Location
+                  </th>
+                  <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
+                    Type
+                  </th>
+                  <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
+                    Rent
+                  </th>
+                  <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
+                    Leads
+                  </th>
+                  <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
+                    Status
+                  </th>
+                  <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
+                    Views
+                  </th>
+                  <th className="text-left py-3 px-4 text-darkGray font-bold text-base">
+                    Action
+                  </th>
                 </tr>
-              ) : currentProperties.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="py-8 text-center text-darkGray text-base">
-                    No active properties found.
-                  </td>
-                </tr>
-              ) : (
-                currentProperties.map((property, index) => (
-                <tr
-                  key={property.id}
-                  className="border-b border-lightGray hover:bg-gray-50"
-                >
-                  <td className="py-4 px-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-midGray text-base">
-                        {startIndex + index + 1}
-                      </span>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="8" className="py-12 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#6B4EFF] border-t-transparent"></div>
+                        <p className="mt-4 text-darkGray text-sm sm:text-base">Loading active properties...</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : currentProperties.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="py-8 text-center text-darkGray text-base">
+                      No active properties found.
+                    </td>
+                  </tr>
+                ) : (
+                  currentProperties.map((property, index) => (
+                    <tr
+                      key={property.id}
+                      className="border-b border-lightGray hover:bg-gray-50"
+                    >
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <span className="text-midGray text-base">
+                            {startIndex + index + 1}
+                          </span>
+                          {property.image ? (
+                            <img
+                              src={property.image}
+                              alt={property.title}
+                              className="w-12 h-12 rounded-lg object-cover"
+                              onError={(e) => {
+                                e.target.src = "https://via.placeholder.com/48x48?text=No+Image";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center">
+                              <span className="text-xs text-gray-500">No Image</span>
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-bold font-nunito text-secondary text-base">
+                              {property.title}
+                            </p>
+                            <p className="text-darkGray text-base font-nunito font-normal">
+                              {property.propertyId}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <p className="text-secondary  text-base font-nunito font-normal">
+                          {property.location}
+                        </p>
+                      </td>
+                      <td className="py-4 px-4">
+                        <p className="text-secondary  text-base font-nunito font-normal">
+                          {property.type}
+                        </p>
+                      </td>
+                      <td className="py-4 px-4">
+                        <p className="font-bold text-secondary text-base font-nunito">
+                          {property.rent}
+                        </p>
+                      </td>
+                      <td className="py-4 px-4">
+                        <p className="text-secondary text-base font-nunito font-normal">
+                          {property.leads}
+                        </p>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span
+                          className={`px-3 py-1 rounded-full text-base font-nunito font-normal ${property.status === "Active"
+                            ? "bg-[#DFFFE6] text-[#00893A]"
+                            : "bg-[#FFF5CC] text-[#D19600]"
+                            }`}
+                        >
+                          {property.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <p className="text-secondary text-base font-nunito font-normal">
+                          {property.views}
+                        </p>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div
+                          className="relative"
+                          ref={(el) => (dropdownRefs.current[property.id] = el)}
+                        >
+                          <button
+                            onClick={() => handleToggleDropdown(property.id)}
+                            className="flex items-center justify-center hover:bg-gray-100 rounded-lg p-1 transition-colors"
+                          >
+                            <ThreeDotsIcon />
+                          </button>
+                          {openDropdownId === property.id && (
+                            <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-lightGray rounded-lg shadow-lg z-50">
+                              {/* <button
+                            onClick={() => handleAction("edit", property.id)}
+                            className="w-full flex items-center gap-3 px-4 py-2 text-left text-secondary hover:bg-gray-50 transition-colors first:rounded-t-lg"
+                          >
+                            <span className="text-base text-secondary font-medium font-nunito">
+                              Edit
+                            </span>
+                          </button> */}
+                              <button
+                                onClick={() => handleAction("delete", property.id)}
+                                className="w-full flex items-center gap-3 px-4 py-2 text-left  hover:bg-gray-50  transition-colors"
+                              >
+                                <span className="text-base text-secondary font-medium font-nunito">
+                                  Delete
+                                </span>
+                              </button>
+                              <button
+                                onClick={() => handleAction("share", property.id)}
+                                className="w-full flex items-center gap-3 px-4 py-2 text-left text-secondary hover:bg-gray-50 transition-colors last:rounded-b-lg"
+                              >
+                                <span className="text-base text-secondary font-medium font-nunito">
+                                  Share
+                                </span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-4 pb-4">
+            {/* Pagination */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              itemName="properties"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Cards */}
+      {!error && (
+        <div className="md:hidden space-y-3">
+          {loading ? (
+            <div className="border border-lightGray rounded-[20px] p-8 text-center">
+              <div className="flex flex-col items-center justify-center">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#6B4EFF] border-t-transparent"></div>
+                <p className="mt-4 text-darkGray text-sm sm:text-base">Loading active properties...</p>
+              </div>
+            </div>
+          ) : currentProperties.length === 0 ? (
+            <div className="border border-lightGray rounded-[20px] p-8 text-center">
+              <p className="text-darkGray text-sm sm:text-base">No active properties found.</p>
+            </div>
+          ) : (
+            currentProperties.map((property, index) => (
+              <div
+                key={property.id}
+                className="border border-lightGray rounded-[20px] overflow-hidden bg-white"
+              >
+                <div className="block">
+                  <div className="flex p-3 sm:p-4 items-start justify-between mb-3 border-b border-lightGray">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
                       {property.image ? (
-                      <img
-                        src={property.image}
-                        alt={property.title}
-                        className="w-12 h-12 rounded-lg object-cover"
+                        <img
+                          src={property.image}
+                          alt={property.title}
+                          className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
                           onError={(e) => {
-                            e.target.src = "https://via.placeholder.com/48x48?text=No+Image";
+                            e.target.src = "https://via.placeholder.com/64x64?text=No+Image";
                           }}
-                      />
+                        />
                       ) : (
-                        <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
                           <span className="text-xs text-gray-500">No Image</span>
                         </div>
                       )}
-                      <div>
-                        <p className="font-bold font-nunito text-secondary text-base">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold font-nunito text-secondary mb-2 text-base truncate">
                           {property.title}
                         </p>
-                        <p className="text-darkGray text-base font-nunito font-normal">
+                        <p className="text-darkGray text-xs sm:text-sm font-nunito font-normal">
                           {property.propertyId}
                         </p>
                       </div>
                     </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <p className="text-secondary  text-base font-nunito font-normal">
-                      {property.location}
-                    </p>
-                  </td>
-                  <td className="py-4 px-4">
-                    <p className="text-secondary  text-base font-nunito font-normal">
-                      {property.type}
-                    </p>
-                  </td>
-                  <td className="py-4 px-4">
-                    <p className="font-bold text-secondary text-base font-nunito">
-                      {property.rent}
-                    </p>
-                  </td>
-                  <td className="py-4 px-4">
-                    <p className="text-secondary text-base font-nunito font-normal">
-                      {property.leads}
-                    </p>
-                  </td>
-                  <td className="py-4 px-4">
-                    <span
-                      className={`px-3 py-1 rounded-full text-base font-nunito font-normal ${
-                        property.status === "Active"
-                          ? "bg-[#DFFFE6] text-[#00893A]"
-                          : "bg-[#FFF5CC] text-[#D19600]"
-                      }`}
-                    >
-                      {property.status}
-                    </span>
-                  </td>
-                  <td className="py-4 px-4">
-                    <p className="text-secondary text-base font-nunito font-normal">
-                      {property.views}
-                    </p>
-                  </td>
-                  <td className="py-4 px-4">
                     <div
-                      className="relative"
+                      className="relative flex-shrink-0"
                       ref={(el) => (dropdownRefs.current[property.id] = el)}
                     >
                       <button
@@ -499,19 +602,19 @@ function ActiveProperties() {
                       </button>
                       {openDropdownId === property.id && (
                         <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-lightGray rounded-lg shadow-lg z-50">
-                          {/* <button
+                          <button
                             onClick={() => handleAction("edit", property.id)}
                             className="w-full flex items-center gap-3 px-4 py-2 text-left text-secondary hover:bg-gray-50 transition-colors first:rounded-t-lg"
                           >
-                            <span className="text-base text-secondary font-medium font-nunito">
+                            <span className="text-sm sm:text-base text-secondary font-medium font-nunito">
                               Edit
                             </span>
-                          </button> */}
+                          </button>
                           <button
                             onClick={() => handleAction("delete", property.id)}
-                            className="w-full flex items-center gap-3 px-4 py-2 text-left  hover:bg-gray-50  transition-colors"
+                            className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 transition-colors"
                           >
-                            <span className="text-base text-secondary font-medium font-nunito">
+                            <span className="text-sm sm:text-base text-secondary font-medium font-nunito">
                               Delete
                             </span>
                           </button>
@@ -519,194 +622,87 @@ function ActiveProperties() {
                             onClick={() => handleAction("share", property.id)}
                             className="w-full flex items-center gap-3 px-4 py-2 text-left text-secondary hover:bg-gray-50 transition-colors last:rounded-b-lg"
                           >
-                            <span className="text-base text-secondary font-medium font-nunito">
+                            <span className="text-sm sm:text-base text-secondary font-medium font-nunito">
                               Share
                             </span>
                           </button>
                         </div>
                       )}
                     </div>
-                  </td>
-                </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="px-4 pb-4">
-          {/* Pagination */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            itemName="properties"
-          />
-        </div>
-      </div>
-      )}
+                  </div>
 
-      {/* Mobile Cards */}
-      {!error && (
-      <div className="md:hidden space-y-3">
-        {loading ? (
-          <div className="border border-lightGray rounded-[20px] p-8 text-center">
-            <div className="flex flex-col items-center justify-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#6B4EFF] border-t-transparent"></div>
-              <p className="mt-4 text-darkGray text-sm sm:text-base">Loading active properties...</p>
-            </div>
-          </div>
-        ) : currentProperties.length === 0 ? (
-          <div className="border border-lightGray rounded-[20px] p-8 text-center">
-            <p className="text-darkGray text-sm sm:text-base">No active properties found.</p>
-          </div>
-        ) : (
-          currentProperties.map((property, index) => (
-          <div
-            key={property.id}
-            className="border border-lightGray rounded-[20px] overflow-hidden bg-white"
-          >
-            <div className="block">
-              <div className="flex p-3 sm:p-4 items-start justify-between mb-3 border-b border-lightGray">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  {property.image ? (
-                  <img
-                    src={property.image}
-                    alt={property.title}
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
-                      onError={(e) => {
-                        e.target.src = "https://via.placeholder.com/64x64?text=No+Image";
-                      }}
-                  />
-                  ) : (
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs text-gray-500">No Image</span>
+                  <div className="space-y-2 px-4 pb-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm min-w-[60px] font-normal text-darkGray font-nunito">
+                        Location:
+                      </span>
+                      <p className="text-sm text-secondary font-nunito font-medium text-left flex-1 ml-2 truncate">
+                        {property.location}
+                      </p>
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold font-nunito text-secondary mb-2 text-base truncate">
-                      {property.title}
-                    </p>
-                    <p className="text-darkGray text-xs sm:text-sm font-nunito font-normal">
-                      {property.propertyId}
-                    </p>
+                    <div className="flex items-center justify-start">
+                      <span className="text-sm  min-w-[60px] font-normal text-darkGray font-nunito">
+                        Type:
+                      </span>
+                      <p className="text-sm text-secondary font-nunito font-medium text-left flex-1 ml-2 truncate">
+                        {property.type}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-start">
+                      <span className="text-sm  min-w-[60px] font-normal text-darkGray font-nunito">
+                        Rent:
+                      </span>
+                      <p className="font-bold text-sm text-secondary font-nunito  text-left flex-1 ml-2 truncate">
+                        {property.rent}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-start">
+                      <span className="text-sm  min-w-[60px] font-normal text-darkGray font-nunito">
+                        Leads:
+                      </span>
+                      <p className="text-sm text-secondary font-nunito font-medium  ml-2">
+                        {property.leads}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-start">
+                      <span className="text-sm  min-w-[60px] font-normal text-darkGray font-nunito">
+                        Views:
+                      </span>
+                      <p className="text-sm text-secondary font-nunito font-medium text-left flex-1 ml-2 truncate">
+                        {property.views}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-start">
+                      <span className="text-sm  min-w-[60px] font-normal text-darkGray font-nunito">
+                        Status:
+                      </span>
+                      <span
+                        className={`px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-nunito font-normal ${property.status === "Active"
+                          ? "bg-[#DFFFE6] text-[#00893A]"
+                          : "bg-[#FFF5CC] text-[#D19600]"
+                          }`}
+                      >
+                        {property.status}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div
-                  className="relative flex-shrink-0"
-                  ref={(el) => (dropdownRefs.current[property.id] = el)}
-                >
-                  <button
-                    onClick={() => handleToggleDropdown(property.id)}
-                    className="flex items-center justify-center hover:bg-gray-100 rounded-lg p-1 transition-colors"
-                  >
-                    <ThreeDotsIcon />
-                  </button>
-                  {openDropdownId === property.id && (
-                    <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-lightGray rounded-lg shadow-lg z-50">
-                      <button
-                        onClick={() => handleAction("edit", property.id)}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-left text-secondary hover:bg-gray-50 transition-colors first:rounded-t-lg"
-                      >
-                        <span className="text-sm sm:text-base text-secondary font-medium font-nunito">
-                          Edit
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => handleAction("delete", property.id)}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 transition-colors"
-                      >
-                        <span className="text-sm sm:text-base text-secondary font-medium font-nunito">
-                          Delete
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => handleAction("share", property.id)}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-left text-secondary hover:bg-gray-50 transition-colors last:rounded-b-lg"
-                      >
-                        <span className="text-sm sm:text-base text-secondary font-medium font-nunito">
-                          Share
-                        </span>
-                      </button>
-                    </div>
-                  )}
-                </div>
               </div>
+            ))
+          )}
 
-              <div className="space-y-2 px-4 pb-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm min-w-[60px] font-normal text-darkGray font-nunito">
-                    Location:
-                  </span>
-                  <p className="text-sm text-secondary font-nunito font-medium text-left flex-1 ml-2 truncate">
-                    {property.location}
-                  </p>
-                </div>
-                <div className="flex items-center justify-start">
-                  <span className="text-sm  min-w-[60px] font-normal text-darkGray font-nunito">
-                    Type:
-                  </span>
-                  <p className="text-sm text-secondary font-nunito font-medium text-left flex-1 ml-2 truncate">
-                    {property.type}
-                  </p>
-                </div>
-                <div className="flex items-center justify-start">
-                  <span className="text-sm  min-w-[60px] font-normal text-darkGray font-nunito">
-                    Rent:
-                  </span>
-                  <p className="font-bold text-sm text-secondary font-nunito  text-left flex-1 ml-2 truncate">
-                    {property.rent}
-                  </p>
-                </div>
-                <div className="flex items-center justify-start">
-                  <span className="text-sm  min-w-[60px] font-normal text-darkGray font-nunito">
-                    Leads:
-                  </span>
-                  <p className="text-sm text-secondary font-nunito font-medium  ml-2">
-                    {property.leads}
-                  </p>
-                </div>
-                <div className="flex items-center justify-start">
-                  <span className="text-sm  min-w-[60px] font-normal text-darkGray font-nunito">
-                    Views:
-                  </span>
-                  <p className="text-sm text-secondary font-nunito font-medium text-left flex-1 ml-2 truncate">
-                    {property.views}
-                  </p>
-                </div>
-                <div className="flex items-center justify-start">
-                  <span className="text-sm  min-w-[60px] font-normal text-darkGray font-nunito">
-                    Status:
-                  </span>
-                  <span
-                    className={`px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-nunito font-normal ${
-                      property.status === "Active"
-                        ? "bg-[#DFFFE6] text-[#00893A]"
-                        : "bg-[#FFF5CC] text-[#D19600]"
-                    }`}
-                  >
-                    {property.status}
-                  </span>
-                </div>
-              </div>
-            </div>
+          {/* Mobile Pagination */}
+          <div className="pt-2">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              itemName="properties"
+            />
           </div>
-          ))
-        )}
-
-        {/* Mobile Pagination */}
-        <div className="pt-2">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            itemName="properties"
-          />
         </div>
-      </div>
       )}
 
       <VerificationSubscriptionModal

@@ -12,12 +12,12 @@ function EmploymentDetailsSection({
   errors = {},
 }) {
   return (
-    <div className="bg-white border-b border-lightGray pb-4">
+    <div className="bg-white pb-4">
       <SectionHeader icon={BlueOccupationIcon} title="Employment Details" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+          <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
             Job Title
           </label>
           <input
@@ -31,7 +31,7 @@ function EmploymentDetailsSection({
         </div>
 
         <div>
-          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+          <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
             Company
           </label>
           <input
@@ -45,7 +45,7 @@ function EmploymentDetailsSection({
         </div>
 
         <div>
-          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+          <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
             Start Date
           </label>
           <CustomCalendar
@@ -57,7 +57,7 @@ function EmploymentDetailsSection({
         </div>
 
         <div>
-          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+          <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
             Employment Type
           </label>
           <CustomDropdown
@@ -69,7 +69,7 @@ function EmploymentDetailsSection({
         </div>
 
         <div>
-          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+          <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
             Annual Salary
           </label>
           <input
@@ -80,9 +80,8 @@ function EmploymentDetailsSection({
             placeholder="Enter your annual salary"
             inputMode="numeric"
             pattern="[0-9.]*"
-            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
-              errors.annualSalary ? 'border-errorColor' : 'border-lightGray'
-            }`}
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${errors.annualSalary ? 'border-errorColor' : 'border-lightGray'
+              }`}
           />
           {errors.annualSalary && (
             <p className="mt-1 text-sm text-errorColor">{errors.annualSalary}</p>
@@ -90,7 +89,7 @@ function EmploymentDetailsSection({
         </div>
 
         <div>
-          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+          <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
             Work Location
           </label>
           <input

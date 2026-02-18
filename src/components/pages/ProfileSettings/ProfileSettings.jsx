@@ -50,7 +50,7 @@ function ProfileSettings() {
         // Error is handled by Redux state
       }
     };
-    
+
     loadUserProfile();
   }, [dispatch]);
 
@@ -62,7 +62,7 @@ function ProfileSettings() {
       const refreshTimer = setTimeout(() => {
         dispatch(fetchUserInfo());
       }, 300);
-      
+
       return () => clearTimeout(refreshTimer);
     }
   }, [activeTab, dispatch]); // Only depend on activeTab to avoid loops
@@ -115,7 +115,7 @@ function ProfileSettings() {
       const nameParts = data.fullName.trim().split(/\s+/).filter(part => part.length > 0);
       const firstName = nameParts[0] || null;
       const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
-      
+
       const updateData = {
         firstName: firstName,
         lastName: lastName,
@@ -134,7 +134,7 @@ function ProfileSettings() {
           businessName: data.businessName || '',
         },
       };
-      
+
       // Only add lastName to updateData if it's provided (not null)
       if (lastName) {
         updateData.lastName = lastName;
@@ -157,34 +157,34 @@ function ProfileSettings() {
         await dispatch(uploadUserProfilePicture(data.profileImage)).unwrap();
         // Refresh user info after picture upload to get updated profile
         const refreshedUserInfo = await dispatch(fetchUserInfo()).unwrap();
-        
+
         // Dispatch event to notify Header component about profile image update
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('profileImageUpdated'));
         }
-        
+
         // Update AuthContext with new profile image if available
         if (refreshedUserInfo?.userInfo?.profileImage && updateUser) {
-          updateUser({ 
-            userInfo: { 
-              ...user?.userInfo, 
-              profileImage: refreshedUserInfo.userInfo.profileImage 
-            } 
+          updateUser({
+            userInfo: {
+              ...user?.userInfo,
+              profileImage: refreshedUserInfo.userInfo.profileImage
+            }
           });
         }
       }
 
       // Update profile (no phone change or phone already verified)
       const updatedProfile = await dispatch(updateUserInfo(updateData)).unwrap();
-      
+
       // The updateUserInfo already returns the complete updated profile from backend
       // But we'll refresh to ensure we have the latest data including any server-side changes
       const refreshedUserInfo = await dispatch(fetchUserInfo()).unwrap();
 
       // Keep AuthContext/localStorage userData in sync so header name and image updates immediately
       if (updateUser) {
-        updateUser({ 
-          firstName, 
+        updateUser({
+          firstName,
           lastName,
           userInfo: {
             ...user?.userInfo,
@@ -192,21 +192,21 @@ function ProfileSettings() {
           }
         });
       }
-      
+
       // Dispatch event to notify Header component about profile image update
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('profileImageUpdated'));
       }
-      
+
       // Show success message
       toast.success('Profile updated successfully!');
     } catch (error) {
       console.error('Error saving profile:', error);
-      
+
       // When using Redux Toolkit's .unwrap(), the rejected value is the error itself
       // Extract validation errors from different possible locations
       let validationErrors = null;
-      
+
       // Check if error itself has validationErrors (when rejected with object)
       if (error && typeof error === 'object' && error.validationErrors && Array.isArray(error.validationErrors)) {
         validationErrors = error.validationErrors;
@@ -219,36 +219,36 @@ function ProfileSettings() {
       else if (error?.response?.data?.errors && Array.isArray(error.response.data.errors)) {
         validationErrors = error.response.data.errors;
       }
-      
+
       // Display only the first validation error (one toast at a time)
       if (validationErrors && validationErrors.length > 0) {
         const firstError = validationErrors[0];
         // Show just the error message, not the field name for cleaner UX
         toast.error(firstError.message || 'Validation failed');
       } else {
-      // Extract error message - could be string (from Redux) or object (from axios)
-      let errorMessage = "Failed to update profile. Please try again.";
-      
-      if (typeof error === 'string') {
-        errorMessage = error;
+        // Extract error message - could be string (from Redux) or object (from axios)
+        let errorMessage = "Failed to update profile. Please try again.";
+
+        if (typeof error === 'string') {
+          errorMessage = error;
         } else if (error && typeof error === 'object') {
           // When Redux rejects with object, check message property
           if (error.message && typeof error.message === 'string') {
             errorMessage = error.message;
           } else if (error?.payload) {
             errorMessage = typeof error.payload === 'string' ? error.payload : (error.payload.message || error.payload.error || errorMessage);
-      } else if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
+          } else if (error?.response?.data?.error) {
+            errorMessage = error.response.data.error;
+          } else if (error?.response?.data?.message) {
+            errorMessage = error.response.data.message;
+          } else if (error?.message) {
+            errorMessage = error.message;
           }
+        }
+
+        toast.error(errorMessage);
       }
-      
-      toast.error(errorMessage);
-      }
-      
+
       throw error; // Re-throw to let component handle it
     }
   };
@@ -259,7 +259,7 @@ function ProfileSettings() {
         // Verify phone update
         await dispatch(verifyUserPhoneUpdate(otp)).unwrap();
         setPendingPhoneUpdate(null);
-        
+
         // If there's a pending profile update, complete it now
         if (pendingProfileUpdate) {
           // Upload profile picture first if it was part of the update
@@ -267,32 +267,32 @@ function ProfileSettings() {
           await dispatch(updateUserInfo(pendingProfileUpdate)).unwrap();
           setPendingProfileUpdate(null);
         }
-        
+
         // Always refresh user info after phone verification to get complete updated profile
         const refreshedUserInfo = await dispatch(fetchUserInfo()).unwrap();
-        
+
         // Dispatch event to notify Header component about profile image update (if image was updated)
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('profileImageUpdated'));
         }
-        
+
         // Update AuthContext with new profile image if available
         if (refreshedUserInfo?.userInfo?.profileImage && updateUser) {
-          updateUser({ 
-            userInfo: { 
-              ...user?.userInfo, 
-              profileImage: refreshedUserInfo.userInfo.profileImage 
-            } 
+          updateUser({
+            userInfo: {
+              ...user?.userInfo,
+              profileImage: refreshedUserInfo.userInfo.profileImage
+            }
           });
         }
-        
+
         // Show success message
         toast.success('Phone number verified and profile updated successfully!');
       }
       setIsProfileOtpOpen(false);
     } catch (error) {
       console.error('Error verifying OTP:', error);
-      
+
       // Extract validation errors from different possible locations
       let validationErrors = null;
       if (error?.validationErrors && Array.isArray(error.validationErrors)) {
@@ -304,31 +304,31 @@ function ProfileSettings() {
       } else if (error?.response?.data?.errors && Array.isArray(error.response.data.errors)) {
         validationErrors = error.response.data.errors;
       }
-      
+
       // Display only the first validation error (one toast at a time)
       if (validationErrors && validationErrors.length > 0) {
         const firstError = validationErrors[0];
         // Show just the error message
         toast.error(firstError.message || 'Validation failed');
       } else {
-      // Extract error message - could be string (from Redux) or object (from axios)
-      let errorMessage = "Failed to verify OTP. Please try again.";
-      
-      if (typeof error === 'string') {
-        errorMessage = error;
+        // Extract error message - could be string (from Redux) or object (from axios)
+        let errorMessage = "Failed to verify OTP. Please try again.";
+
+        if (typeof error === 'string') {
+          errorMessage = error;
         } else if (error?.payload) {
           errorMessage = typeof error.payload === 'string' ? error.payload : (error.payload.message || error.payload.error || errorMessage);
-      } else if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
+        } else if (error?.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        } else if (error?.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error?.message) {
+          errorMessage = error.message;
+        }
+
+        toast.error(errorMessage);
       }
-      
-      toast.error(errorMessage);
-      }
-      
+
       throw error; // Let the modal handle the error display
     }
   };
@@ -348,13 +348,13 @@ function ProfileSettings() {
 
       // Show success message
       toast.success('Password changed successfully. Please login again with your new password.');
-      
+
       // Clear user info from userSlice
       dispatch(clearUserInfo());
-      
+
       // Logout user after successful password change (security best practice)
       await dispatch(logout()).unwrap();
-      
+
       // Navigate to login page
       navigate('/login', { replace: true });
     } catch (error) {
@@ -363,7 +363,7 @@ function ProfileSettings() {
       // When using .unwrap(), rejectWithValue(string) throws the string directly
       // API returns { success: false, error: "message" } or { success: false, message: "message" }
       let errorMessage = "Failed to change password. Please try again.";
-      
+
       if (typeof error === 'string') {
         // Redux thunk rejected with a string message
         errorMessage = error;
@@ -377,7 +377,7 @@ function ProfileSettings() {
         // Standard error object
         errorMessage = error.message;
       }
-      
+
       toast.error(errorMessage);
       throw error;
     }
@@ -398,7 +398,7 @@ function ProfileSettings() {
       console.error('Error deleting account:', error);
       // Extract error message - could be string (from Redux) or object (from axios)
       let errorMessage = "Failed to delete account. Please try again.";
-      
+
       if (typeof error === 'string') {
         errorMessage = error;
       } else if (error?.response?.data?.error) {
@@ -408,7 +408,7 @@ function ProfileSettings() {
       } else if (error?.message) {
         errorMessage = error.message;
       }
-      
+
       toast.error(errorMessage);
     }
   };
@@ -460,11 +460,10 @@ function ProfileSettings() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`pb-2 px-2 text-base lg:text-lg font-medium font-nunito transition-colors relative ${
-                  activeTab === tab.id
-                    ? "text-[#4A2FCC] font-semibold"
-                    : "text-darkGray hover:text-secondary"
-                }`}
+                className={`pb-2 px-2 text-base lg:text-lg font-medium font-nunito transition-colors relative ${activeTab === tab.id
+                  ? "text-[#4A2FCC] font-semibold"
+                  : "text-darkGray hover:text-secondary"
+                  }`}
               >
                 {tab.label}
                 {activeTab === tab.id && (
@@ -474,40 +473,40 @@ function ProfileSettings() {
             ))}
           </div>
           <div className="bg-white rounded-xl border border-lightGray p-4">
-          <div className="bg-white rounded-xl border border-lightGray p-4">
-            {/* Loading State */}
-            {loading && !userInfo && (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6B4EFF]"></div>
-                <p className="ml-4 text-darkGray">Loading profile...</p>
-              </div>
-            )}
-
-            {/* Tab Content */}
-            {(!loading || userInfo) && (
-              <div>
-                {activeTab === "edit" && (
-                  <EditProfileTab
-                    profileData={profileSettingsData}
-                    onSave={handleSaveProfile}
-                    loading={updating || uploading}
-                    error={null}
-                  />
-                )}
-              {activeTab === "password" && (
-                <ChangePasswordTab
-                  onSave={handleSavePassword}
-                  onSuccess={() => setIsPasswordSuccessModalOpen(true)}
-                  loading={changingPassword}
-                  error={error}
-                />
+            <div>
+              {/* Loading State */}
+              {loading && !userInfo && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6B4EFF]"></div>
+                  <p className="ml-4 text-darkGray">Loading profile...</p>
+                </div>
               )}
-                {activeTab === "delete" && (
-                  <DeleteAccountTab onDelete={handleDeleteAccount} />
-                )}
-              </div>
-            )}
-          </div>
+
+              {/* Tab Content */}
+              {(!loading || userInfo) && (
+                <div>
+                  {activeTab === "edit" && (
+                    <EditProfileTab
+                      profileData={profileSettingsData}
+                      onSave={handleSaveProfile}
+                      loading={updating || uploading}
+                      error={null}
+                    />
+                  )}
+                  {activeTab === "password" && (
+                    <ChangePasswordTab
+                      onSave={handleSavePassword}
+                      onSuccess={() => setIsPasswordSuccessModalOpen(true)}
+                      loading={changingPassword}
+                      error={error}
+                    />
+                  )}
+                  {activeTab === "delete" && (
+                    <DeleteAccountTab onDelete={handleDeleteAccount} />
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

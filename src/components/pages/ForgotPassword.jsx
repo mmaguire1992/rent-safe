@@ -48,10 +48,10 @@ function ForgotPassword() {
 
   const handleEmailChange = (e) => {
     let value = e.target.value;
-    
+
     // Prevent leading spaces - remove all leading spaces immediately
     value = value.replace(/^\s+/, '');
-    
+
     setEmail(value);
     setError("");
     setValidationError(""); // Clear validation error when user types
@@ -62,7 +62,7 @@ function ForgotPassword() {
     if (e.key === ' ' || e.key === 'Spacebar') {
       const input = e.target;
       const cursorPosition = input.selectionStart;
-      
+
       // If cursor is at the start (position 0) or field is empty, prevent space
       if (cursorPosition === 0 || email.length === 0) {
         e.preventDefault();
@@ -147,12 +147,12 @@ function ForgotPassword() {
       }, 100);
     } catch (error) {
       console.error('Forgot password error:', error);
-      
+
       // Check if it's a validation error from API (structured error response)
       // Note: fetch API stores response data in error.data, not error.response.data
       const responseData = error.data || error.response?.data;
       const validationErrors = responseData?.errors;
-      
+
       if (validationErrors && Array.isArray(validationErrors) && validationErrors.length > 0) {
         // Find email field error
         const emailError = validationErrors.find(err => err.field === 'email');
@@ -347,8 +347,8 @@ function ForgotPassword() {
                       onPaste={handlePaste}
                       placeholder="-"
                       className={`w-[50px] sm:w-[62px] h-[48px] sm:h-[52px] text-center text-lg sm:text-xl font-semibold border rounded-lg focus:outline-none focus:ring-2 placeholder:text-gray-400 ${error
-                          ? "border-errorColor"
-                          : "border-lightGray focus:ring-primary"
+                        ? "border-errorColor"
+                        : "border-lightGray focus:ring-primary"
                         }`}
                     />
                   ))}
@@ -387,7 +387,7 @@ function ForgotPassword() {
 
         {/* Back to Login Link */}
         <div className="mt-6 text-center">
-          <Link to="/login" className="text-primary text-base font-bold">
+          <Link to="/login" className="text-primary text-base font-bold hover:underline">
             Back to Login
           </Link>
         </div>

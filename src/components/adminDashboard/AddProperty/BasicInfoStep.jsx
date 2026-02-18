@@ -25,7 +25,7 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
   // Validate fields
   const validateField = (fieldName, value) => {
     let error = "";
-    
+
     switch (fieldName) {
       case "propertyTitle":
         if (!value || !value.trim()) {
@@ -67,7 +67,7 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
       default:
         break;
     }
-    
+
     return error;
   };
 
@@ -81,41 +81,41 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
     if (fieldName === "bedrooms" || fieldName === "bathrooms") {
       // Store original value to check if it contains invalid characters (for validation on Next click)
       const originalValue = value.toString().trim();
-      
+
       // Store the original input value for validation when Next is clicked
       lastInputValueRef.current[fieldName] = originalValue;
-      
+
       // Remove all non-digit characters to clean the value
       const cleanedValue = originalValue.replace(/[^0-9]/g, "");
-      
+
       // Prevent negative values
       let finalValue = cleanedValue;
       if (cleanedValue !== "" && parseInt(cleanedValue) < 0) {
         finalValue = "0";
       }
-      
+
       // Clear error when user starts typing
       if (errors && errors[fieldName] && setErrors) {
         setErrors({ ...errors, [fieldName]: "" });
       }
-      
+
       // Don't set errors here - validation happens only when Next button is clicked
       // Just clean the value and update formData
       // Also store original input in a hidden field for validation
       value = finalValue;
-      setFormData({ 
-        ...formData, 
+      setFormData({
+        ...formData,
         [fieldName]: value,
         [`${fieldName}Original`]: originalValue // Store original for validation
       });
       return;
     }
-    
+
     // Clear error when user starts typing
     if (errors && errors[fieldName] && setErrors) {
       setErrors({ ...errors, [fieldName]: "" });
     }
-    
+
     setFormData({ ...formData, [fieldName]: value });
   };
 
@@ -127,8 +127,8 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
   const handleIncrement = (field) => {
     const currentValue = parseInt(formData[field]) || 0;
     const newValue = (currentValue + 1).toString();
-    setFormData({ 
-      ...formData, 
+    setFormData({
+      ...formData,
       [field]: newValue,
       [`${field}Original`]: newValue // Store as original since it's a valid number
     });
@@ -138,8 +138,8 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
   const handleDecrement = (field) => {
     const currentValue = parseInt(formData[field]) || 0;
     const newValue = Math.max(0, currentValue - 1).toString(); // Ensure value never goes below 0
-    setFormData({ 
-      ...formData, 
+    setFormData({
+      ...formData,
       [field]: newValue,
       [`${field}Original`]: newValue // Store as original since it's a valid number
     });
@@ -168,11 +168,10 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
               onChange={(e) => handleChange("propertyTitle", e.target.value)}
               onBlur={() => handleBlur("propertyTitle")}
               placeholder="Enter your property title"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
-                touched.propertyTitle && errors?.propertyTitle
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${touched.propertyTitle && errors?.propertyTitle
                   ? "border-red-500"
                   : "border-lightGray"
-              }`}
+                }`}
             />
             {touched.propertyTitle && errors?.propertyTitle && (
               <p className="mt-1 text-sm text-red-600">{errors.propertyTitle}</p>
@@ -211,11 +210,10 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
               onBlur={() => handleBlur("propertyDescription")}
               placeholder="Enter your property description"
               rows="6"
-              className={`w-full px-4 py-3 border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 resize-none ${
-                touched.propertyDescription && errors?.propertyDescription
+              className={`w-full px-4 py-3 border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 resize-none ${touched.propertyDescription && errors?.propertyDescription
                   ? "border-red-500"
                   : "border-lightGray"
-              }`}
+                }`}
             />
             {/* <button
               onClick={() => setShowAIModal(true)}
@@ -244,11 +242,10 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
                 onBlur={() => handleBlur("bedrooms")}
                 onWheel={handleWheel}
                 placeholder="Enter number of bedrooms"
-                className={`w-full px-4 py-3 pr-12 h-[52px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                  touched.bedrooms && errors?.bedrooms
+                className={`w-full px-4 py-3 pr-12 h-[52px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${touched.bedrooms && errors?.bedrooms
                     ? "border-red-500"
                     : "border-lightGray"
-                }`}
+                  }`}
               />
               <div className="absolute bg-white right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-0.5">
                 <button
@@ -286,11 +283,10 @@ function BasicInfoStep({ formData, setFormData, setShowAIModal, errors, setError
                 onBlur={() => handleBlur("bathrooms")}
                 onWheel={handleWheel}
                 placeholder="Enter number of bathrooms"
-                className={`w-full px-4 py-3 pr-12 h-[52px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                  touched.bathrooms && errors?.bathrooms
+                className={`w-full px-4 py-3 pr-12 h-[52px] border rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${touched.bathrooms && errors?.bathrooms
                     ? "border-red-500"
                     : "border-lightGray"
-                }`}
+                  }`}
               />
               <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-0.5">
                 <button
