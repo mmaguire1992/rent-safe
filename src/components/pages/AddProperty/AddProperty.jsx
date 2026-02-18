@@ -32,7 +32,7 @@ function AddProperty() {
   const { creating, error: propertyError } = useSelector((state) => state.property);
   const wizardAdd = useSelector((state) => state.propertyWizard?.add);
   const { user, userType } = useAuth();
-  
+
   const [currentStep, setCurrentStep] = useState(1);
   const [showAIModal, setShowAIModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -187,7 +187,7 @@ function AddProperty() {
         // Fetch fresh user data (includes subscriptionId)
         const fetchedUserData = await getCurrentUser();
         setUserData(fetchedUserData);
-        
+
         // Check verification status from userData
         const isVerified = fetchedUserData?.userInfo?.verificationStatus === 'verified';
         setNeedsVerification(!isVerified);
@@ -201,10 +201,10 @@ function AddProperty() {
           // Check if subscription exists and is active with remaining properties
           // Handle both 'active' and 'activate' status (backend may use 'activate')
           const isActiveStatus = subscription.status === 'active' || subscription.status === 'activate';
-          if (subscription && 
-              isActiveStatus && 
-              subscription.remainingProperties !== undefined && 
-              subscription.remainingProperties > 0) {
+          if (subscription &&
+            isActiveStatus &&
+            subscription.remainingProperties !== undefined &&
+            subscription.remainingProperties > 0) {
             hasActiveSubscription = true;
           }
         } catch (error) {
@@ -292,7 +292,7 @@ function AddProperty() {
       internet: false,
       councilTax: false,
     };
-    
+
     data.utilities.forEach((utility) => {
       if (utility && utility.trim()) {
         const utilityKey = utility.toLowerCase();
@@ -307,8 +307,8 @@ function AddProperty() {
     // Use coordinates from formData if available, otherwise default (London, UK)
     // Format: [longitude, latitude]
     const defaultCoordinates = [-0.1278, 51.5074];
-    const coordinates = data.coordinates && data.coordinates.length === 2 
-      ? data.coordinates 
+    const coordinates = data.coordinates && data.coordinates.length === 2
+      ? data.coordinates
       : defaultCoordinates;
 
     // Build ideal renter profile
@@ -338,11 +338,11 @@ function AddProperty() {
     // Process additional charges - filter out empty ones and convert amounts to numbers
     const processedAdditionalCharges = data.additionalCharges && data.additionalCharges.length > 0
       ? data.additionalCharges
-          .filter((charge) => charge.type && charge.type.trim() && charge.amount)
-          .map((charge) => ({
-            type: charge.type.trim(),
-            amount: parseFloat(charge.amount) || 0,
-          }))
+        .filter((charge) => charge.type && charge.type.trim() && charge.amount)
+        .map((charge) => ({
+          type: charge.type.trim(),
+          amount: parseFloat(charge.amount) || 0,
+        }))
       : undefined;
 
     // Process availableFrom date
@@ -368,7 +368,7 @@ function AddProperty() {
       additionalCharges: processedAdditionalCharges,
       furnished: furnished || undefined,
       amenities: mappedAmenities,
-      otherAmenities: data.otherAmenities && data.otherAmenities.length > 0 
+      otherAmenities: data.otherAmenities && data.otherAmenities.length > 0
         ? data.otherAmenities.map(amenity => amenity.trim()).filter(amenity => amenity.length > 0)
         : undefined,
       utilitiesIncluded: utilitiesIncluded,
@@ -388,11 +388,11 @@ function AddProperty() {
   };
 
   const steps = addPropertySteps;
-  
+
   // Validate step 1 (Basic Information)
   const validateStep1 = () => {
     const errors = { ...stepErrors }; // Preserve existing errors from BasicInfoStep
-    
+
     if (!formData.propertyTitle || !formData.propertyTitle.trim()) {
       errors.propertyTitle = "Property Title is required";
     }
@@ -402,7 +402,7 @@ function AddProperty() {
     if (!formData.propertyDescription || !formData.propertyDescription.trim()) {
       errors.propertyDescription = "Property Description is required";
     }
-    
+
     // Validate bedrooms - check original input if available, otherwise check cleaned value
     const bedroomsOriginal = formData.bedroomsOriginal || formData.bedrooms;
     if (!formData.bedrooms || formData.bedrooms === "") {
@@ -420,7 +420,7 @@ function AddProperty() {
         }
       }
     }
-    
+
     // Validate bathrooms - check original input if available, otherwise check cleaned value
     const bathroomsOriginal = formData.bathroomsOriginal || formData.bathrooms;
     if (!formData.bathrooms || formData.bathrooms === "") {
@@ -438,7 +438,7 @@ function AddProperty() {
         }
       }
     }
-    
+
     return errors;
   };
 
@@ -452,8 +452,8 @@ function AddProperty() {
       errors.city = "City is required";
     }
     if (!formData.state || !formData.state.trim()) {
-    errors.state = "State/Province is required";
-  }
+      errors.state = "State/Province is required";
+    }
     if (!formData.postcode || !formData.postcode.trim()) {
       errors.postcode = "Postcode is required";
     }
@@ -512,7 +512,7 @@ function AddProperty() {
     if (currentStep === 1) {
       const errors = validateStep1();
       setStepErrors(errors);
-      
+
       // Check if there are any errors
       const hasErrors = Object.values(errors).some(error => error && error.trim() !== "");
       if (hasErrors) {
@@ -521,7 +521,7 @@ function AddProperty() {
     } else if (currentStep === 2) {
       const errors = validateStep2();
       setStepErrors(errors);
-      
+
       // Check if there are any errors
       const hasErrors = Object.values(errors).some(error => error && error.trim() !== "");
       if (hasErrors) {
@@ -530,7 +530,7 @@ function AddProperty() {
     } else if (currentStep === 3) {
       const errors = validateStep3();
       setStepErrors(errors);
-      
+
       // Check if there are any errors
       const hasErrors = Object.values(errors).some(error => error && error.trim() !== "");
       if (hasErrors) {
@@ -539,7 +539,7 @@ function AddProperty() {
     } else if (currentStep === 4) {
       const errors = validateStep4();
       setStepErrors(errors);
-      
+
       // Check if there are any errors
       const hasErrors = Object.values(errors).some(error => error && error.trim() !== "");
       if (hasErrors) {
@@ -548,33 +548,33 @@ function AddProperty() {
     } else if (currentStep === 5) {
       const errors = validateStep5();
       setStepErrors(errors);
-      
+
       // Check if there are any errors
       const hasErrors = Object.values(errors).some(error => error && error.trim() !== "");
       if (hasErrors) {
         return; // Don't proceed if there are errors
       }
     }
-    
+
     if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
       setSubmitError(null); // Clear errors when moving to next step
       setStepErrors({}); // Clear step errors
     }
   };
-  
+
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
       setSubmitError(null); // Clear errors when going back
     }
   };
-  
+
   const handleSubmit = async () => {
     try {
       setSubmitError(null);
       setIsSubmitting(true); // Start loading state
-      
+
       // Validate required fields
       if (!formData.propertyTitle || !formData.propertyType || !formData.propertyDescription) {
         setSubmitError("Please fill in all required fields in Basic Information step.");
@@ -582,14 +582,14 @@ function AddProperty() {
         setIsSubmitting(false);
         return;
       }
-      
+
       if (!formData.address || !formData.city || !formData.postcode) {
         setSubmitError("Please fill in all required fields in Location step.");
         setCurrentStep(2);
         setIsSubmitting(false);
         return;
       }
-      
+
       if (!formData.monthlyRent) {
         setSubmitError("Please fill in monthly rent in Rent Details step.");
         setCurrentStep(3);
@@ -599,13 +599,13 @@ function AddProperty() {
 
       // Transform form data to API format
       const apiData = transformFormDataToAPI(formData);
-      
+
       // Step 1: Create property first
       const result = await dispatch(createNewProperty(apiData)).unwrap();
-      
+
       // Get property ID from response
       const propertyId = result?.data?._id || result?.data?.id || result?._id || result?.id;
-      
+
       if (!propertyId) {
         setSubmitError("Property created but could not retrieve property ID.");
         return;
@@ -616,7 +616,7 @@ function AddProperty() {
       // Step 2: Upload media files if any images/videos are selected
       let mediaUploadSuccess = true;
       let mediaUploadError = null;
-      
+
       if (formData.images && formData.images.length > 0) {
         try {
           // Filter only valid image files (strict validation)
@@ -646,24 +646,24 @@ function AddProperty() {
 
           if (mediaFiles.length > 0) {
             // Upload images
-              const imageFormData = new FormData();
+            const imageFormData = new FormData();
             mediaFiles.forEach((file) => {
-                imageFormData.append("files", file);
-              });
-              imageFormData.append("mediaType", "image");
-              // Set first image as primary
-              imageFormData.append("isPrimary", "true");
-            
-              await uploadMultiplePropertyMedia(propertyId, imageFormData);
+              imageFormData.append("files", file);
+            });
+            imageFormData.append("mediaType", "image");
+            // Set first image as primary
+            imageFormData.append("isPrimary", "true");
+
+            await uploadMultiplePropertyMedia(propertyId, imageFormData);
             mediaUploadSuccess = true;
           }
         } catch (mediaError) {
           console.error("Error uploading media:", mediaError);
           mediaUploadSuccess = false;
-          mediaUploadError = mediaError?.response?.data?.error || 
-                           mediaError?.message || 
-                           "Failed to upload media files";
-          
+          mediaUploadError = mediaError?.response?.data?.error ||
+            mediaError?.message ||
+            "Failed to upload media files";
+
           // If media upload fails, show error but don't prevent success modal
           // User can upload media later
           setSubmitError(
@@ -683,15 +683,15 @@ function AddProperty() {
       } else {
         // Property created but media failed - still show success but with warning
         // The error message is already set above
-    setShowSuccessModal(true);
+        setShowSuccessModal(true);
       }
     } catch (error) {
       console.error("Error creating property:", error);
       toast.error(error?.response?.data?.error || error?.error || error?.error?.message || "Failed to create property. Please try again.");
       setSubmitError(
         error?.response?.data?.error ||
-        error?.error || 
-        error?.error?.message || 
+        error?.error ||
+        error?.error?.message ||
         "Failed to create property. Please try again."
       );
     } finally {
@@ -804,8 +804,8 @@ function AddProperty() {
         );
       case 5:
         return (
-          <UploadImagesStep 
-            formData={formData} 
+          <UploadImagesStep
+            formData={formData}
             setFormData={setFormData}
             errors={stepErrors}
             setErrors={setStepErrors}
@@ -870,7 +870,20 @@ function AddProperty() {
         <ProgressIndicator steps={steps} currentStep={currentStep} />
 
         <div className="bg-white rounded-[20px] border border-lightGray p-4">
-          <div className="flex items-center justify-between mb-4">
+
+
+          {renderStepContent()}
+
+          {/* Error Display */}
+          {(submitError || propertyError?.message) && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">
+                {submitError || propertyError?.message}
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between mt-4">
             <button
               onClick={() => setShowCancelModal(true)}
               className="px-4 md:px-6 py-1.5 font-nunito border border-[#F1F1F1] rounded-[10px] text-base text-secondary font-bold bg-[#F1F1F1] transition-colors"
@@ -914,17 +927,6 @@ function AddProperty() {
               )}
             </div>
           </div>
-
-          {renderStepContent()}
-
-          {/* Error Display */}
-          {(submitError || propertyError?.message) && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">
-                {submitError || propertyError?.message}
-              </p>
-            </div>
-          )}
         </div>
       </div>
 

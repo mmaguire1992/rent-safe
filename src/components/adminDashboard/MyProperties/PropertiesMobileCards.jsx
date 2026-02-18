@@ -37,7 +37,7 @@ function PropertiesMobileCards({
   // Handle share button click - copy property link to clipboard
   const handleShare = async (propertyId, e) => {
     if (e) e.stopPropagation();
-    
+
     try {
       if (!propertyId) {
         toast.error('Property ID not available');
@@ -47,7 +47,7 @@ function PropertiesMobileCards({
 
       // Construct property detail URL (public route for renters to view)
       const propertyUrl = `${window.location.origin}/properties/${propertyId}`;
-      
+
       // Try modern clipboard API first
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(propertyUrl);
@@ -62,11 +62,11 @@ function PropertiesMobileCards({
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        
+
         try {
           const successful = document.execCommand('copy');
           document.body.removeChild(textArea);
-          
+
           if (successful) {
             toast.success('Link copied to clipboard!');
           } else {
@@ -81,13 +81,13 @@ function PropertiesMobileCards({
       console.error('Failed to copy link:', error);
       toast.error('Failed to copy link. Please copy manually.');
     }
-    
+
     setOpenDropdownId(null);
   };
 
   const handleAction = (action, propertyId, e) => {
     if (e) e.stopPropagation();
-    
+
     if (action === "edit") {
       navigate(`/dashboard/properties/${propertyId}`);
       setOpenDropdownId(null);
@@ -96,7 +96,7 @@ function PropertiesMobileCards({
     } else if (action === "delete") {
       // Delete functionality can be added here
       console.log(`Delete property:`, propertyId);
-    setOpenDropdownId(null);
+      setOpenDropdownId(null);
     }
   };
   return (
@@ -110,14 +110,14 @@ function PropertiesMobileCards({
             <div className="flex p-3 sm:p-4 items-start justify-between mb-3 border-b border-lightGray">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 {property.image ? (
-                <img
-                  src={property.image}
+                  <img
+                    src={property.image}
                     alt={property.description || property.title}
-                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
                     onError={(e) => {
                       e.target.src = "https://via.placeholder.com/64x64?text=No+Image";
                     }}
-                />
+                  />
                 ) : (
                   <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
                     <span className="text-xs text-gray-500">No Image</span>
@@ -219,17 +219,16 @@ function PropertiesMobileCards({
                   Status:
                 </span>
                 <span
-                  className={`px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-nunito font-normal ${
-                    property.status === "Active"
-                      ? "bg-[#DFFFE6] text-[#00893A]"
-                      : property.status === "Pending Approval" || property.status === "pending_approval"
-                      ? "bg-gray-100 text-blue-600"
-                      : property.status === "Rent Out" || property.status === "rented"
+                  className={`px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-nunito font-normal ${property.status === "Active"
+                    ? "bg-[#DFFFE6] text-[#00893A]"
+                    : property.status === "Pending" || property.status === "pending_approval"
                       ? "bg-[#FFF5CC] text-[#D19600]"
-                      : property.status === "Draft" || property.status === "draft"
-                      ? "bg-[#E8E2FF] text-[#6B4EFF]"
-                      : "bg-gray-100 text-gray-600"
-                  }`}
+                      : property.status === "Rent Out" || property.status === "rented"
+                        ? "bg-[#FFF5CC] text-[#D19600]"
+                        : property.status === "Draft" || property.status === "draft"
+                          ? "bg-[#E8E2FF] text-[#6B4EFF]"
+                          : "bg-gray-100 text-gray-600"
+                    }`}
                 >
                   {property.status}
                 </span>

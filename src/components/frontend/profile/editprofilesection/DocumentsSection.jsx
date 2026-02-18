@@ -24,10 +24,10 @@ function DocumentsSection({
     'driving-license': 'driving_license',
     'id-card': 'national_id',
   };
-  
+
   // Get the current docType based on selected documentType
   const currentDocType = docTypeMap[formData.documentType] || null;
-  
+
   // Filter existing documents to only show those matching the selected document type
   // If no document type is selected, show all documents from this section (passport, driving_license, national_id)
   const filteredDocuments = existingDocuments.filter(doc => {
@@ -39,14 +39,14 @@ function DocumentsSection({
       return ['passport', 'driving_license', 'national_id'].includes(doc.docType);
     }
   });
-  
+
   return (
     <div className="bg-white border-b border-lightGray pb-4">
       <SectionHeader icon={BlueDocumentIcon} title="Documents" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
-          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+          <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
             Type
           </label>
           <CustomDropdown
@@ -61,7 +61,7 @@ function DocumentsSection({
         </div>
 
         <div>
-          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+          <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
             Document Number
           </label>
           <input
@@ -70,9 +70,8 @@ function DocumentsSection({
             value={formData.documentNumber}
             onChange={handleChange}
             placeholder="Enter your document number"
-            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
-              errors.documentNumber ? 'border-errorColor' : 'border-lightGray'
-            }`}
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${errors.documentNumber ? 'border-errorColor' : 'border-lightGray'
+              }`}
           />
           {errors.documentNumber && (
             <p className="mt-1 text-sm text-errorColor">{errors.documentNumber}</p>
@@ -80,7 +79,7 @@ function DocumentsSection({
         </div>
 
         <div>
-          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+          <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
             Expire
           </label>
           <CustomCalendar

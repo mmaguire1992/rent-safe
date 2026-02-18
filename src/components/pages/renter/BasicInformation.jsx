@@ -37,20 +37,20 @@ function RenterBasicInformation() {
 
   // const handleChange = (e) => {
   //   const { name, value } = e.target;
-    
+
   //   // For fullName field, prevent leading spaces
   //   let processedValue = value;
   //   if (name === 'fullName') {
   //     // Remove leading spaces
   //     processedValue = value.replace(/^\s+/, '');
   //   }
-    
+
   //   // For phoneNumber field, only allow numbers and common phone formatting characters
   //   if (name === 'phoneNumber') {
   //     // Allow only numbers, +, -, spaces, parentheses, and dots
   //     processedValue = value.replace(/[^0-9+\-().\s]/g, '');
   //   }
-    
+
   //   setFormData((prev) => ({
   //     ...prev,
   //     [name]: processedValue,
@@ -65,47 +65,47 @@ function RenterBasicInformation() {
   // };
 
   const handleChange = (e) => {
-  const { name, value } = e.target;
-  let processedValue = value;
+    const { name, value } = e.target;
+    let processedValue = value;
 
-  // 1. Phone number: keep only allowed characters
-  if (name === 'phoneNumber') {
-    processedValue = value.replace(/[^0-9+\-().\s]/g, '');
-  }
+    // 1. Phone number: keep only allowed characters
+    if (name === 'phoneNumber') {
+      processedValue = value.replace(/[^0-9+\-().\s]/g, '');
+    }
 
-  // 2. Remove leading whitespace from ALL fields except monthlyIncome
-  if (name !== 'monthlyIncome') {
-    processedValue = processedValue.replace(/^\s+/, '');
-  }
+    // 2. Remove leading whitespace from ALL fields except monthlyIncome
+    if (name !== 'monthlyIncome') {
+      processedValue = processedValue.replace(/^\s+/, '');
+    }
 
-  setFormData((prev) => ({
-    ...prev,
-    [name]: processedValue,
-  }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: processedValue,
+    }));
 
-  // Clear error when user starts typing
-  // For fullName field: only clear error if user types a non-space character
-  // For other fields: clear error on any input
-  if (errors[name]) {
-    if (name === 'fullName') {
-      // Only clear error if the value contains at least one non-space character
-      const hasNonSpaceChar = processedValue.trim().length > 0;
-      if (hasNonSpaceChar) {
+    // Clear error when user starts typing
+    // For fullName field: only clear error if user types a non-space character
+    // For other fields: clear error on any input
+    if (errors[name]) {
+      if (name === 'fullName') {
+        // Only clear error if the value contains at least one non-space character
+        const hasNonSpaceChar = processedValue.trim().length > 0;
+        if (hasNonSpaceChar) {
+          setErrors((prev) => ({
+            ...prev,
+            [name]: "",
+          }));
+        }
+        // If only spaces, keep the error (don't clear it)
+      } else {
+        // For other fields, clear error on any input
         setErrors((prev) => ({
           ...prev,
           [name]: "",
         }));
       }
-      // If only spaces, keep the error (don't clear it)
-    } else {
-      // For other fields, clear error on any input
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
     }
-  }
-};
+  };
 
 
   const validateForm = () => {
@@ -155,7 +155,7 @@ function RenterBasicInformation() {
       // If two or more words: first word is firstName, rest is lastName
       const trimmedName = formData.fullName.trim();
       const nameParts = trimmedName.split(/\s+/).filter(part => part.length > 0);
-      
+
       let firstName, lastName;
       if (nameParts.length === 1) {
         // Single name: use as firstName only, don't set lastName
@@ -185,12 +185,12 @@ function RenterBasicInformation() {
         monthlyIncome: formData.monthlyIncome ? parseFloat(formData.monthlyIncome) : undefined,
         description: formData.description || undefined,
       };
-      
+
       // Only add lastName if it's provided
       if (lastName) {
         signupData.lastName = lastName;
       }
-      
+
       const result = await signupUser(signupData);
 
       // Store user data and token (will be activated after OTP verification)
@@ -203,7 +203,7 @@ function RenterBasicInformation() {
 
       // Navigate to OTP verification page
       navigate("/signup/renter/verify-account", {
-        state: { 
+        state: {
           email: result.user.email,
           userType: 'renter',
           formData: {
@@ -215,23 +215,23 @@ function RenterBasicInformation() {
       });
     } catch (error) {
       console.error('Signup error:', error);
-      
+
       // Check for validation errors array
       const validationErrors = error.validationErrors || error.response?.data?.errors;
-      
+
       if (validationErrors && Array.isArray(validationErrors) && validationErrors.length > 0) {
         // Get the first validation error message
         const firstError = validationErrors[0];
         let errorMessage = firstError.message || 'Validation failed';
-        
+
         // Replace "phone" with "phone number" in error messages if it's a phone-related error
         if (firstError.field === 'phone' || firstError.field === 'phoneNumber') {
           errorMessage = errorMessage.replace(/\bphone\b/gi, 'phone number');
         }
-        
+
         // Display only the first specific error message
         toast.error(errorMessage);
-        
+
         // Map backend field names to form field names and set errors
         const fieldErrors = {};
         validationErrors.forEach((err) => {
@@ -248,10 +248,10 @@ function RenterBasicInformation() {
         setErrors(fieldErrors);
       } else {
         // Display generic error message
-        const errorMessage = error.response?.data?.error || 
-                           error.response?.data?.message || 
-                           error.message || 
-                           'Failed to create account. Please try again.';
+        const errorMessage = error.response?.data?.error ||
+          error.response?.data?.message ||
+          error.message ||
+          'Failed to create account. Please try again.';
         toast.error(errorMessage);
       }
     } finally {
@@ -298,9 +298,8 @@ function RenterBasicInformation() {
               value={formData.fullName}
               onChange={handleChange}
               placeholder="Enter your full name"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
-                errors.fullName ? "border-errorColor" : "border-lightGray"
-              }`}
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${errors.fullName ? "border-errorColor" : "border-lightGray"
+                }`}
             />
             {errors.fullName && (
               <p className="mt-1 text-sm text-errorColor">{errors.fullName}</p>
@@ -322,9 +321,8 @@ function RenterBasicInformation() {
               value={formData.email}
               onChange={handleChange}
               placeholder="Enter your email address"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
-                errors.email ? "border-errorColor" : "border-lightGray"
-              }`}
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${errors.email ? "border-errorColor" : "border-lightGray"
+                }`}
             />
             {errors.email && (
               <p className="mt-1 text-sm text-errorColor">{errors.email}</p>
@@ -346,9 +344,8 @@ function RenterBasicInformation() {
               value={formData.phoneNumber}
               onChange={handleChange}
               placeholder="Enter your phone number"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
-                errors.phoneNumber ? "border-errorColor" : "border-lightGray"
-              }`}
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${errors.phoneNumber ? "border-errorColor" : "border-lightGray"
+                }`}
             />
             {errors.phoneNumber && (
               <p className="mt-1 text-sm text-errorColor">
@@ -372,9 +369,8 @@ function RenterBasicInformation() {
               value={formData.address}
               onChange={handleChange}
               placeholder="Enter your address"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
-                errors.address ? "border-errorColor" : "border-lightGray"
-              }`}
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${errors.address ? "border-errorColor" : "border-lightGray"
+                }`}
             />
             {errors.address && (
               <p className="mt-1 text-sm text-errorColor">{errors.address}</p>
@@ -396,9 +392,8 @@ function RenterBasicInformation() {
               value={formData.city}
               onChange={handleChange}
               placeholder="Enter your city"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
-                errors.city ? "border-errorColor" : "border-lightGray"
-              }`}
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${errors.city ? "border-errorColor" : "border-lightGray"
+                }`}
             />
             {errors.city && (
               <p className="mt-1 text-sm text-errorColor">{errors.city}</p>
@@ -420,9 +415,8 @@ function RenterBasicInformation() {
               value={formData.state}
               onChange={handleChange}
               placeholder="Enter your state"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
-                errors.state ? "border-errorColor" : "border-lightGray"
-              }`}
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${errors.state ? "border-errorColor" : "border-lightGray"
+                }`}
             />
             {errors.state && (
               <p className="mt-1 text-sm text-errorColor">{errors.state}</p>
@@ -444,9 +438,8 @@ function RenterBasicInformation() {
               value={formData.country}
               onChange={handleChange}
               placeholder="Enter your country"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
-                errors.country ? "border-errorColor" : "border-lightGray"
-              }`}
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${errors.country ? "border-errorColor" : "border-lightGray"
+                }`}
             />
             {errors.country && (
               <p className="mt-1 text-sm text-errorColor">{errors.country}</p>
@@ -468,9 +461,8 @@ function RenterBasicInformation() {
               value={formData.postalCode}
               onChange={handleChange}
               placeholder="Enter your postal code"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
-                errors.postalCode ? "border-errorColor" : "border-lightGray"
-              }`}
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${errors.postalCode ? "border-errorColor" : "border-lightGray"
+                }`}
             />
             {errors.postalCode && (
               <p className="mt-1 text-sm text-errorColor">
@@ -494,9 +486,8 @@ function RenterBasicInformation() {
               value={formData.occupation}
               onChange={handleChange}
               placeholder="Enter your designation"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
-                errors.occupation ? "border-errorColor" : "border-lightGray"
-              }`}
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${errors.occupation ? "border-errorColor" : "border-lightGray"
+                }`}
             />
             {errors.occupation && (
               <p className="mt-1 text-sm text-errorColor">
@@ -520,9 +511,8 @@ function RenterBasicInformation() {
               value={formData.monthlyIncome}
               onChange={handleChange}
               placeholder="Enter your monthly income"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
-                errors.monthlyIncome ? "border-errorColor" : "border-lightGray"
-              }`}
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${errors.monthlyIncome ? "border-errorColor" : "border-lightGray"
+                }`}
             />
             {errors.monthlyIncome && (
               <p className="mt-1 text-sm text-errorColor">
@@ -565,9 +555,8 @@ function RenterBasicInformation() {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Enter your password"
-                className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 pr-12 ${
-                  errors.password ? "border-errorColor" : "border-lightGray"
-                }`}
+                className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 pr-12 ${errors.password ? "border-errorColor" : "border-lightGray"
+                  }`}
               />
               <button
                 type="button"
@@ -592,7 +581,7 @@ function RenterBasicInformation() {
               htmlFor="confirmPassword"
               className="block text-base font-semibold text-secondary mb-1"
             >
-              Re-enter Password
+              Re-enter Password <span className="text-errorColor">*</span>
             </label>
             <div className="relative">
               <input
@@ -602,11 +591,10 @@ function RenterBasicInformation() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 placeholder="Re-enter your password"
-                className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 pr-12 ${
-                  errors.confirmPassword
-                    ? "border-errorColor"
-                    : "border-lightGray"
-                }`}
+                className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 pr-12 ${errors.confirmPassword
+                  ? "border-errorColor"
+                  : "border-lightGray"
+                  }`}
               />
               <button
                 type="button"

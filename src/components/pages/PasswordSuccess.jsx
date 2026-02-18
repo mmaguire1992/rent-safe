@@ -51,7 +51,7 @@ function PasswordSuccess() {
         {/* Back to Login Button */}
         <button
           onClick={handleGoToLogin}
-          className="w-full text-center mt-4 bg-blueGradient h-[56px] text-white text-base font-bold py-3 rounded-xl flex items-center justify-center transition-all shadow-[0px_2px_10px_0px_#00000033]"
+          className="w-full text-center mt-4 bg-blueGradient h-[56px] text-white text-base font-bold py-3 rounded-xl flex items-center justify-center transition-all shadow-[0px_2px_10px_0px_#00000033] hover:underline"
         >
           Back to Login
         </button>
