@@ -49,9 +49,9 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
         sortBy: 'createdAt',
         sortOrder: 'desc'
       });
-      
+
       let ticketsData = [];
-      
+
       if (response?.data?.tickets) {
         ticketsData = response.data.tickets;
       } else if (response?.tickets) {
@@ -61,13 +61,13 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
       } else if (Array.isArray(response)) {
         ticketsData = response;
       }
-      
+
       // Ensure media is an array for each ticket
       ticketsData = ticketsData.map(ticket => ({
         ...ticket,
         media: Array.isArray(ticket.media) ? ticket.media : []
       }));
-      
+
       setTickets(ticketsData);
       setCurrentPage(1);
     } catch (error) {
@@ -201,7 +201,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
 
     try {
       setIsSubmitting(true);
-      
+
       const subject = formData.subject.trim();
 
       const ticketResponse = await createSupportTicket({
@@ -211,7 +211,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
       });
 
       const ticketId = ticketResponse?.data?._id || ticketResponse?.data?.id || ticketResponse?._id || ticketResponse?.data?.ticket?._id;
-      
+
       if (!ticketId) {
         throw new Error('Failed to create ticket');
       }
@@ -266,7 +266,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
       closed: { label: 'Closed', class: 'bg-gray-100 text-gray-800' },
       cancelled: { label: 'Cancelled', class: 'bg-red-100 text-red-800' },
     };
-    
+
     const config = statusConfig[status] || { label: status, class: 'bg-gray-100 text-gray-800' };
     return (
       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${config.class}`}>
@@ -278,9 +278,9 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -342,12 +342,12 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
     try {
       const response = await getSupportTicketById(mediaId);
       const ticketData = response?.data || response;
-      
+
       if (ticketData?.media) {
-        const media = Array.isArray(ticketData.media) 
+        const media = Array.isArray(ticketData.media)
           ? ticketData.media.find(m => m._id === mediaId || m.id === mediaId)
           : ticketData.media;
-        
+
         if (media?.url) {
           window.open(media.url, '_blank');
         } else {
@@ -400,9 +400,8 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                     name="subject"
                     value={formData.subject}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 font-nunito ${
-                      fieldErrors.subject ? 'border-errorColor' : 'border-lightGray'
-                    }`}
+                    className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 font-nunito ${fieldErrors.subject ? 'border-errorColor' : 'border-lightGray'
+                      }`}
                     placeholder="Enter subject (max 50 characters)"
                   />
                   {fieldErrors.subject && (
@@ -448,9 +447,8 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                   value={formData.notes}
                   onChange={handleInputChange}
                   rows="6"
-                  className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 font-nunito resize-none ${
-                    fieldErrors.notes ? 'border-errorColor' : 'border-lightGray'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 font-nunito resize-none ${fieldErrors.notes ? 'border-errorColor' : 'border-lightGray'
+                    }`}
                   placeholder="Enter your notes (max 200 characters)"
                 />
                 {fieldErrors.notes && (
@@ -520,7 +518,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
         <div className="bg-white rounded-[14px] border border-lightGray p-3 mb-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-secondary mb-1">
+              <label className="block text-xs font-semibold text-secondary mb-3">
                 Search (Subject, Description)
               </label>
               <input
@@ -528,10 +526,10 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value.replace(/^\s+/, ''))}
                 placeholder="Search subject or description..."
-                className="w-full px-3 py-2 text-sm border border-lightGray rounded-[8px] focus:outline-none focus:ring-0 font-nunito"
+                className="w-full px-3 h-[52px] text-sm border border-lightGray rounded-xl focus:outline-none focus:ring-0 font-nunito"
               />
             </div>
-            
+
             <div>
               <label className="block text-xs font-semibold text-secondary mb-3">
                 Status
@@ -552,9 +550,9 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                 className="h-[40px]"
               />
             </div>
-            
+
             <div>
-              <label className="block text-xs font-semibold text-secondary mb-1 mt-2">
+              <label className="block text-xs font-semibold text-secondary mb-3">
                 Priority
               </label>
               <CustomDropdown
@@ -571,32 +569,32 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                 className="h-[40px]"
               />
             </div>
-            
-             <div>
-               <label className="block text-xs font-semibold text-secondary mb-1 mt-2">
-                 Created Date
-               </label>
-               <div className="relative">
-                 <input
-                   type="date"
-                   value={dateFilter}
-                   onChange={(e) => setDateFilter(e.target.value)}
-                   max={new Date().toISOString().split('T')[0]}
-                   className="w-full px-3 py-2 pr-8 text-sm border border-lightGray rounded-[8px] focus:outline-none focus:ring-0 font-nunito text-secondary"
-                 />
-                 {dateFilter && (
-                   <button
-                     onClick={() => setDateFilter("")}
-                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                     title="Clear date filter"
-                   >
-                     <FiX className="h-4 w-4" />
-                   </button>
-                 )}
-               </div>
-             </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-secondary mb-3">
+                Created Date
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 h-[52px] pr-8 text-sm border border-lightGray rounded-xl focus:outline-none focus:ring-0 font-nunito text-secondary"
+                />
+                {dateFilter && (
+                  <button
+                    onClick={() => setDateFilter("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Clear date filter"
+                  >
+                    <FiX className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
-          
+
           {(searchQuery || statusFilter || priorityFilter || dateFilter) && (
             <div className="mt-3">
               <button
@@ -622,7 +620,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
             </div>
           ) : filteredTickets.length === 0 ? (
             <div className="py-12 text-center text-darkGray text-base">
-              {tickets.length === 0 
+              {tickets.length === 0
                 ? 'No support tickets found. Click "Create New Support" to create your first ticket.'
                 : 'No tickets match your filters. Try adjusting your search or date filter.'
               }
@@ -663,16 +661,16 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                           {startIndex + index + 1}
                         </td>
                         <td className="py-3 px-4 text-darkGray text-sm font-medium">
-                          <div 
-                            className="max-w-xs cursor-help" 
+                          <div
+                            className="max-w-xs cursor-help"
                             title={ticket.subject || 'N/A'}
                           >
                             {truncateSubject(ticket.subject, 50)}
                           </div>
                         </td>
                         <td className="py-3 px-4 text-darkGray text-sm">
-                          <div 
-                            className="max-w-md cursor-help" 
+                          <div
+                            className="max-w-md cursor-help"
                             title={ticket.description || 'N/A'}
                           >
                             <span className="line-clamp-2">
@@ -712,7 +710,7 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                   </tbody>
                 </table>
               </div>
-              
+
               {totalPages > 1 && (
                 <div className="p-4 border-t border-lightGray">
                   <Pagination

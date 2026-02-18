@@ -294,9 +294,9 @@ function AmenitiesUtilitiesStep({
                     </div>
                   </div>
                   {/* Icon */}
-                  <div className="ml-2 flex items-center justify-center w-6 h-6">
+                  {/* <div className="ml-2 flex items-center justify-center w-6 h-6">
                     <IconComponent />
-                  </div>
+                  </div> */}
                   {/* Label */}
                   <span className="ml-2 text-sm text-secondary font-medium select-none">
                     {amenity}
@@ -356,7 +356,7 @@ function AmenitiesUtilitiesStep({
                     <path d="M5 13l4 4L19 7"></path>
                   </svg>
                 </div>
-                {amenity}
+                <p className="truncate break-all">{amenity}</p>
               </div>
               <button
                 onClick={() => handleRemoveOtherAmenity(index)}

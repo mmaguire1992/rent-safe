@@ -673,9 +673,9 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
           onChange={(e) => handleChange("address", e.target.value.replace(/^\s+/, ''))}
           onBlur={() => handleBlur("address")}
           placeholder="Search for an address (e.g., 123 Main St, London)..."
-          className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] focus:border-[#6B4EFF] ${
+          className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none  ${
             touched.address && errors?.address
-              ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+              ? "border-red-500 "
               : "border-lightGray"
           }`}
         />
@@ -701,9 +701,9 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
               }}
               onBlur={() => handleBlur("city")}
               placeholder="City (auto-filled from address)"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] focus:border-[#6B4EFF] ${
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none  ${
                 touched.city && errors?.city
-                  ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                  ? "border-red-500 "
                   : "border-lightGray"
               }`}
             />
@@ -725,9 +725,9 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
     onChange={(e) => handleChange("state", e.target.value)}
     onBlur={() => handleBlur("state")}
     placeholder="State/Province (auto-filled from address)"
-    className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] focus:border-[#6B4EFF] ${
+    className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none  ${
       touched.state && errors?.state
-        ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+        ? "border-red-500 "
         : "border-lightGray"
     }`}
   />
@@ -751,9 +751,9 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
               onChange={(e) => handleChange("postcode", e.target.value)}
               onBlur={() => handleBlur("postcode")}
               placeholder="Postcode (auto-filled from address)"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] focus:border-[#6B4EFF] ${
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none  ${
                 touched.postcode && errors?.postcode
-                  ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                  ? "border-red-500 "
                   : "border-lightGray"
               }`}
             />
@@ -781,9 +781,9 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
               onChange={(e) => handleChange("country", e.target.value)}
                onBlur={() => handleBlur("country")}
               placeholder="Country (auto-filled from address)"
-              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-2 focus:ring-[#6B4EFF] focus:border-[#6B4EFF] ${
+              className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none  ${
       touched.country && errors?.country
-        ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+        ? "border-red-500 "
         : "border-lightGray"
     }`}
   />
@@ -836,7 +836,7 @@ function LocationStep({ formData, setFormData, errors, setErrors }) {
           )}
         </div>
       </div>
-      
+
     </div>
   );
 }

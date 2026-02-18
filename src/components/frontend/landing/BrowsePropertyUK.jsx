@@ -87,19 +87,19 @@ function BrowsePropertyUK() {
 
     // Get or create shuffled images for this set of cities
     const cityNamesKey = citiesWithProperties.map(c => c.name).sort().join(',');
-    
+
     if (!imageAssignmentRef.current.has(cityNamesKey)) {
       // Shuffle images to ensure random distribution
       const shuffledImages = shuffleArray(cityImages);
       const assignment = new Map();
-      
+
       // Assign images to cities, cycling through all images before repeating
       // Example: if we have 5 images and 12 cities, use all 5 images, then repeat from first
       citiesWithProperties.forEach((city, index) => {
         // Cycle through all images: use all images once, then repeat from the beginning
         assignment.set(city.name, shuffledImages[index % shuffledImages.length]);
       });
-      
+
       imageAssignmentRef.current.set(cityNamesKey, assignment);
     }
 
@@ -210,7 +210,11 @@ function BrowsePropertyUK() {
   return (
     <section
       id="locations"
-      className="w-full pb-6 md:pt-14 lg:pt-16 pb-0 bg-white scroll-mt-[88px]  overflow-hidden"
+      className="w-full pb-6 md:pt-14 lg:pt-16 pb-0 scroll-mt-[88px]  overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(135deg, rgba(249, 249, 252, 0.99) 0%, rgba(255, 255, 255, 0.9) 57.87%, rgba(232, 226, 255, 0.3) 100%)",
+      }}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}

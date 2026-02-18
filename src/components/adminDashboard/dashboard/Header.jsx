@@ -246,8 +246,8 @@ function Header({ onMenuClick }) {
         </button>
 
         {/* Search Bar */}
-        <div className="hidden md:flex flex-1 max-w-md">
-          <div className="relative">
+        <div className="hidden md:flex lg:w-[420px]">
+          <div className="relative w-full">
             <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lg md:text-xl">
               <BlueSearchIcon />
             </span>

@@ -127,7 +127,7 @@ function ChangePasswordSection() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     // Prevent browser validation completely
     if (e.target && typeof e.target.checkValidity === 'function') {
       e.target.setAttribute('novalidate', '');
@@ -266,13 +266,13 @@ function ChangePasswordSection() {
         title="Change Password"
       />
 
-      <form 
+      <form
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
           handleSubmit(e);
         }}
-        noValidate 
+        noValidate
         onInvalid={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -283,7 +283,7 @@ function ChangePasswordSection() {
         <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
           {/* Old Password */}
           <div>
-            <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+            <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
               Old Password <span className="text-errorColor">*</span>
             </label>
             <div className="relative">
@@ -294,8 +294,8 @@ function ChangePasswordSection() {
                 onChange={handleInputChange}
                 onInvalid={handleInvalid}
                 className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${touched.oldPassword && errors.oldPassword
-                    ? "border-errorColor"
-                    : "border-lightGray"
+                  ? "border-errorColor"
+                  : "border-lightGray"
                   }`}
                 placeholder="Enter your old password"
                 disabled={loading}
@@ -317,7 +317,7 @@ function ChangePasswordSection() {
         {/* New Password */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div >
-            <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+            <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
               New Password <span className="text-errorColor">*</span>
             </label>
             <div className="relative">
@@ -328,8 +328,8 @@ function ChangePasswordSection() {
                 onChange={handleInputChange}
                 onInvalid={handleInvalid}
                 className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${touched.newPassword && errors.newPassword
-                    ? "border-errorColor"
-                    : "border-lightGray"
+                  ? "border-errorColor"
+                  : "border-lightGray"
                   }`}
                 placeholder="Enter your new password"
                 disabled={loading}
@@ -347,40 +347,40 @@ function ChangePasswordSection() {
               <p className="text-xs text-errorColor mt-1">{errors.newPassword}</p>
             )}
           </div>
-       
 
-        {/* Confirm Password */}
-        <div>
-          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
-            Confirm Password <span className="text-errorColor">*</span>
-          </label>
-          <div className="relative">
-            <input
-              type={showPasswords.confirm ? "text" : "password"}
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleInputChange}
-              onInvalid={handleInvalid}
-              className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${touched.confirmPassword && errors.confirmPassword
+
+          {/* Confirm Password */}
+          <div>
+            <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
+              Confirm Password <span className="text-errorColor">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type={showPasswords.confirm ? "text" : "password"}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                onInvalid={handleInvalid}
+                className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${touched.confirmPassword && errors.confirmPassword
                   ? "border-errorColor"
                   : "border-lightGray"
-                }`}
-              placeholder="Enter your Confirm password"
-              disabled={loading}
-            />
-            <button
-              type="button"
-              onClick={() => togglePasswordVisibility("confirm")}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-darkGray hover:text-secondary"
-              disabled={loading}
-            >
-              {showPasswords.confirm ? <BsEye className="w-5 h-5" /> : <BsEyeSlash className="w-5 h-5" />}
-            </button>
+                  }`}
+                placeholder="Enter your Confirm password"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => togglePasswordVisibility("confirm")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-darkGray hover:text-secondary"
+                disabled={loading}
+              >
+                {showPasswords.confirm ? <BsEye className="w-5 h-5" /> : <BsEyeSlash className="w-5 h-5" />}
+              </button>
+            </div>
+            {touched.confirmPassword && errors.confirmPassword && (
+              <p className="text-xs text-errorColor mt-1">{errors.confirmPassword}</p>
+            )}
           </div>
-          {touched.confirmPassword && errors.confirmPassword && (
-            <p className="text-xs text-errorColor mt-1">{errors.confirmPassword}</p>
-          )}
-        </div>
         </div>
         {/* Save Button */}
         <div className="flex justify-end pt-4">

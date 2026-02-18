@@ -23,7 +23,7 @@ function ReferencesSection({
           {index > 0 && <div className="border-t border-lightGray my-6"></div>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+              <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                 Full Name
               </label>
               <input
@@ -38,7 +38,7 @@ function ReferencesSection({
             </div>
 
             <div>
-              <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+              <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                 Type
               </label>
               <CustomDropdown
@@ -52,7 +52,7 @@ function ReferencesSection({
             </div>
 
             <div>
-              <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+              <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                 Designation
               </label>
               <input
@@ -67,7 +67,7 @@ function ReferencesSection({
             </div>
 
             <div>
-              <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+              <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                 Email Address
               </label>
               <input
@@ -82,7 +82,7 @@ function ReferencesSection({
             </div>
 
             <div>
-              <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+              <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                 Phone Number
               </label>
               <input
@@ -97,7 +97,7 @@ function ReferencesSection({
             </div>
 
             <div>
-              <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+              <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                 Relationship
               </label>
               <input

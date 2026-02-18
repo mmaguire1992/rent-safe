@@ -30,13 +30,13 @@ function BasicInformationSection({
               {formData.profileImage ? (
                 <>
                   <div className="w-full h-full rounded-full overflow-hidden">
-                <img
-                  src={
-                    typeof formData.profileImage === "string"
-                      ? formData.profileImage
-                      : URL.createObjectURL(formData.profileImage)
-                  }
-                  alt="Profile"
+                    <img
+                      src={
+                        typeof formData.profileImage === "string"
+                          ? formData.profileImage
+                          : URL.createObjectURL(formData.profileImage)
+                      }
+                      alt="Profile"
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -75,11 +75,11 @@ function BasicInformationSection({
                 }
                 className="px-6 py-2 w-[190px] bg-white border border-[#4A2FCC] text-white rounded-[10px] hover:bg-opacity-90 transition-colors font-semibold font-nunito flex items-center justify-center gap-2"
               >
-                 <BlueUploadIcon />
+                <BlueUploadIcon />
                 <span className="text-base font-bold font-nunito text-[#4A2FCC]">
                   Upload Image
                 </span>
-               
+
               </button>
               <input
                 id="profile-image-upload"
@@ -101,13 +101,13 @@ function BasicInformationSection({
                     const validImageTypes = ['image/heic', 'image/webp', 'image/png', 'image/jpeg', 'image/jpg'];
                     const fileType = file.type.toLowerCase();
                     const fileName = file.name.toLowerCase();
-                    const isValidImage = validImageTypes.includes(fileType) || 
-                                       fileName.endsWith('.heic') || 
-                                       fileName.endsWith('.webp') || 
-                                       fileName.endsWith('.png') || 
-                                       fileName.endsWith('.jpg') || 
-                                       fileName.endsWith('.jpeg');
-                    
+                    const isValidImage = validImageTypes.includes(fileType) ||
+                      fileName.endsWith('.heic') ||
+                      fileName.endsWith('.webp') ||
+                      fileName.endsWith('.png') ||
+                      fileName.endsWith('.jpg') ||
+                      fileName.endsWith('.jpeg');
+
                     if (!isValidImage) {
                       toast.error('Please select only image files (HEIC, WEBP, PNG, or JPG)');
                       e.target.value = ''; // Clear the input
@@ -126,7 +126,7 @@ function BasicInformationSection({
           {/* Basic Info Fields */}
           <div className="flex-1 space-y-4">
             <div>
-              <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+              <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                 Description
               </label>
               <textarea
@@ -142,7 +142,7 @@ function BasicInformationSection({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+                <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                   Full name
                 </label>
                 <input
@@ -155,7 +155,7 @@ function BasicInformationSection({
               </div>
 
               <div>
-                <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+                <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                   Email Address
                 </label>
                 <div className="flex items-center relative gap-2">
@@ -176,7 +176,7 @@ function BasicInformationSection({
               </div>
 
               <div>
-                <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+                <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                   Phone Number
                 </label>
                 <div className="flex items-center gap-2 relative">
@@ -185,9 +185,8 @@ function BasicInformationSection({
                     name="phoneNumber"
                     value={formData.phoneNumber}
                     onChange={handleChange}
-                    className={`flex-1 px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
-                      errors.phoneNumber ? 'border-errorColor' : 'border-lightGray'
-                    }`}
+                    className={`flex-1 px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${errors.phoneNumber ? 'border-errorColor' : 'border-lightGray'
+                      }`}
                   />
                   <button
                     type="button"
@@ -202,7 +201,7 @@ function BasicInformationSection({
               </div>
 
               <div>
-                <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+                <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                   Address
                 </label>
                 <input
@@ -217,7 +216,7 @@ function BasicInformationSection({
               </div>
 
               <div>
-                <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+                <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                   City
                 </label>
                 <input
@@ -232,7 +231,7 @@ function BasicInformationSection({
               </div>
 
               <div>
-                <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+                <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                   Country
                 </label>
                 <input
@@ -247,7 +246,7 @@ function BasicInformationSection({
               </div>
 
               <div>
-                <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+                <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                   Postcode
                 </label>
                 <input
@@ -258,9 +257,8 @@ function BasicInformationSection({
                   placeholder="Enter your postcode"
                   inputMode="text"
                   autoComplete="postal-code"
-                  className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
-                    errors.postcode ? 'border-errorColor' : 'border-lightGray'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${errors.postcode ? 'border-errorColor' : 'border-lightGray'
+                    }`}
                 />
                 {errors.postcode && (
                   <p className="mt-1 text-sm text-errorColor">{errors.postcode}</p>
@@ -268,7 +266,7 @@ function BasicInformationSection({
               </div>
 
               <div>
-                <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+                <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                   Designation
                 </label>
                 <input
@@ -283,7 +281,7 @@ function BasicInformationSection({
               </div>
 
               <div>
-                <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+                <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
                   Monthly Income (£)
                 </label>
                 <input
@@ -294,9 +292,8 @@ function BasicInformationSection({
                   placeholder="Enter your monthly income"
                   inputMode="numeric"
                   pattern="[0-9.]*"
-                  className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
-                    errors.monthlyIncome ? 'border-errorColor' : 'border-lightGray'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${errors.monthlyIncome ? 'border-errorColor' : 'border-lightGray'
+                    }`}
                 />
                 {errors.monthlyIncome && (
                   <p className="mt-1 text-sm text-errorColor">{errors.monthlyIncome}</p>

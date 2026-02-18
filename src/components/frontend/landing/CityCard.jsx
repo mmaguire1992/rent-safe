@@ -2,18 +2,18 @@ function CityCard({ city }) {
   // Handle image - it might be an imported module object or a string URL
   const getImageSrc = () => {
     if (!city.image) return '';
-    
+
     // If it's already a string, return it
     if (typeof city.image === 'string') {
       return city.image;
     }
-    
+
     // If it's an object (imported module), try to get the URL
     // Next.js/webpack can return { default: url } or { src: url } or just the url
     if (typeof city.image === 'object') {
       return city.image.default || city.image.src || city.image || '';
     }
-    
+
     return '';
   };
 
@@ -45,7 +45,7 @@ function CityCard({ city }) {
       </div>
 
       {/* City Info */}
-      <div className="p-4 sm:p-5 text-center">
+      <div className="py-4 sm:py-5 text-center">
         <h3 className="text-lg sm:text-xl font-bold text-text-primary mb-2">
           {city.name}
         </h3>

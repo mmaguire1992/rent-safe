@@ -19,7 +19,7 @@ function CurrentAddressSection({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
-          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+          <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
             Address
           </label>
           <input
@@ -28,9 +28,8 @@ function CurrentAddressSection({
             value={formData.currentAddress}
             onChange={handleChange}
             placeholder="Enter your address"
-            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
-              errors.currentAddress ? 'border-errorColor' : 'border-lightGray'
-            }`}
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${errors.currentAddress ? 'border-errorColor' : 'border-lightGray'
+              }`}
           />
           {errors.currentAddress && (
             <p className="mt-1 text-sm text-errorColor">{errors.currentAddress}</p>
@@ -38,7 +37,7 @@ function CurrentAddressSection({
         </div>
 
         <div>
-          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+          <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
             City
           </label>
           <input
@@ -47,9 +46,8 @@ function CurrentAddressSection({
             value={formData.currentCity}
             onChange={handleChange}
             placeholder="Enter your city"
-            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
-              errors.currentCity ? 'border-errorColor' : 'border-lightGray'
-            }`}
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${errors.currentCity ? 'border-errorColor' : 'border-lightGray'
+              }`}
           />
           {errors.currentCity && (
             <p className="mt-1 text-sm text-errorColor">{errors.currentCity}</p>
@@ -57,7 +55,7 @@ function CurrentAddressSection({
         </div>
 
         <div>
-          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+          <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
             Country
           </label>
           <input
@@ -66,9 +64,8 @@ function CurrentAddressSection({
             value={formData.currentCountry}
             onChange={handleChange}
             placeholder="Enter your country"
-            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
-              errors.currentCountry ? 'border-errorColor' : 'border-lightGray'
-            }`}
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${errors.currentCountry ? 'border-errorColor' : 'border-lightGray'
+              }`}
           />
           {errors.currentCountry && (
             <p className="mt-1 text-sm text-errorColor">{errors.currentCountry}</p>
@@ -76,7 +73,7 @@ function CurrentAddressSection({
         </div>
 
         <div>
-          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+          <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
             Postcode
           </label>
           <input
@@ -87,9 +84,8 @@ function CurrentAddressSection({
             placeholder="Enter your postcode"
             inputMode="text"
             autoComplete="postal-code"
-            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
-              errors.currentPostcode ? 'border-errorColor' : 'border-lightGray'
-            }`}
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${errors.currentPostcode ? 'border-errorColor' : 'border-lightGray'
+              }`}
           />
           {errors.currentPostcode && (
             <p className="mt-1 text-sm text-errorColor">{errors.currentPostcode}</p>
@@ -97,7 +93,7 @@ function CurrentAddressSection({
         </div>
 
         <div>
-          <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+          <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
             Residency Length
           </label>
           <input
@@ -106,9 +102,8 @@ function CurrentAddressSection({
             value={formData.residencyLength}
             onChange={handleChange}
             placeholder="Enter your residency length"
-            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
-              errors.residencyLength ? 'border-errorColor' : 'border-lightGray'
-            }`}
+            className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${errors.residencyLength ? 'border-errorColor' : 'border-lightGray'
+              }`}
           />
           {errors.residencyLength && (
             <p className="mt-1 text-sm text-errorColor">{errors.residencyLength}</p>

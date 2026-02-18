@@ -699,107 +699,107 @@ export const getPropertyData = (id) => {
 // Helper function to get amenity icon (same as ReviewStep)
 export const getAmenityIcon = (amenity) => {
   if (!amenity) return null;
-  
+
   // Normalize amenity string: handle both display names and backend formats
   const amenityLower = amenity.toLowerCase().replace(/_/g, ' ').trim();
-  
+
   // Parking variations: "parking", "residents' parking", "residents parking"
   if (amenityLower.includes("parking")) return BlueCarIcon;
-  
+
   // WiFi variations: "wifi", "wi-fi", "wifi included"
   if (amenityLower.includes("wifi") || amenityLower.includes("wi-fi") || amenityLower.includes("wi fi")) {
     return BlueWIFIIcon;
   }
-  
+
   // Garden variations: "garden"
   if (amenityLower.includes("garden")) return BlueGardenIcon;
-  
+
   // Heating variations: "heating", "central heating", "underfloor heating", "heating controls"
   if (amenityLower.includes("heating")) return BlueHeatingIcon;
-  
+
   // Bed variations: "bed", "beds"
   if (amenityLower.includes("bed")) return GrayBedIcon;
-  
+
   // Wardrobe variations
   if (amenityLower.includes("wardrobe")) return BlueWardrobeIcon;
-  
+
   // Fireplace variations
   if (amenityLower.includes("fireplace")) return BlueFireplaceIcon;
-  
+
   // Washing machine variations
   if (amenityLower.includes("washing machine") || amenityLower.includes("washing")) return BlueWashingMachineIcon;
-  
+
   // Dishwasher variations
   if (amenityLower.includes("dishwasher")) return BlueDishwasherIcon;
-  
+
   // Microwave variations
   if (amenityLower.includes("microwave")) return BlueMicrowaveIcon;
-  
+
   // Oven/Hob variations
   if (amenityLower.includes("oven") || amenityLower.includes("hob")) return BlueOvenIcon;
-  
+
   // Fridge variations
   if (amenityLower.includes("fridge") || amenityLower.includes("freezer")) return BlueFridgeIcon;
-  
+
   // Dryer variations
   if (amenityLower.includes("dryer") || amenityLower.includes("washer-dryer")) return BlueDryerIcon;
-  
+
   // Flooring variations: "wooden flooring", "carpet flooring", "flooring"
   if (amenityLower.includes("flooring") || amenityLower.includes("floor")) return BlueFlooringIcon;
-  
+
   // Smoke alarm variations
   if (amenityLower.includes("smoke alarm") || amenityLower.includes("smoke")) return BlueSmokeAlarmIcon;
-  
+
   // CCTV variations
   if (amenityLower.includes("cctv") || amenityLower.includes("camera")) return BlueCCTVIcon;
-  
+
   // Recycling variations
   if (amenityLower.includes("recycling") || amenityLower.includes("bin")) return BlueRecyclingIcon;
-  
+
   // Sprinkler variations
   if (amenityLower.includes("sprinkler")) return BlueSprinklerIcon;
-  
+
   // Certificate variations: "gas safety certificate", "electrical safety certificate", "certificate"
   if (amenityLower.includes("certificate") || amenityLower.includes("safety")) return BlueCertificateIcon;
-  
+
   // EV charging variations
   if (amenityLower.includes("ev charging") || amenityLower.includes("charging point")) return BlueEVChargingIcon;
-  
+
   // TV point variations
   if (amenityLower.includes("tv point") || amenityLower.includes("tv")) return BlueTVIcon;
-  
+
   // House/Home/Garage variations
   if (amenityLower.includes("garage") || amenityLower.includes("house") || amenityLower.includes("home")) {
     return BlueHouseIcon;
   }
-  
+
   // Building/Apartment/Lift variations
   if (amenityLower.includes("apartment") || amenityLower.includes("building") || amenityLower.includes("lift")) {
     return ApartmentIcon;
   }
-  
+
   // Storage/Pantry variations
   if (amenityLower.includes("storage") || amenityLower.includes("pantry") || amenityLower.includes("bicycle storage")) {
     return GrayBuildingIcon;
   }
-  
+
   return null; // Will use dummy icon in component
 };
 
 // Helper function to get utility icon (same as ReviewStep)
 export const getUtilityIcon = (utility) => {
   if (!utility) return null;
-  
+
   // Handle both object format {value, label} and string format
-  const utilityValue = typeof utility === 'string' 
-    ? utility.toLowerCase() 
+  const utilityValue = typeof utility === 'string'
+    ? utility.toLowerCase()
     : (utility?.value || utility?.label || '').toLowerCase();
-  
+
   if (utilityValue === "electricity") return OrangeElectrityIcon;
   if (utilityValue === "gas") return OrangeGasIcon;
   if (utilityValue === "water") return OrangeWaterIcon;
   if (utilityValue === "internet") return OrangeInternetIcon;
-  
+
   return null; // Will use dummy icon in component
 };
 
@@ -1098,7 +1098,7 @@ export const properties = [
 export const statusOptions = [
   { value: "all", label: "All" },
   { value: "draft", label: "Draft" },
-  { value: "pending_approval", label: "Pending Approval" },
+  { value: "pending_approval", label: "Pending" },
   { value: "active", label: "Active" },
   { value: "inactive", label: "Inactive" },
   { value: "rented", label: "Rent Out" },

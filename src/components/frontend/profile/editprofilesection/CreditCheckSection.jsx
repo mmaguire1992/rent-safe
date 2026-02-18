@@ -17,7 +17,7 @@ function CreditCheckSection({
       <SectionHeader icon={BlueCreditIcon} title="Credit Check" />
 
       <div className="mb-4 w-full md:max-w-[50%]">
-        <label className="block text-sm md:text-base font-medium text-secondary mb-1">
+        <label className="block text-sm md:text-base font-semibold text-secondary mb-1">
           Credit Score
         </label>
         <input
@@ -28,9 +28,8 @@ function CreditCheckSection({
           placeholder="Type your credit score"
           inputMode="numeric"
           pattern="[0-9]*"
-          className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${
-            errors.creditScore ? 'border-errorColor' : 'border-lightGray'
-          }`}
+          className={`w-full px-4 py-3 border rounded-[10px] focus:outline-none focus:ring-0 text-base font-normal font-nunito text-secondary ${errors.creditScore ? 'border-errorColor' : 'border-lightGray'
+            }`}
         />
         {errors.creditScore && (
           <p className="mt-1 text-sm text-errorColor">{errors.creditScore}</p>

@@ -49,19 +49,17 @@ function RoleSelection() {
             {/* Renter Option */}
             <button
               onClick={() => setSelectedRole("renter")}
-              className={`w-full px-4 py-2 border-2 h-[52px] rounded-xl text-left transition-all flex items-center sm:justify-between justify-center ${
-                selectedRole === "renter"
+              className={`w-full px-4 py-2 border-2 h-[52px] rounded-xl text-left transition-all flex items-center sm:justify-between justify-center ${selectedRole === "renter"
                   ? "bg-blueGradient !text-white"
                   : "border-lightGray bg-white"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span
-                  className={`text-sm sm:text-base font-medium ${
-                    selectedRole === "renter"
+                  className={`text-sm sm:text-base font-medium ${selectedRole === "renter"
                       ? "text-white"
                       : "text-secondary"
-                  }`}
+                    }`}
                 >
                   I am a Renter
                 </span>
@@ -76,17 +74,15 @@ function RoleSelection() {
             {/* Owner/Agent Option */}
             <button
               onClick={() => setSelectedRole("owner")}
-              className={`w-full px-2 sm:px-4 py-2 border-2 h-[52px] rounded-xl text-left transition-all flex items-center sm:justify-between justify-center ${
-                selectedRole === "owner"
+              className={`w-full px-2 sm:px-4 py-2 border-2 h-[52px] rounded-xl text-left transition-all flex items-center sm:justify-between justify-center ${selectedRole === "owner"
                   ? "bg-blueGradient !text-white"
                   : "border-lightGray bg-white"
-              }`}
+                }`}
             >
               <div className="flex items-center sm:justify-between justify-center">
                 <span
-                  className={`text-sm sm:text-base font-medium ${
-                    selectedRole === "owner" ? "text-white" : "text-secondary"
-                  }`}
+                  className={`text-sm sm:text-base font-medium ${selectedRole === "owner" ? "text-white" : "text-secondary"
+                    }`}
                 >
                   I am an Owner/Agent
                 </span>
@@ -108,7 +104,7 @@ function RoleSelection() {
           Next
         </button>
         <div className="mt-6 text-center">
-          <Link to="/login" className="text-primary text-base font-bold">
+          <Link to="/login" className="text-primary text-base font-bold hover:underline">
             Back to Login
           </Link>
         </div>
