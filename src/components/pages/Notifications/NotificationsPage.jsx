@@ -20,6 +20,9 @@ const NOTIFICATION_TYPES = [
   { value: 'property_rejected', label: 'Property Rejected' },
   { value: 'property_created', label: 'Property Created' },
   { value: 'document_reuploaded', label: 'Document Reuploaded' },
+  { value: 'document_uploaded', label: 'Document Uploaded' },
+  { value: 'document_approved', label: 'Document Approved' },
+  { value: 'document_rejected', label: 'Document Rejected' },
   { value: 'subscription_expiring', label: 'Subscription Expiring' },
   { value: 'subscription_activated', label: 'Subscription Activated' },
   { value: 'subscription_canceled', label: 'Subscription Canceled' },
@@ -40,11 +43,13 @@ const getNotificationIcon = (type) => {
   switch (type) {
     case 'verification_approved':
     case 'property_approved':
+    case 'document_approved':
       return <div className={`${iconStyle} rounded-full bg-green-100 flex items-center justify-center`}>
         <FiCheckCircle className="text-green-600 text-sm" />
       </div>;
     case 'verification_rejected':
     case 'property_rejected':
+    case 'document_rejected':
       return <div className={`${iconStyle} rounded-full bg-red-100 flex items-center justify-center`}>
         <FiCheckCircle className="text-red-600 text-sm" />
       </div>;
@@ -54,6 +59,7 @@ const getNotificationIcon = (type) => {
       </div>;
     case 'property_created':
     case 'document_reuploaded':
+    case 'document_uploaded':
       return <div className={`${iconStyle} rounded-full bg-purple-100 flex items-center justify-center`}>
         <FiCheckCircle className="text-purple-600 text-sm" />
       </div>;
