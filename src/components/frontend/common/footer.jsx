@@ -10,7 +10,46 @@ import {
 
 import { linkColumns } from "@/websitedata/commonConst";
 
-const socialIcons = [FaFacebookF, FaLinkedinIn, FaInstagram, FaPinterestP];
+const normalizeSocialUrl = (url) => {
+  if (!url || typeof url !== "string") return "";
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl) return "";
+  if (trimmedUrl.startsWith("http://") || trimmedUrl.startsWith("https://")) {
+    return trimmedUrl;
+  }
+  return `https://${trimmedUrl}`;
+};
+
+const socialLinks = [
+  {
+    Icon: FaFacebookF,
+    url: normalizeSocialUrl(
+      process.env.NEXT_PUBLIC_FACEBOOK_URL || process.env.NEXT_PUBLIC_FACEBOOK_LINK
+    ),
+    label: "Facebook",
+  },
+  {
+    Icon: FaLinkedinIn,
+    url: normalizeSocialUrl(
+      process.env.NEXT_PUBLIC_LINKEDIN_URL || process.env.NEXT_PUBLIC_LINKEDIN_LINK
+    ),
+    label: "LinkedIn",
+  },
+  {
+    Icon: FaInstagram,
+    url: normalizeSocialUrl(
+      process.env.NEXT_PUBLIC_INSTAGRAM_URL || process.env.NEXT_PUBLIC_INSTAGRAM_LINK
+    ),
+    label: "Instagram",
+  },
+  {
+    Icon: FaPinterestP,
+    url: normalizeSocialUrl(
+      process.env.NEXT_PUBLIC_PINTEREST_URL || process.env.NEXT_PUBLIC_PINTEREST_LINK
+    ),
+    label: "Pinterest",
+  },
+];
 
 const Footer = () => {
   return (
@@ -67,8 +106,8 @@ const Footer = () => {
                   Join Us By
                 </p>
                 <div className="flex items-center gap-1 md:gap-2 justify-start">
-                  {socialIcons.map((Icon, i) => (
-                    <SocialIcon key={i}>
+                  {socialLinks.map(({ Icon, url, label }, i) => (
+                    <SocialIcon key={i} href={url} label={label}>
                       <Icon className="text-white text-base sm:text-lg" />
                     </SocialIcon>
                   ))}
@@ -85,8 +124,8 @@ const Footer = () => {
               Join Us By
             </p>
             <div className="flex items-center gap-1 md:gap-2 justify-start">
-              {socialIcons.map((Icon, i) => (
-                <SocialIcon key={i}>
+              {socialLinks.map(({ Icon, url, label }, i) => (
+                <SocialIcon key={i} href={url} label={label}>
                   <Icon className="text-white text-base sm:text-lg" />
                 </SocialIcon>
               ))}
@@ -146,10 +185,29 @@ const FooterColumn = ({ title, children }) => {
 };
 
 /* Reusable social icon circle */
-const SocialIcon = ({ children }) => (
-  <div className="flex items-center justify-center w-10 h-10 cursor-pointer hover:scale-110 transition-all duration-500 rounded-full bg-[#3C3F48]">
-    {children}
-  </div>
-);
+const SocialIcon = ({ children, href, label }) => {
+  if (!href) {
+    return (
+      <div
+        aria-label={label}
+        className="flex items-center justify-center w-10 h-10 transition-all duration-500 rounded-full bg-[#3C3F48] opacity-70"
+      >
+        {children}
+      </div>
+    );
+  }
+
+  return (
+    <a
+      href={href}
+      aria-label={label}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center justify-center w-10 h-10 cursor-pointer hover:scale-110 transition-all duration-500 rounded-full bg-[#3C3F48]"
+    >
+      {children}
+    </a>
+  );
+};
 
 export default Footer;
