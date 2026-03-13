@@ -138,8 +138,15 @@ function Header({ onMenuClick }) {
     }
 
     // Listen for profile image updates
-    const handleProfileImageUpdate = async () => {
+    const handleProfileImageUpdate = async (event) => {
       try {
+        // Use event detail first for instant UI update after upload
+        const updatedImage = event?.detail?.profileImage;
+        if (updatedImage) {
+          const imageUrl = updatedImage + (updatedImage.includes('?') ? '&' : '?') + '_t=' + Date.now();
+          setProfileImage(imageUrl);
+        }
+
         const userData = await getCurrentUser();
         // Keep freshest user info for verification badge
         if (userData) {

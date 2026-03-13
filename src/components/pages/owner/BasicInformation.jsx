@@ -62,7 +62,7 @@ function BasicInformation() {
   let processedValue = value;
 
   if (name === 'phoneNumber') {
-    processedValue = value.replace(/[^0-9+\-().\s]/g, '');
+    processedValue = value.replace(/\D/g, '').slice(0, 10);
   }
 
   // Remove leading spaces from EVERY text-like field
@@ -99,6 +99,10 @@ function BasicInformation() {
 
     if (!formData.password || formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
+    }
+
+    if (formData.phoneNumber && !/^\d{10}$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = "Phone number must be exactly 10 digits";
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -306,6 +310,8 @@ function BasicInformation() {
               name="phoneNumber"
               value={formData.phoneNumber}
               onChange={handleChange}
+              inputMode="numeric"
+              maxLength={10}
               placeholder="Enter your phone number"
               className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${
                 errors.phoneNumber ? "border-errorColor" : "border-lightGray"
