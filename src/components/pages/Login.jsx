@@ -105,7 +105,7 @@ function Login() {
       <div className="block">
         <div className="lg:absolute top-[50px] left-[10%]">
           <a
-            href="http://localhost:3000/"
+            href="/"
             className="inline-flex items-center gap-2 text-secondary hover:text-primary mb-3"
           >
             <FiArrowLeft className="lg:text-4xl" />
@@ -115,7 +115,7 @@ function Login() {
 
         {/* Logo */}
         <div className="mb-6">
-          <a href="http://localhost:3000/" aria-label="Go to home page">
+          <a href="/" aria-label="Go to home page">
             <img
               src="/images/dashboard/mainLogoBK.svg"
               alt="Logo"
