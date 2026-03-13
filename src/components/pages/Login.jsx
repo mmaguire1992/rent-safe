@@ -1,13 +1,14 @@
-'use client'
+"use client";
 
 import { useEffect, useState } from "react";
-import { Link } from '@/lib/react-router-compat';
+import { Link } from "@/lib/react-router-compat";
 import AuthLayout from "@/components/AuthLayout";
 import CustomCheckbox from "@/components/adminDashboard/common/CustomCheckbox";
 import EyeIcon from "@/svg/eyeIcon";
 import EyeSlashIcon from "@/svg/eyeSlashIcon";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-toastify";
+import { FiArrowLeft } from "react-icons/fi";
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -24,9 +25,9 @@ function Login() {
   // Show a one-time toast if we were redirected here due to account deactivation/inactive status
   useEffect(() => {
     try {
-      const msg = sessionStorage.getItem('authRedirectToast');
+      const msg = sessionStorage.getItem("authRedirectToast");
       if (msg) {
-        sessionStorage.removeItem('authRedirectToast');
+        sessionStorage.removeItem("authRedirectToast");
         toast.error(msg);
       }
     } catch (_) {
@@ -88,9 +89,10 @@ function Login() {
       });
       // Redirect is handled by AuthContext
     } catch (error) {
-      const errorMessage = error.message || "Login failed. Please check your credentials.";
+      const errorMessage =
+        error.message || "Login failed. Please check your credentials.";
       setLoginError(errorMessage);
-      
+
       // Show toast notification
       toast.error(errorMessage);
     } finally {
@@ -101,10 +103,30 @@ function Login() {
   return (
     <AuthLayout>
       <div className="block">
+        <div className="lg:absolute top-[50px] left-[10%]">
+          <a
+            href="http://localhost:3000/"
+            className="inline-flex items-center gap-2 text-secondary hover:text-primary mb-3"
+          >
+            <FiArrowLeft className="lg:text-4xl" />
+            <span className="text-lg lg:text-2xl font-medium">Back</span>
+          </a>
+        </div>
+
         {/* Logo */}
         <div className="mb-6">
-          <img src="/images/dashboard/mainLogoBK.svg" alt="Logo" className="justify-center" />
+          <a href="http://localhost:3000/" aria-label="Go to home page">
+            <img
+              src="/images/dashboard/mainLogoBK.svg"
+              alt="Logo"
+              className="justify-center"
+            />
+          </a>
         </div>
+        {/* Logo */}
+        {/* <div className="mb-6">
+          <img src="/images/dashboard/mainLogoBK.svg" alt="Logo" className="justify-center" />
+        </div> */}
 
         {/* Welcome Message */}
         <div className="text-left mb-6 md:mb-8">
@@ -117,7 +139,11 @@ function Login() {
         </div>
 
         {/* Login Form */}
-        <form noValidate onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
+        <form
+          noValidate
+          onSubmit={handleSubmit}
+          className="space-y-4 md:space-y-5"
+        >
           {/* Email Field */}
           <div>
             <label
@@ -168,11 +194,7 @@ function Login() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary"
                 >
-                  {showPassword ? (
-                    <EyeIcon />
-                  ) : (
-                    <EyeSlashIcon />
-                  )}
+                  {showPassword ? <EyeIcon /> : <EyeSlashIcon />}
                 </button>
               </div>
               {errors.password && (
@@ -211,7 +233,10 @@ function Login() {
           <span className="text-base font-normal text-darkGray">
             Don't have an account?{" "}
           </span>
-          <Link to="/signup" className="text-primary text-base font-bold hover:underline">
+          <Link
+            to="/signup"
+            className="text-primary text-base font-bold hover:underline"
+          >
             Create an account
           </Link>
         </div>
@@ -219,11 +244,17 @@ function Login() {
         {/* Terms and Privacy */}
         <div className="mt-6 text-sm font-normal text-darkGray">
           By logging in, you agreed to our{" "}
-          <Link to="/terms" className="text-primary text-sm font-bold hover:underline">
+          <Link
+            to="/terms"
+            className="text-primary text-sm font-bold hover:underline"
+          >
             Terms & Conditions
           </Link>{" "}
           and{" "}
-          <Link to="/privacy" className="text-primary text-sm font-bold hover:underline">
+          <Link
+            to="/privacy"
+            className="text-primary text-sm font-bold hover:underline"
+          >
             Privacy Policy
           </Link>
         </div>
