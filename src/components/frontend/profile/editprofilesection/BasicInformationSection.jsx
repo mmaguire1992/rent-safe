@@ -56,7 +56,13 @@ function BasicInformationSection({
                 <div className="w-full h-full rounded-full bg-blueGradient flex items-center justify-center">
                   {formData.fullName && formData.fullName.trim() ? (
                     <span className="text-white text-2xl font-bold font-nunito">
-                      {formData.fullName.trim().charAt(0).toUpperCase()}
+                      {(() => {
+                        const names = formData.fullName.trim().split(/\s+/);
+                        if (names.length >= 2) {
+                          return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+                        }
+                        return names[0][0].toUpperCase();
+                      })()}
                     </span>
                   ) : (
                     <GrayUserIcon />
