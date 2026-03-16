@@ -138,8 +138,15 @@ function Header({ onMenuClick }) {
     }
 
     // Listen for profile image updates
-    const handleProfileImageUpdate = async () => {
+    const handleProfileImageUpdate = async (event) => {
       try {
+        // Use event detail first for instant UI update after upload
+        const updatedImage = event?.detail?.profileImage;
+        if (updatedImage) {
+          const imageUrl = updatedImage + (updatedImage.includes('?') ? '&' : '?') + '_t=' + Date.now();
+          setProfileImage(imageUrl);
+        }
+
         const userData = await getCurrentUser();
         // Keep freshest user info for verification badge
         if (userData) {
@@ -362,7 +369,7 @@ function Header({ onMenuClick }) {
                     className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-8 h-8 md:w-10 md:h-10 bg-[#E8E2FF] rounded-full flex items-center justify-center text-primary font-bold text-sm md:text-base">
+                  <div className="w-8 h-8 md:w-10 md:h-10 bg-blueGradient rounded-full flex items-center justify-center text-white font-bold text-sm md:text-base">
                     {getUserInitials()}
                   </div>
                 )}
@@ -396,7 +403,7 @@ function Header({ onMenuClick }) {
                           className="w-12 h-12 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="w-12 h-12 bg-[#6B4EFF] rounded-full flex items-center justify-center text-white font-bold">
+                        <div className="w-12 h-12 bg-blueGradient rounded-full flex items-center justify-center text-white font-bold">
                           {getUserInitials()}
                         </div>
                       )}

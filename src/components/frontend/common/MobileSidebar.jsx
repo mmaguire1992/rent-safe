@@ -150,7 +150,7 @@ function MobileSidebar({ isOpen, onClose }) {
                       className="w-12 h-12 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                    <div className="w-12 h-12 bg-blueGradient rounded-full flex items-center justify-center">
                       <span className="text-white text-xl font-bold">{getUserInitials()}</span>
                     </div>
                   )}

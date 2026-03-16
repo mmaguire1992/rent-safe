@@ -68,10 +68,19 @@ function RenterBasicInformation() {
     const { name, value } = e.target;
     let processedValue = value;
 
-    // 1. Phone number: keep only allowed characters
-    if (name === 'phoneNumber') {
-      processedValue = value.replace(/[^0-9+\-().\s]/g, '');
+  // 1. Phone number: keep digits only (max 10)
+  if (name === 'phoneNumber') {
+    processedValue = value.replace(/\D/g, '').slice(0, 10);
+  }
+
+  // 1.1 Monthly income: allow only positive numeric values (no minus)
+  if (name === 'monthlyIncome') {
+    processedValue = value.replace(/[^\d.]/g, '');
+    const dotParts = processedValue.split('.');
+    if (dotParts.length > 2) {
+      processedValue = `${dotParts[0]}.${dotParts.slice(1).join('')}`;
     }
+  }
 
     // 2. Remove leading whitespace from ALL fields except monthlyIncome
     if (name !== 'monthlyIncome') {
@@ -134,10 +143,18 @@ function RenterBasicInformation() {
       newErrors.password = "Password must be at least 6 characters";
     }
 
-    // Validate confirm password - check if empty first
-    if (!formData.confirmPassword || !formData.confirmPassword.trim()) {
-      newErrors.confirmPassword = "Confirm password is required";
-    } else if (formData.password !== formData.confirmPassword) {
+    if (formData.phoneNumber && !/^\d{10}$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = "Phone number must be exactly 10 digits";
+    }
+
+    if (formData.monthlyIncome !== "") {
+      const income = parseFloat(formData.monthlyIncome);
+      if (Number.isNaN(income) || income <= 0) {
+        newErrors.monthlyIncome = "Monthly income must be a positive number";
+      }
+    }
+
+    if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords must match";
     }
 
@@ -349,6 +366,8 @@ function RenterBasicInformation() {
               name="phoneNumber"
               value={formData.phoneNumber}
               onChange={handleChange}
+              inputMode="numeric"
+              maxLength={10}
               placeholder="Enter your phone number"
               className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${errors.phoneNumber ? "border-errorColor" : "border-lightGray"
                 }`}
@@ -516,6 +535,7 @@ function RenterBasicInformation() {
               name="monthlyIncome"
               value={formData.monthlyIncome}
               onChange={handleChange}
+              min="0"
               placeholder="Enter your monthly income"
               className={`w-full px-4 py-3 border h-[52px] rounded-xl text-base font-normal text-secondary focus:outline-none focus:ring-0 ${errors.monthlyIncome ? "border-errorColor" : "border-lightGray"
                 }`}

@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from '@/lib/react-router-compat';
 import { useAuth } from '@/context/AuthContext';
 import { getCurrentUser } from "@/api/users";
-import ProfileStatusCheckIcon from "@/svg/websiteSvg/profileStatusCheckIcon";
 import LogoutIcon from "@/svg/websiteSvg/logoutIcon";
 import { FiChevronDown } from "react-icons/fi";
 import GreenCheckedIcon from "@/svg/greenCheckedIcon";
@@ -62,7 +61,7 @@ function ProfileMenu({ profileImage }) {
               className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover"
             />
           ) : (
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-[#E8E2FF] rounded-full flex items-center justify-center text-primary font-bold text-sm md:text-base">
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-blueGradient rounded-full flex items-center justify-center text-white font-bold text-sm md:text-base">
               {userName ? (userName.trim().split(' ').length >= 2 
                 ? (userName.trim().split(' ')[0][0] + userName.trim().split(' ')[userName.trim().split(' ').length - 1][0]).toUpperCase()
                 : userName[0].toUpperCase()) : 'U'}
@@ -100,17 +99,21 @@ function ProfileMenu({ profileImage }) {
                     className="w-12 h-12 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                    <span className="text-sm text-gray-600">
+                  <div className="w-12 h-12 bg-blueGradient rounded-full flex items-center justify-center text-white font-bold">
+                    <span className="text-sm">
                       {userName ? (userName.trim().split(' ').length >= 2 
                         ? (userName.trim().split(' ')[0][0] + userName.trim().split(' ')[userName.trim().split(' ').length - 1][0]).toUpperCase()
                         : userName[0].toUpperCase()) : 'U'}
                     </span>
                   </div>
                 )}
-                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-                  <ProfileStatusCheckIcon />
-                </div>
+                <span className="absolute -top-1 -right-1">
+                  {isUserVerified(freshUserData || user) ? (
+                    <GreenCheckedIcon />
+                  ) : (
+                    <RedCrossIcon />
+                  )}
+                </span>
               </div>
               <div>
                 <p className="text-sm font-semibold text-text-primary">

@@ -154,13 +154,38 @@ function ProfileSettings() {
 
       // Upload profile picture first if provided (so it's included in the profile)
       if (data.profileImage && data.profileImage instanceof File) {
-        await dispatch(uploadUserProfilePicture(data.profileImage)).unwrap();
+        const uploadResult = await dispatch(uploadUserProfilePicture(data.profileImage)).unwrap();
+        const uploadedProfileImage = uploadResult?.profileImage || null;
+
+        // Update AuthContext immediately so header/profile icon reflects without waiting for refetch
+        if (uploadedProfileImage && updateUser) {
+          updateUser({
+            userInfo: {
+              ...user?.userInfo,
+              profileImage: uploadedProfileImage,
+            },
+          });
+        }
+
+        // Notify headers immediately with the latest image URL
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('profileImageUpdated', {
+              detail: { profileImage: uploadedProfileImage },
+            })
+          );
+        }
+
         // Refresh user info after picture upload to get updated profile
         const refreshedUserInfo = await dispatch(fetchUserInfo()).unwrap();
 
         // Dispatch event to notify Header component about profile image update
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('profileImageUpdated'));
+          window.dispatchEvent(
+            new CustomEvent('profileImageUpdated', {
+              detail: { profileImage: refreshedUserInfo?.userInfo?.profileImage || uploadedProfileImage },
+            })
+          );
         }
 
         // Update AuthContext with new profile image if available

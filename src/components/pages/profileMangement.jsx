@@ -150,7 +150,7 @@ function ProfileManagementPage() {
         designation: employment.jobTitle || '',
         location: `${address.city || ''}${address.city && address.country ? ', ' : ''}${address.country || ''}`.trim() || '',
         monthlyIncome: employment.monthlyIncome ? `£${employment.monthlyIncome}` : '',
-        verified: userInfo.verificationStatus === 'verified' || profileData?.isEmailVerified || false,
+        verified: userInfo.verificationStatus === 'verified',
         creditScore: userInfo.creditScore || 0,
         creditMax: 850,
         creditScoreDocument: creditScoreDocument,

@@ -384,8 +384,8 @@ const Navbar = () => {
                       className="w-9 h-9 rounded-full object-cover border-2 border-primary"
                     />
                   ) : (
-                    <div className="w-9 h-9 bg-[#E8E2FF] rounded-full flex items-center justify-center text-primary font-bold text-lg border-2 border-[#E6E8EC]">
-                      {userName ? userName[0].toUpperCase() : 'U'}
+                    <div className="w-9 h-9 bg-blueGradient rounded-full flex items-center justify-center text-white font-bold text-lg border-2 border-[#E6E8EC]">
+                      {getUserInitials()}
                     </div>
                   )}
                 </button>
@@ -603,7 +603,7 @@ const Navbar = () => {
                           className="w-8 h-8 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="w-8 h-8 bg-[#E8E2FF] rounded-full flex items-center justify-center text-primary font-bold text-sm">
+                        <div className="w-8 h-8 bg-blueGradient rounded-full flex items-center justify-center text-white font-bold text-sm">
                           {getUserInitials()}
                         </div>
                       )}
@@ -638,7 +638,7 @@ const Navbar = () => {
                                 className="w-12 h-12 rounded-full object-cover"
                               />
                             ) : (
-                              <div className="w-12 h-12 bg-[#6B4EFF] rounded-full flex items-center justify-center text-white font-bold">
+                              <div className="w-12 h-12 bg-blueGradient rounded-full flex items-center justify-center text-white font-bold">
                                 {getUserInitials()}
                               </div>
                             )}
