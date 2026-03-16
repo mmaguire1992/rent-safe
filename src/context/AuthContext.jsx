@@ -15,12 +15,27 @@ import {
 
 const AuthContext = createContext(null);
 
+/**
+ * TEMPORARY ACCESS LOCK (easy rollback):
+ * - Keep this true while you want login required for all routes.
+ * - Set to false to restore normal access flow.
+ */
+const TEMP_FORCE_LOGIN_LOCK = true;
+
+/**
+ * Routes still allowed without login while lock is enabled.
+ * Keep minimal to enforce strict login wall.
+ */
+const TEMP_AUTH_ALLOWLIST = ['/login'];
+const TEMP_LOGOUT_REDIRECT_FLAG = 'rentsafe:logoutRedirect';
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const pathname = usePathname();
+  const currentPath = typeof pathname === 'string' ? pathname : String(pathname || '');
 
   // Initialize auth state from localStorage
   useEffect(() => {
@@ -43,49 +58,98 @@ export const AuthProvider = ({ children }) => {
   // Protect ALL routes - user must be authenticated to access any route
   useEffect(() => {
     if (loading) return;
+
+    // Clear one-time logout flag once we have reached login page.
+    if (typeof window !== 'undefined' && currentPath === '/login') {
+      try {
+        sessionStorage.removeItem(TEMP_LOGOUT_REDIRECT_FLAG);
+      } catch {
+        // ignore
+      }
+    }
     
     const currentUserType = getUserType();
     const isAuth = isAuthenticated();
     
-    // Define public routes that don't require authentication
-    const publicRoutes = [
-      '/',
-      '/landing',
-      '/login',
-      '/signup',
-      '/forgot-password',
-      '/otp-verification',
-      '/create-password',
-      '/password-success',
-      '/properties',
-      '/support'
-    ];
-    
-    // Ensure pathname is a string
-    const currentPath = typeof pathname === 'string' ? pathname : String(pathname || '');
-    
-    // Check if current route is public (including signup sub-routes and public routes)
-    const isPublicRoute = publicRoutes.includes(currentPath) || 
-                         currentPath.startsWith('/signup') || 
-                         currentPath.startsWith('/properties') ||
-                         currentPath.startsWith('/property/') || // Property detail pages (singular)
-                         currentPath.startsWith('/support');
+    // TEMP lock: only allow explicitly whitelisted auth routes before login.
+    const isTempAllowedWithoutAuth = TEMP_AUTH_ALLOWLIST.some((route) => currentPath === route);
     
     // Profile route should be accessible to authenticated users only
     const isProfileRoute = currentPath.startsWith('/profile');
     
     if (!isAuth) {
       // User is NOT authenticated
-      // Block access to ALL routes except public auth routes
-      // Profile requires authentication
-      if (!isPublicRoute && !isProfileRoute) {
-        navigate('/login');
-        return;
-      }
-      // If trying to access profile without auth, redirect to login
-      if (isProfileRoute) {
-        navigate('/login');
-        return;
+      if (TEMP_FORCE_LOGIN_LOCK) {
+        if (!isTempAllowedWithoutAuth) {
+          const shouldForceCleanLogin =
+            typeof window !== 'undefined' &&
+            sessionStorage.getItem(TEMP_LOGOUT_REDIRECT_FLAG) === '1';
+          if (shouldForceCleanLogin) {
+            navigate('/login', { replace: true });
+            return;
+          }
+
+          const nextPath =
+            typeof window !== 'undefined'
+              ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+              : currentPath || '/';
+          navigate(`/login?next=${encodeURIComponent(nextPath || '/')}`, { replace: true });
+          return;
+        }
+      } else {
+        // TEMPORARILY DISABLED (kept for rollback): existing public-route behavior.
+        /*
+        const publicRoutes = [
+          '/',
+          '/landing',
+          '/login',
+          '/signup',
+          '/forgot-password',
+          '/otp-verification',
+          '/create-password',
+          '/password-success',
+          '/properties',
+          '/support'
+        ];
+        const isPublicRoute = publicRoutes.includes(currentPath) || 
+                             currentPath.startsWith('/signup') || 
+                             currentPath.startsWith('/properties') ||
+                             currentPath.startsWith('/property/') ||
+                             currentPath.startsWith('/support');
+        if (!isPublicRoute && !isProfileRoute) {
+          navigate('/login');
+          return;
+        }
+        if (isProfileRoute) {
+          navigate('/login');
+          return;
+        }
+        */
+        const legacyPublicRoutes = [
+          '/',
+          '/landing',
+          '/login',
+          '/signup',
+          '/forgot-password',
+          '/otp-verification',
+          '/create-password',
+          '/password-success',
+          '/properties',
+          '/support'
+        ];
+        const isLegacyPublicRoute = legacyPublicRoutes.includes(currentPath) ||
+          currentPath.startsWith('/signup') ||
+          currentPath.startsWith('/properties') ||
+          currentPath.startsWith('/property/') ||
+          currentPath.startsWith('/support');
+        if (!isLegacyPublicRoute && !isProfileRoute) {
+          navigate('/login');
+          return;
+        }
+        if (isProfileRoute) {
+          navigate('/login');
+          return;
+        }
       }
     } else {
       // User IS authenticated
@@ -95,8 +159,8 @@ export const AuthProvider = ({ children }) => {
         // Email not verified - redirect to OTP verification
         // Only redirect if NOT already on an OTP verification or success page
         const isOTPPage = currentPath.includes('/verify-account') || 
-                         currentPath === '/otp-verification' ||
-                         currentPath.includes('/signup/') && currentPath.includes('/success');
+                        currentPath === '/otp-verification' ||
+                        currentPath.includes('/signup/') && currentPath.includes('/success');
         
         if (!isOTPPage) {
           const email = userData.email;
@@ -136,6 +200,39 @@ export const AuthProvider = ({ children }) => {
       
       // Redirect from public auth routes to appropriate dashboard/landing
       // But allow property detail pages, properties list, support, and profile to be accessible
+      // TEMPORARILY DISABLED (kept for rollback): original public-route redirect branching.
+      /*
+      const publicRoutes = [
+        '/',
+        '/landing',
+        '/login',
+        '/signup',
+        '/forgot-password',
+        '/otp-verification',
+        '/create-password',
+        '/password-success',
+        '/properties',
+        '/support'
+      ];
+      const isPublicRoute = publicRoutes.includes(currentPath) || 
+                           currentPath.startsWith('/signup') || 
+                           currentPath.startsWith('/properties') ||
+                           currentPath.startsWith('/property/') ||
+                           currentPath.startsWith('/support');
+      */
+      const isPublicRoute = !TEMP_FORCE_LOGIN_LOCK && (
+        currentPath === '/' ||
+        currentPath === '/landing' ||
+        currentPath === '/login' ||
+        currentPath.startsWith('/signup') ||
+        currentPath === '/forgot-password' ||
+        currentPath === '/otp-verification' ||
+        currentPath === '/create-password' ||
+        currentPath === '/password-success' ||
+        currentPath.startsWith('/properties') ||
+        currentPath.startsWith('/property/') ||
+        currentPath.startsWith('/support')
+      );
       if (isPublicRoute && !isPropertyOrSupportRoute) {
         redirectBasedOnUserType(navigate, currentPath);
         return;
@@ -219,9 +316,30 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       setToken(userToken);
       
-      // Redirect based on user type
-      const currentPath = typeof pathname === 'string' ? pathname : String(pathname || '');
-      redirectBasedOnUserType(navigate, currentPath);
+      // TEMP lock behavior: return user to intended route after successful login.
+      // Fallback to existing role-based redirect if no valid "next" target is present.
+      const nextPath = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('next')
+        : null;
+      const shouldIgnoreNextFromLogout =
+        typeof window !== 'undefined' &&
+        sessionStorage.getItem(TEMP_LOGOUT_REDIRECT_FLAG) === '1';
+      const isValidNextPath =
+        !shouldIgnoreNextFromLogout &&
+        typeof nextPath === 'string' &&
+        nextPath.startsWith('/') &&
+        !nextPath.startsWith('//') &&
+        !nextPath.startsWith('/login') &&
+        !(
+          userData.userType === 'renter' &&
+          nextPath.startsWith('/dashboard')
+        );
+      if (TEMP_FORCE_LOGIN_LOCK && isValidNextPath) {
+        navigate(nextPath, { replace: true });
+      } else {
+        const currentPath = typeof pathname === 'string' ? pathname : String(pathname || '');
+        redirectBasedOnUserType(navigate, currentPath);
+      }
       
       return { success: true };
     } catch (error) {
@@ -265,9 +383,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    // Defer clearing auth data until after navigation is allowed.
-    // This lets pages like Add/Edit Property block navigation with a confirmation modal.
-    navigate('/', {
+    // TEMP lock compatibility:
+    // Force a clean logout target so no old protected route is carried via ?next.
+    // Also bypass blockers so logout always succeeds from any page.
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem(TEMP_LOGOUT_REDIRECT_FLAG, '1');
+      } catch {
+        // ignore
+      }
+    }
+    navigate('/login', {
+      replace: true,
+      __bypassBlocker: true,
       __afterNavigate: () => {
         clearAuthData();
         setUser(null);
@@ -304,7 +432,18 @@ export const AuthProvider = ({ children }) => {
     loading,
   };
 
-  return <AuthContext.Provider value={authValue}>{children}</AuthContext.Provider>;
+  // While temporary lock is enabled, don't render protected pages for unauthenticated users.
+  // This prevents brief flashes of public/protected content before redirect to login.
+  const shouldHideChildrenForTempLock =
+    TEMP_FORCE_LOGIN_LOCK &&
+    currentPath !== '/login' &&
+    (loading || !isAuthenticated());
+
+  return (
+    <AuthContext.Provider value={authValue}>
+      {shouldHideChildrenForTempLock ? null : children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {
