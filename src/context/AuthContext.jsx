@@ -26,8 +26,25 @@ const TEMP_FORCE_LOGIN_LOCK = true;
  * Routes still allowed without login while lock is enabled.
  * Keep minimal to enforce strict login wall.
  */
-const TEMP_AUTH_ALLOWLIST = ['/login'];
+const TEMP_AUTH_ALLOWLIST_EXACT = [
+  '/login',
+  '/forgot-password',
+  '/create-password',
+  '/otp-verification',
+  '/password-success',
+  '/terms',
+  '/privacy',
+];
+const TEMP_AUTH_ALLOWLIST_PREFIX = ['/signup'];
 const TEMP_LOGOUT_REDIRECT_FLAG = 'rentsafe:logoutRedirect';
+
+const isTempAllowedWithoutAuthRoute = (path) => {
+  const safePath = typeof path === 'string' ? path : String(path || '');
+  return (
+    TEMP_AUTH_ALLOWLIST_EXACT.includes(safePath) ||
+    TEMP_AUTH_ALLOWLIST_PREFIX.some((prefix) => safePath.startsWith(prefix))
+  );
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -72,7 +89,7 @@ export const AuthProvider = ({ children }) => {
     const isAuth = isAuthenticated();
     
     // TEMP lock: only allow explicitly whitelisted auth routes before login.
-    const isTempAllowedWithoutAuth = TEMP_AUTH_ALLOWLIST.some((route) => currentPath === route);
+    const isTempAllowedWithoutAuth = isTempAllowedWithoutAuthRoute(currentPath);
     
     // Profile route should be accessible to authenticated users only
     const isProfileRoute = currentPath.startsWith('/profile');
@@ -436,7 +453,7 @@ export const AuthProvider = ({ children }) => {
   // This prevents brief flashes of public/protected content before redirect to login.
   const shouldHideChildrenForTempLock =
     TEMP_FORCE_LOGIN_LOCK &&
-    currentPath !== '/login' &&
+    !isTempAllowedWithoutAuthRoute(currentPath) &&
     (loading || !isAuthenticated());
 
   return (
