@@ -33,6 +33,7 @@ const TEMP_AUTH_ALLOWLIST_EXACT = [
   '/otp-verification',
   '/password-success',
   '/terms',
+  '/policy',
   '/privacy',
 ];
 const TEMP_AUTH_ALLOWLIST_PREFIX = ['/signup'];

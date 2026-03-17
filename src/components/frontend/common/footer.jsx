@@ -10,6 +10,11 @@ import {
 
 import { linkColumns } from "@/websitedata/commonConst";
 
+const LEGAL_ROUTE_MAP = {
+  "Privacy Policy": "/policy",
+  "Terms & Conditions": "/terms",
+};
+
 const normalizeSocialUrl = (url) => {
   if (!url || typeof url !== "string") return "";
   const trimmedUrl = url.trim();
@@ -82,9 +87,21 @@ const Footer = () => {
           {/* Links / Support / Legal columns */}
           {linkColumns.map((col) => (
             <FooterColumn key={col.title} title={col.title}>
-              {col.items.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
+              {col.items.map((item) => {
+                const route = LEGAL_ROUTE_MAP[item];
+
+                return (
+                  <li key={item}>
+                    {route ? (
+                      <a href={route} className="inline-block">
+                        {item}
+                      </a>
+                    ) : (
+                      item
+                    )}
+                  </li>
+                );
+              })}
             </FooterColumn>
           ))}
 

@@ -252,7 +252,7 @@ function Login() {
           </Link>{" "}
           and{" "}
           <Link
-            to="/privacy"
+            to="/policy"
             className="text-primary text-sm font-bold hover:underline"
           >
             Privacy Policy
