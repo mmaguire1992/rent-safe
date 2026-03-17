@@ -103,7 +103,7 @@ function Login() {
   return (
     <AuthLayout>
       <div className="block">
-        <div className="lg:absolute top-[50px] left-[10%]">
+        {/* <div className="lg:absolute top-[50px] left-[10%]">
           <a
             href="/"
             className="inline-flex items-center gap-2 text-secondary hover:text-primary mb-3"
@@ -111,7 +111,7 @@ function Login() {
             <FiArrowLeft className="lg:text-4xl" />
             <span className="text-lg lg:text-2xl font-medium">Back</span>
           </a>
-        </div>
+        </div> */}
 
         {/* Logo */}
         <div className="mb-6">
