@@ -68,19 +68,10 @@ function RenterBasicInformation() {
     const { name, value } = e.target;
     let processedValue = value;
 
-  // 1. Phone number: keep digits only (max 10)
-  if (name === 'phoneNumber') {
-    processedValue = value.replace(/\D/g, '').slice(0, 10);
-  }
-
-  // 1.1 Monthly income: allow only positive numeric values (no minus)
-  if (name === 'monthlyIncome') {
-    processedValue = value.replace(/[^\d.]/g, '');
-    const dotParts = processedValue.split('.');
-    if (dotParts.length > 2) {
-      processedValue = `${dotParts[0]}.${dotParts.slice(1).join('')}`;
+    // 1. Phone number: keep only allowed characters
+    if (name === 'phoneNumber') {
+      processedValue = value.replace(/[^0-9+\-().\s]/g, '');
     }
-  }
 
     // 2. Remove leading whitespace from ALL fields except monthlyIncome
     if (name !== 'monthlyIncome') {

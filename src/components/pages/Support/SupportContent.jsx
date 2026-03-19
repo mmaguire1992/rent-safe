@@ -579,7 +579,6 @@ function SupportContent({ showBreadcrumb = false, BreadcrumbComponent = null }) 
                   type="date"
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
                   className="w-full px-3 h-[52px] pr-8 text-sm border border-lightGray rounded-xl focus:outline-none focus:ring-0 font-nunito text-secondary"
                 />
                 {dateFilter && (
