@@ -115,6 +115,7 @@ function AddProperty() {
   useEffect(() => {
     isWizardDirtyRef.current = isWizardDirty;
   }, [isWizardDirty]);
+  const allowNextBackNavigationRef = useRef(false);
 
   // Register a global navigation blocker so sidebar/header navigation prompts before leaving
   useEffect(() => {
@@ -133,6 +134,44 @@ function AddProperty() {
         window.__rentsafe_navBlocker = null;
       }
     };
+  }, []);
+
+  // Intercept browser back/forward buttons and route them through the same discard modal.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handlePopState = () => {
+      const blocker = window.__rentsafe_navBlocker;
+
+      // Allow the intentionally triggered back navigation after user confirms discard.
+      if (allowNextBackNavigationRef.current) {
+        allowNextBackNavigationRef.current = false;
+        return;
+      }
+
+      if (
+        blocker &&
+        typeof blocker.shouldBlock === 'function' &&
+        blocker.shouldBlock() &&
+        typeof blocker.request === 'function'
+      ) {
+        // Cancel this browser back attempt and stay on current page.
+        window.history.forward();
+
+        blocker.request({
+          to: -1,
+          options: {},
+          kind: 'back',
+          proceed: () => {
+            allowNextBackNavigationRef.current = true;
+            window.history.back();
+          },
+        });
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   // Restore wizard state on first mount (prevents refresh from resetting to step 1)
