@@ -213,7 +213,7 @@ function ChatView({
                 </div>
                 {/* Show verification icon for renters: cross if not verified, checkmark if verified */}
                 {msg.senderUserType === 'renter' && (
-                  <div className="absolute -bottom-0 right-[-24px] bg-white rounded-full cursor-pointer">
+                  <div className="absolute top-[24px] left-[25px] h-fit w-fit bg-white rounded-full cursor-pointer">
                     {msg.isVerified ? (
                       <MediumCheckedIcon />
                     ) : (
