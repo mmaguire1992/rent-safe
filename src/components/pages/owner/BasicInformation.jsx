@@ -61,9 +61,9 @@ function BasicInformation() {
     const { name, value } = e.target;
     let processedValue = value;
 
-  if (name === 'phoneNumber') {
-    processedValue = value.replace(/\D/g, '').slice(0, 10);
-  }
+    if (name === 'phoneNumber') {
+      processedValue = value.replace(/[^0-9+\-().\s]/g, '');
+    }
 
     // Remove leading spaces from EVERY text-like field
     processedValue = processedValue.replace(/^\s+/, '');
