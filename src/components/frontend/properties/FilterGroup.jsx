@@ -15,9 +15,9 @@ function FilterGroup({
         <h3 className="text-base font-bold font-nunito text-[#2B2F38] mb-3">
           {title}
         </h3>
-        <div className="dropdownIcon">
+        {/* <div className="dropdownIcon">
           <DropdownIcon />
-        </div>
+        </div> */}
       </div>
       <div className="flex flex-wrap gap-2">
         {options.map((option) => {
