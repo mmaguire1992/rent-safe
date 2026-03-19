@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from '@/lib/react-router-compat';
 import { toast } from 'react-toastify';
 import ThreeDotsIcon from "@/svg/threeDotsIcon";
+import { buildPropertyShareUrl } from "@/utils/propertyShare";
 
 function PropertiesMobileCards({
   properties,
@@ -46,7 +47,12 @@ function PropertiesMobileCards({
       }
 
       // Construct property detail URL (public route for renters to view)
-      const propertyUrl = `${window.location.origin}/properties/${propertyId}`;
+      const propertyUrl = buildPropertyShareUrl(propertyId);
+      if (!propertyUrl) {
+        toast.error('Property link is not available');
+        setOpenDropdownId(null);
+        return;
+      }
 
       // Try modern clipboard API first
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -149,7 +155,7 @@ function PropertiesMobileCards({
                       className="w-full flex items-center gap-3 px-4 py-2 text-left text-secondary hover:bg-gray-50 transition-colors first:rounded-t-lg"
                     >
                       <span className="text-sm sm:text-base text-secondary font-medium font-nunito">
-                        Edit
+                        Edit 
                       </span>
                     </button>
                     <button

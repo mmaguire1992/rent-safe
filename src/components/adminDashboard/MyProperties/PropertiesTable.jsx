@@ -8,6 +8,7 @@ import ThreeDotsIcon from "@/svg/threeDotsIcon";
 import HouseIcon from "@/svg/websiteSvg/houseIcon";
 import { FiEdit, FiTrash2, FiShare2 } from "react-icons/fi";
 import { toast } from "react-toastify";
+import { buildPropertyShareUrl } from "@/utils/propertyShare";
 
 function PropertiesTable({
   properties,
@@ -94,8 +95,55 @@ function PropertiesTable({
         }
       }
       navigate(`/dashboard/properties/edit/${propertyId}`);
+    } else if (action === "Share") {
+      handleShare(propertyId);
     }
     setOpenDropdownId(null);
+  };
+
+  const handleShare = async (propertyId) => {
+    try {
+      if (!propertyId) {
+        toast.error('Property ID not available');
+        return;
+      }
+
+      const propertyUrl = buildPropertyShareUrl(propertyId);
+      if (!propertyUrl) {
+        toast.error('Property link is not available');
+        return;
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(propertyUrl);
+        toast.success('Link copied to clipboard!');
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = propertyUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+          const successful = document.execCommand('copy');
+          document.body.removeChild(textArea);
+          if (successful) {
+            toast.success('Link copied to clipboard!');
+          } else {
+            throw new Error('execCommand failed');
+          }
+        } catch (err) {
+          document.body.removeChild(textArea);
+          throw err;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      toast.error('Failed to copy link. Please copy manually.');
+    }
   };
 
   return (

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from '@/lib/react-router-compat';
 import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
 import {
   FiFilter,
   FiDownload,
@@ -20,6 +21,7 @@ import { fetchMyActiveProperties } from '@/redux/slices/propertySlice';
 import { useAuth } from "@/context/AuthContext";
 import VerificationSubscriptionModal from "@/components/common/VerificationSubscriptionModal";
 import { useVerificationSubscription } from "@/hooks/useVerificationSubscription";
+import { buildPropertyShareUrl } from "@/utils/propertyShare";
 
 function ActiveProperties() {
   const navigate = useNavigate();
@@ -234,8 +236,52 @@ function ActiveProperties() {
       console.log("Delete property:", propertyId);
       // TODO: Implement delete functionality
     } else if (action === "share") {
-      console.log("Share property:", propertyId);
-      // TODO: Implement share functionality
+      handleShare(propertyId);
+    }
+  };
+
+  const handleShare = async (propertyId) => {
+    try {
+      if (!propertyId) {
+        toast.error('Property ID not available');
+        return;
+      }
+
+      const propertyUrl = buildPropertyShareUrl(propertyId);
+      if (!propertyUrl) {
+        toast.error('Property link is not available');
+        return;
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(propertyUrl);
+        toast.success('Link copied to clipboard!');
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = propertyUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+          const successful = document.execCommand('copy');
+          document.body.removeChild(textArea);
+          if (successful) {
+            toast.success('Link copied to clipboard!');
+          } else {
+            throw new Error('execCommand failed');
+          }
+        } catch (err) {
+          document.body.removeChild(textArea);
+          throw err;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      toast.error('Failed to copy link. Please copy manually.');
     }
   };
 

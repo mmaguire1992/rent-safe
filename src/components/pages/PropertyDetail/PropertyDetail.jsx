@@ -20,6 +20,7 @@ import { PROPERTY_PLACEHOLDER_IMAGE } from "@/constant";
 import { toast } from "react-toastify";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import RentOutModal from "@/components/adminDashboard/PropertyDetail/RentOutModal";
+import { buildPropertyShareUrl } from "@/utils/propertyShare";
 
 function PropertyDetail() {
   const { id } = useParams();
@@ -501,7 +502,11 @@ function PropertyDetail() {
       }
 
       // Construct property detail URL (public route for renters to view)
-      const propertyUrl = `${window.location.origin}/properties/${id}`;
+      const propertyUrl = buildPropertyShareUrl(id);
+      if (!propertyUrl) {
+        toast.error('Property link is not available');
+        return;
+      }
       
       // Try modern clipboard API first
       if (navigator.clipboard && navigator.clipboard.writeText) {
