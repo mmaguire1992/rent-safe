@@ -37,7 +37,6 @@ config.bat
 <<<<<<< HEAD
 
 #env
-.env
 =======
 >>>>>>> 4d7fa19df41852f81196955dd82d7787219fee93
 temp_auto_push.bat
