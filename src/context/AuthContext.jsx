@@ -38,6 +38,45 @@ const TEMP_AUTH_ALLOWLIST_EXACT = [
 ];
 const TEMP_AUTH_ALLOWLIST_PREFIX = ['/signup'];
 const TEMP_LOGOUT_REDIRECT_FLAG = 'rentsafe:logoutRedirect';
+const DEV_LOGIN_PASSWORD = 'RentSafe123!';
+
+const getDevLoginUser = (credentials) => {
+  if (process.env.NODE_ENV !== 'development') return null;
+
+  const email = credentials?.email?.trim().toLowerCase();
+  const password = credentials?.password;
+  if (password !== DEV_LOGIN_PASSWORD) return null;
+
+  if (email === 'owner@rentsafe.dev') {
+    return {
+      user: {
+        id: 'dev-owner',
+        firstName: 'Dev',
+        lastName: 'Owner',
+        email,
+        userType: 'owner',
+        isEmailVerified: true,
+      },
+      token: 'dev-owner-token',
+    };
+  }
+
+  if (email === 'renter@rentsafe.dev') {
+    return {
+      user: {
+        id: 'dev-renter',
+        firstName: 'Dev',
+        lastName: 'Renter',
+        email,
+        userType: 'renter',
+        isEmailVerified: true,
+      },
+      token: 'dev-renter-token',
+    };
+  }
+
+  return null;
+};
 
 const isTempAllowedWithoutAuthRoute = (path) => {
   const safePath = typeof path === 'string' ? path : String(path || '');
@@ -283,9 +322,12 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Email and password are required');
       }
 
-      // Import and call login API
-      const { loginUser } = await import('@/api/auth');
-      const { user: userData, token: userToken } = await loginUser(credentials);
+      const devLogin = getDevLoginUser(credentials);
+      const loginResult = devLogin || await (async () => {
+        const { loginUser } = await import('@/api/auth');
+        return loginUser(credentials);
+      })();
+      const { user: userData, token: userToken } = loginResult;
       
       // Validate response data
       if (!userData || !userToken) {
@@ -471,4 +513,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
